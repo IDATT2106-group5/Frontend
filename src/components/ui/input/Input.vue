@@ -27,3 +27,16 @@ const modelValue = useVModel(props, 'modelValue', emits, {
     "
   />
 </template>
+
+<style scoped>
+input {
+  font-family: 'Inter', sans-serif;
+  color: #333;
+  border-radius: 20px;
+}
+
+input:focus {
+  border-color: #4f46e5; /* custom focus border */
+  border-radius: 20px;
+}
+</style>
