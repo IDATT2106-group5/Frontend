@@ -1,0 +1,16 @@
+services:
+  frontend:
+    build: .
+    restart: unless-stopped
+    ports: 
+      - "5173:5173"
+    networks:
+      - app-network
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    command: npm run dev -- --host
+
+networks:
+  app-network:
+    driver: bridge
