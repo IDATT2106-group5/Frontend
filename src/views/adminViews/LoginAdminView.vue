@@ -4,6 +4,5 @@
 <template>
   <main>
     <Login />
-    Login for Admin
   </main>
 </template>
