@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 
-// Optional: simple handler for now
 function onSubmit(event) {
   event.preventDefault()
   const formData = new FormData(event.target)
