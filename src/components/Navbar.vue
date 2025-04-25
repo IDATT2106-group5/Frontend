@@ -16,15 +16,15 @@ import { RouterLink, RouterView } from 'vue-router'
         Nyheter
       </a>
       <a href="#" class="flex items-center gap-2 hover:underline focus:outline-none">
-        <Globe class="w-5 h-5 text-teal-300" />
+        <Globe class="w-5 h-5 text-teal-300 text-white" />
         Kart
       </a>
       <a href="#" class="flex items-center gap-2 hover:underline">
-        <ShoppingCart class="w-5 h-5 text-yellow-400" />
+        <ShoppingCart class="w-5 h-5  text-white" />
         Min beholdning
       </a>
       <a href="#" class="flex items-center gap-2 hover:underline">
-        <User class="w-5 h-5 text-orange-400" />
+        <User class="w-5 h-5  text-white" />
         Min husstand
       </a>
     </nav>
