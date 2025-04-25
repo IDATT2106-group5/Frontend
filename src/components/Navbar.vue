@@ -23,10 +23,12 @@ import { RouterLink, RouterView } from 'vue-router'
         <ShoppingCart class="w-5 h-5  text-white" />
         Min beholdning
       </a>
+    <RouterLink to="/household">
       <a href="#" class="flex items-center gap-2 hover:underline">
         <User class="w-5 h-5  text-white" />
         Min husstand
       </a>
+    </RouterLink>
     </nav>
 
   <RouterLink to="/login">
