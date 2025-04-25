@@ -31,8 +31,13 @@ export const useUserStore = defineStore('user', {
         apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         localStorage.setItem('jwt', token);
         await this.fetchUser();
-      } catch (err) {
-        this.error = err.message;
+      }
+        catch (err) {
+          if (err.response?.status === 409) {
+            this.error = "E-postadresse er allerede registrert";
+          } else {
+            this.error = err.message || "Noe gikk galt";
+          }
       } finally {
         this.isLoading = false;
       }
