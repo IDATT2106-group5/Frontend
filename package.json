@@ -15,6 +15,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@unhead/vue": "^2.0.8",
     "@vuelidate/core": "^2.0.3",
     "@vuelidate/validators": "^2.0.4",
     "@vueuse/core": "^13.1.0",
@@ -28,6 +29,8 @@
     "tailwindcss-animate": "^1.0.7",
     "vee-validate": "^4.15.0",
     "vue": "^3.5.13",
+    "vue-recaptcha": "^3.0.0-alpha.6",
+    "vue-recaptcha-v3": "^2.0.1",
     "vue-router": "^4.5.0",
     "vue-the-mask": "^0.11.1"
   },

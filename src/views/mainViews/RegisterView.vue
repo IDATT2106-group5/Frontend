@@ -20,11 +20,13 @@
                 type="email"
                 placeholder="E-post"
                 class="input-with-icon"
-                :class="{'input-error': v$.email.$error}"
+                :class="{'input-error': shouldShowError(v$.email)}"
+                @input="v$.email.$model ? v$.email.$touch() : null"
+                @blur="v$.email.$touch()"
               />
             </div>
-            <div v-if="v$.email.$error" class="error-message">
-              {{ v$.email.$errors[0].$message }}
+            <div v-if="shouldShowError(v$.email)" class="error-message">
+              {{ getErrorMessage(v$.email) }}
             </div>
           </div>
 
@@ -38,10 +40,11 @@
               v-model="v$.name.$model"
               type="text"
               placeholder="Fornavn Etternavn"
-              :class="{'input-error': v$.name.$error}"
+              :class="{'input-error': shouldShowError(v$.name)}"
+              @blur="v$.name.$touch()"
             />
-            <div v-if="v$.name.$error" class="error-message">
-              {{ v$.name.$errors[0].$message }}
+            <div v-if="shouldShowError(v$.name)" class="error-message">
+              {{ getErrorMessage(v$.name) }}
             </div>
           </div>
 
@@ -60,7 +63,9 @@
                 :type="showPassword ? 'text' : 'password'"
                 placeholder="Laget passord"
                 class="input-with-icon"
-                :class="{'input-error': v$.password.$error}"
+                :class="{'input-error': shouldShowError(v$.password)}"
+                @input="v$.password.$model ? v$.password.$touch() : null"
+                @blur="v$.password.$touch()"
               />
               <button
                 type="button"
@@ -70,8 +75,8 @@
                 <component :is="showPassword ? 'EyeOff' : 'Eye'" class="icon" />
               </button>
             </div>
-            <div v-if="v$.password.$error" class="error-message">
-              {{ v$.password.$errors[0].$message }}
+            <div v-if="shouldShowError(v$.password)" class="error-message">
+              {{ getErrorMessage(v$.password) }}
             </div>
           </div>
 
@@ -84,10 +89,10 @@
               v-mask="'+## ### ## ###'"
               placeholder="+47 123 45 678"
               @blur="v$.phone.$touch()"
-              :class="{'input-error': v$.phone.$error}"
+              :class="{'input-error': shouldShowError(v$.phone)}"
             />
-            <div v-if="v$.phone.$error" class="error-message">
-              {{ v$.phone.$errors[0].$message }}
+            <div v-if="shouldShowError(v$.phone)" class="error-message">
+              {{ getErrorMessage(v$.phone) }}
             </div>
           </div>
 
@@ -106,7 +111,8 @@
                 :type="showConfirmPassword ? 'text' : 'password'"
                 placeholder="Skriv passordet igjen"
                 class="input-with-icon"
-                :class="{'input-error': v$.confirmPassword.$error}"
+                :class="{'input-error': shouldShowError(v$.confirmPassword)}"
+                @blur="v$.confirmPassword.$touch()"
               />
               <button
                 type="button"
@@ -116,26 +122,15 @@
                 <component :is="showConfirmPassword ? 'EyeOff' : 'Eye'" class="icon" />
               </button>
             </div>
-            <div v-if="v$.confirmPassword.$error" class="error-message">
-              {{ v$.confirmPassword.$errors[0].$message }}
+            <div v-if="shouldShowError(v$.confirmPassword)" class="error-message">
+              {{ getErrorMessage(v$.confirmPassword) }}
             </div>
           </div>
 
-          <!-- Address Input -->
-          <div class="form-group">
-            <label for="address" class="form-label">Adresse</label>
-            <Input
-              id="address"
-              v-model="v$.address.$model"
-              type="text"
-              placeholder="Høgskoleringen 1, 7053"
-              :class="{'input-error': v$.address.$error}"
-            />
-            <div v-if="v$.address.$error" class="error-message">
-              {{ v$.address.$errors[0].$message }}
-            </div>
-          </div>
         </div>
+
+        <!-- TODO: reCAPTCHA -->
+
 
         <!-- Newsletter & Privacy Policy -->
         <div class="checkbox-section">
@@ -187,7 +182,9 @@ import { ref, reactive, computed } from 'vue'
 import { Input } from '@/components/ui/input'
 import { useVuelidate } from '@vuelidate/core'
 import { required, email, minLength, sameAs, helpers } from '@vuelidate/validators'
-import { Mail, KeySquare} from 'lucide-vue-next'
+import { Mail, KeySquare } from 'lucide-vue-next'
+
+const formSubmitted = ref(false);
 
 // Form data
 const formData = reactive({
@@ -220,7 +217,7 @@ const rules = computed(() => {
       minLength: helpers.withMessage('Passordet må være minst 8 tegn', minLength(8))
     },
     confirmPassword: {
-      required: helpers.withMessage('Passord er påkrevd', required),
+      required: helpers.withMessage('Bekreft passord er påkrevd', required),
       sameAsPassword: helpers.withMessage('Passordene må være like', sameAs(formData.password))
     },
     phone: {
@@ -234,26 +231,68 @@ const rules = computed(() => {
     },
     privacyPolicy: {
       isChecked: helpers.withMessage('Du må godta personvernerklæringen', (value) => value === true)
-    },
-    captchaChecked: {
-      isChecked: helpers.withMessage('Vennligst bekreft at du ikke er en robot', (value) => value === true)
     }
   }
 })
 
 const v$ = useVuelidate(rules, { ...formData })
 
+// Function to determine if error should be shown
+const shouldShowError = (field) => {
+  // If field is empty and required error exists, only show after form submission
+  if (!field.$model && field.$errors.some(e => e.$validator === 'required')) {
+    return formSubmitted.value;
+  }
+
+  // For non-empty fields with other types of errors, show errors as user types
+  return field.$dirty && field.$invalid && field.$model !== '';
+}
+
+// Function to get the appropriate error message
+const getErrorMessage = (field) => {
+  if (!field.$errors || field.$errors.length === 0) return '';
+
+  // If field is empty, return the required error message
+  if (!field.$model && field.$errors.some(e => e.$validator === 'required')) {
+    return field.$errors.find(e => e.$validator === 'required').$message;
+  }
+
+  // For non-empty fields, return format error messages
+  if (field.$model) {
+    // For email fields
+    if (field === v$.value.email && !email(field.$model)) {
+      return field.$errors.find(e => e.$validator === 'email').$message;
+    }
+
+    // For password field
+    if (field === v$.value.password && field.$model.length < 8) {
+      return field.$errors.find(e => e.$validator === 'minLength').$message;
+    }
+
+    // For confirm password field
+    if (field === v$.value.confirmPassword && field.$model !== formData.password) {
+      return field.$errors.find(e => e.$validator === 'sameAsPassword').$message;
+    }
+
+    // For phone field
+    if (field === v$.value.phone) {
+      return field.$errors.find(e => e.$validator === 'phoneFormat').$message;
+    }
+  }
+
+  // Default case
+  return field.$errors[0].$message;
+}
+
 // Form submission handler
 const onSubmit = async () => {
+  formSubmitted.value = true;
   const result = await v$.value.$validate()
 
   if (result) {
-    // Form is valid, handle submission
     console.log('Form submitted:', formData)
-    // Here you would typically send the data to your API
     alert('Registrering vellykket!')
   } else {
-    // Form has validation errors
     console.log('Validation errors:', v$.value.$errors)
   }
 }
