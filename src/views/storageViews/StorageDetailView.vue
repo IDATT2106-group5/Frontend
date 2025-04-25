@@ -11,6 +11,7 @@ import {
 import StorageNavbar from "@/components/StorageNavbar.vue";
 import ItemList from "@/components/ItemList.vue";
 import SearchBar from '@/components/SearchBar.vue'
+import { Button } from '@/components/ui/button/index.js'
 
 // Component state
 const groupedItems = ref({
@@ -68,6 +69,15 @@ onMounted(() => {
   <div>
     <StorageNavbar />
     <SearchBar/>
+    <!-- Info header -->
+    <div class="flex items-end mb-4 pr-20 pl-20 pt-10">
+      <div class="w-1/4 font-semibold text-sm uppercase text-gray-600">Navn</div>
+      <div class="w-1/4 font-semibold text-sm uppercase text-gray-600">Tidligst utløpsdato</div>
+      <div class="w-1/4 font-semibold text-sm uppercase text-gray-600">Antall</div>
+      <div class="w-1/4 font-semibold text-sm uppercase text-gray-600">Hvor lenge varer dette</div>
+      <Button type="submit" className="text-black border border-black rounded-2xl px-4 py-2
+      text-sm hover:bg-black hover:text-white transition-colors">Rediger</Button>
+    </div>
 
     <div class="pl-20 pr-20">
       <Accordion type="single" collapsible v-model:value="openItem">
