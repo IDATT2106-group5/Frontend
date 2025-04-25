@@ -7,7 +7,9 @@ import { RouterLink, RouterView } from 'vue-router'
 <template>
   <header class="bg-[#2c3e50] text-white px-8 py-4 shadow flex items-center justify-between">
     <div class="flex items-center gap-2">
-      <img src="/src/assets/icons/Krisefikser.png" alt="Logo" class="w-10 h-10 bg-gray-300" />
+      <RouterLink to="/">
+        <img src="/src/assets/icons/Krisefikser.png" alt="Logo" class="w-10 h-10 bg-gray-300" />
+      </RouterLink>
     </div>
 
     <nav class="flex gap-8 items-center text-sm font-medium">
