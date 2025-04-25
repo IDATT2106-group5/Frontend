@@ -9,7 +9,8 @@ import {
 } from '@/components/ui/accordion';
 
 import StorageNavbar from "@/components/StorageNavbar.vue";
-import ItemList from "@/components/ItemList.vue"; // Reusable ItemList component
+import ItemList from "@/components/ItemList.vue";
+import SearchBar from '@/components/SearchBar.vue'
 
 // Component state
 const groupedItems = ref({
@@ -66,6 +67,7 @@ onMounted(() => {
 <template>
   <div>
     <StorageNavbar />
+    <SearchBar/>
 
     <div class="pl-20 pr-20">
       <Accordion type="single" collapsible v-model:value="openItem">
