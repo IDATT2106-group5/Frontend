@@ -66,8 +66,12 @@
 
         <div class="flex justify-between gap-2">
           <Button type="submit" class="w-1/2 bg-black text-white">Login</Button>
-          <Button type="button" class="w-1/2 border bg-white text-black border hover:bg-gray-300" >Registrer</Button>
-
+          <RouterLink
+            to="/register"
+            class="w-1/2 text-center border bg-white text-black hover:bg-gray-300 px-4 py-2 rounded"
+          >
+            Registrer
+          </RouterLink>
         </div>
 
         <div class="flex items-center justify-between text-sm">

@@ -1,208 +1,35 @@
-<template>
-  <div class="form-container">
-    <div class="form-wrapper">
-      <h1 class="form-title">Opprett Bruker</h1>
-
-      <form @submit.prevent="onSubmit">
-        <div class="form-grid">
-          <!-- Email Input -->
-          <div class="form-group">
-            <label for="email" class="form-label">
-              E-mail<span class="required">*</span>
-            </label>
-            <div class="input-wrapper">
-              <div class="input-icon">
-                <Mail class="icon" />
-              </div>
-              <Input
-                id="email"
-                v-model="v$.email.$model"
-                type="email"
-                placeholder="E-post"
-                class="input-with-icon"
-                :class="{'input-error': shouldShowError(v$.email)}"
-                @input="v$.email.$model ? v$.email.$touch() : null"
-                @blur="v$.email.$touch()"
-              />
-            </div>
-            <div v-if="shouldShowError(v$.email)" class="error-message">
-              {{ getErrorMessage(v$.email) }}
-            </div>
-          </div>
-
-          <!-- Name Input -->
-          <div class="form-group">
-            <label for="name" class="form-label">
-              Navn<span class="required">*</span>
-            </label>
-            <Input
-              id="name"
-              v-model="v$.name.$model"
-              type="text"
-              placeholder="Fornavn Etternavn"
-              :class="{'input-error': shouldShowError(v$.name)}"
-              @blur="v$.name.$touch()"
-            />
-            <div v-if="shouldShowError(v$.name)" class="error-message">
-              {{ getErrorMessage(v$.name) }}
-            </div>
-          </div>
-
-          <!-- Password Input -->
-          <div class="form-group">
-            <label for="password" class="form-label">
-              Passord<span class="required">*</span>
-            </label>
-            <div class="input-wrapper">
-              <div class="input-icon">
-                <KeySquare class="icon" />
-              </div>
-              <Input
-                id="password"
-                v-model="v$.password.$model"
-                :type="showPassword ? 'text' : 'password'"
-                placeholder="Laget passord"
-                class="input-with-icon"
-                :class="{'input-error': shouldShowError(v$.password)}"
-                @input="v$.password.$model ? v$.password.$touch() : null"
-                @blur="v$.password.$touch()"
-              />
-              <button
-                type="button"
-                @click="showPassword = !showPassword"
-                class="password-toggle"
-              >
-                <component :is="showPassword ? 'EyeOff' : 'Eye'" class="icon" />
-              </button>
-            </div>
-            <div v-if="shouldShowError(v$.password)" class="error-message">
-              {{ getErrorMessage(v$.password) }}
-            </div>
-          </div>
-
-          <!-- Phone Number Input -->
-          <div class="form-group">
-            <label for="phone" class="form-label">Telefon nummer</label>
-            <Input
-              id="phone"
-              v-model="v$.phone.$model"
-              v-mask="'+## ### ## ###'"
-              placeholder="+47 123 45 678"
-              @blur="v$.phone.$touch()"
-              :class="{'input-error': shouldShowError(v$.phone)}"
-            />
-            <div v-if="shouldShowError(v$.phone)" class="error-message">
-              {{ getErrorMessage(v$.phone) }}
-            </div>
-          </div>
-
-          <!-- Confirm Password Input -->
-          <div class="form-group">
-            <label for="confirmPassword" class="form-label">
-              Bekreft Passord<span class="required">*</span>
-            </label>
-            <div class="input-wrapper">
-              <div class="input-icon">
-                <KeySquare class="icon" />
-              </div>
-              <Input
-                id="confirmPassword"
-                v-model="v$.confirmPassword.$model"
-                :type="showConfirmPassword ? 'text' : 'password'"
-                placeholder="Skriv passordet igjen"
-                class="input-with-icon"
-                :class="{'input-error': shouldShowError(v$.confirmPassword)}"
-                @blur="v$.confirmPassword.$touch()"
-              />
-              <button
-                type="button"
-                @click="showConfirmPassword = !showConfirmPassword"
-                class="password-toggle"
-              >
-                <component :is="showConfirmPassword ? 'EyeOff' : 'Eye'" class="icon" />
-              </button>
-            </div>
-            <div v-if="shouldShowError(v$.confirmPassword)" class="error-message">
-              {{ getErrorMessage(v$.confirmPassword) }}
-            </div>
-          </div>
-
-        </div>
-
-        <!-- TODO: reCAPTCHA -->
-
-
-        <!-- Newsletter & Privacy Policy -->
-        <div class="checkbox-section">
-          <div class="checkbox-container">
-            <input
-              id="newsletter"
-              v-model="formData.newsletter"
-              type="checkbox"
-              class="checkbox"
-            />
-            <label for="newsletter" class="checkbox-label">
-              Jeg ønsker å motta nyhetsbrev og annen relevant informasjon på e-post.
-            </label>
-          </div>
-
-          <div class="checkbox-container">
-            <input
-              id="privacy"
-              v-model="v$.privacyPolicy.$model"
-              type="checkbox"
-              class="checkbox"
-            />
-            <label for="privacy" class="checkbox-label">
-              Jeg har lest og godtar <a href="#" class="link">personvernerklæringen</a>.
-            </label>
-          </div>
-          <div v-if="v$.privacyPolicy.$error" class="error-message">
-            {{ v$.privacyPolicy.$errors[0].$message }}
-          </div>
-        </div>
-
-        <!-- Register Button -->
-        <button type="submit" class="register-button">Registrer</button>
-
-        <!-- Login Link -->
-        <div class="login-link">
-          <p>
-            Har du en konto?
-            <a href="#" class="link">Logg inn</a>
-          </p>
-        </div>
-      </form>
-    </div>
-  </div>
-</template>
-
 <script setup>
 import { ref, reactive, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { Input } from '@/components/ui/input'
 import { useVuelidate } from '@vuelidate/core'
 import { required, email, minLength, sameAs, helpers } from '@vuelidate/validators'
-import { Mail, KeySquare } from 'lucide-vue-next'
+import { Mail, KeySquare, Eye, EyeOff } from 'lucide-vue-next'
+import { useUserStore } from '@/stores/UserStore'
 
-const formSubmitted = ref(false);
+const router = useRouter()
+const userStore = useUserStore()
 
-// Form data
 const formData = reactive({
   email: '',
   name: '',
   password: '',
   confirmPassword: '',
   phone: '',
-  address: '',
   newsletter: false,
   privacyPolicy: false
 })
 
-// Password visibility toggles
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 
-// Validation rules
+const status = reactive({
+  loading: false,
+  success: false,
+  error: false,
+  errorMessage: ''
+})
+
 const rules = computed(() => {
   return {
     email: {
@@ -222,12 +49,9 @@ const rules = computed(() => {
     },
     phone: {
       phoneFormat: helpers.withMessage(
-        'Ugyldig telefonnummer',
-        helpers.regex('phoneFormat', /^\+?\d[\d\s]*$/)
+        'Telefonnummer må være 8 siffer',
+        (value) => !value || value.replace(/\s/g, '').length === 8
       )
-    },
-    address: {
-      // Optional field
     },
     privacyPolicy: {
       isChecked: helpers.withMessage('Du må godta personvernerklæringen', (value) => value === true)
@@ -235,220 +59,248 @@ const rules = computed(() => {
   }
 })
 
-const v$ = useVuelidate(rules, { ...formData })
+const v$ = useVuelidate(rules, formData)
 
-// Function to determine if error should be shown
-const shouldShowError = (field) => {
-  // If field is empty and required error exists, only show after form submission
-  if (!field.$model && field.$errors.some(e => e.$validator === 'required')) {
-    return formSubmitted.value;
-  }
-
-  // For non-empty fields with other types of errors, show errors as user types
-  return field.$dirty && field.$invalid && field.$model !== '';
-}
-
-// Function to get the appropriate error message
 const getErrorMessage = (field) => {
   if (!field.$errors || field.$errors.length === 0) return '';
-
-  // If field is empty, return the required error message
-  if (!field.$model && field.$errors.some(e => e.$validator === 'required')) {
-    return field.$errors.find(e => e.$validator === 'required').$message;
-  }
-
-  // For non-empty fields, return format error messages
-  if (field.$model) {
-    // For email fields
-    if (field === v$.value.email && !email(field.$model)) {
-      return field.$errors.find(e => e.$validator === 'email').$message;
-    }
-
-    // For password field
-    if (field === v$.value.password && field.$model.length < 8) {
-      return field.$errors.find(e => e.$validator === 'minLength').$message;
-    }
-
-    // For confirm password field
-    if (field === v$.value.confirmPassword && field.$model !== formData.password) {
-      return field.$errors.find(e => e.$validator === 'sameAsPassword').$message;
-    }
-
-    // For phone field
-    if (field === v$.value.phone) {
-      return field.$errors.find(e => e.$validator === 'phoneFormat').$message;
-    }
-  }
-
-  // Default case
   return field.$errors[0].$message;
 }
 
-// Form submission handler
 const onSubmit = async () => {
-  formSubmitted.value = true;
   const result = await v$.value.$validate()
 
-  if (result) {
-    console.log('Form submitted:', formData)
-    alert('Registrering vellykket!')
-  } else {
+  if (!result) {
     console.log('Validation errors:', v$.value.$errors)
+    return
+  }
+  
+  status.loading = true
+  status.error = false
+  status.success = false
+  
+  try {
+    const userData = {
+      email: formData.email,
+      name: formData.name,
+      password: formData.password,
+      phone: formData.phone ? formData.phone.replace(/\s/g, '') : '',
+      newsletter: formData.newsletter
+    }
+    
+    await userStore.register(userData)
+    
+    if (userStore.error) {
+      throw new Error(userStore.error)
+    }
+    
+    status.success = true
+    
+    setTimeout(() => {
+      router.push('/dashboard')
+    }, 2000)
+  } catch (error) {
+    status.error = true
+    status.errorMessage = error.message || 'Det oppstod en feil under registrering. Vennligst prøv igjen.'
+    console.error('Registration error:', error)
+  } finally {
+    status.loading = false
   }
 }
 </script>
 
-<style scoped>
-.form-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  background-color: #ffffff;
-  padding: 1rem;
-}
+<template>
+  <div class="flex justify-center items-center min-h-screen bg-white p-4">
+    <div class="w-full max-w-2xl">
+      <h1 class="text-4xl font-bold text-center mb-8">Opprett Bruker</h1>
 
-.form-wrapper {
-  width: 100%;
-  max-width: 36rem;
-}
+      <div v-if="status.loading" class="p-3 rounded bg-gray-200 text-blue-900 mb-4 text-center">
+        Registrerer bruker...
+      </div>
+      
+      <div v-if="status.success" class="p-3 rounded bg-green-100 text-green-800 mb-4 text-center">
+        Registrering vellykket! Omdirigerer til innlogging...
+      </div>
+      
+      <div v-if="status.error" class="p-3 rounded bg-red-100 text-red-700 mb-4 text-center">
+        {{ status.errorMessage }}
+      </div>
 
-.form-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 2rem;
-}
+      <form @submit.prevent="onSubmit">
+        <div class="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2">
+          <!-- Email Input -->
+          <div class="flex flex-col mb-6">
+            <label for="email" class="text-base font-medium mb-2 flex">
+              E-mail<span class="text-red-500 ml-0.5">*</span>
+            </label>
+            <div class="relative flex items-center">
+              <div class="absolute left-3 text-gray-400 pointer-events-none">
+                <Mail class="w-5 h-5" />
+              </div>
+              <Input
+                id="email"
+                v-model="v$.email.$model"
+                type="email"
+                placeholder="E-post"
+                class="pl-10"
+                :class="{'border-red-500': v$.email.$error}"
+                @input="v$.email.$touch()"
+                @blur="v$.email.$touch()"
+              />
+            </div>
+            <div v-if="v$.email.$error" class="text-red-500 text-xs mt-1">
+              {{ getErrorMessage(v$.email) }}
+            </div>
+          </div>
 
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
-}
+          <!-- Name Input -->
+          <div class="flex flex-col mb-6">
+            <label for="name" class="text-base font-medium mb-2 flex">
+              Navn<span class="text-red-500 ml-0.5">*</span>
+            </label>
+            <Input
+              id="name"
+              v-model="v$.name.$model"
+              type="text"
+              placeholder="Fornavn Etternavn"
+              :class="{'border-red-500': v$.name.$error}"
+              @input="v$.name.$touch()"
+              @blur="v$.name.$touch()"
+            />
+            <div v-if="v$.name.$error" class="text-red-500 text-xs mt-1">
+              {{ getErrorMessage(v$.name) }}
+            </div>
+          </div>
 
-@media (min-width: 768px) {
-  .form-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
+          <!-- Password Input -->
+          <div class="flex flex-col mb-6">
+            <label for="password" class="text-base font-medium mb-2 flex">
+              Passord<span class="text-red-500 ml-0.5">*</span>
+            </label>
+            <div class="relative flex items-center">
+              <div class="absolute left-3 text-gray-400 pointer-events-none">
+                <KeySquare class="w-5 h-5" />
+              </div>
+              <Input
+                id="password"
+                v-model="v$.password.$model"
+                :type="showPassword ? 'text' : 'password'"
+                placeholder="Laget passord"
+                class="pl-10"
+                :class="{'border-red-500': v$.password.$error}"
+                @input="v$.password.$touch()"
+                @blur="v$.password.$touch()"
+              />
+              <button
+                type="button"
+                @click="showPassword = !showPassword"
+                class="absolute right-3 bg-transparent border-none cursor-pointer text-gray-500"
+              >
+                <component :is="showPassword ? EyeOff : Eye" class="w-5 h-5" />
+              </button>
+            </div>
+            <div v-if="v$.password.$error" class="text-red-500 text-xs mt-1">
+              {{ getErrorMessage(v$.password) }}
+            </div>
+          </div>
 
-.form-group {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 1.5rem;
-}
+          <!-- Phone Number Input -->
+          <div class="flex flex-col mb-6">
+            <label for="phone" class="text-base font-medium mb-2">Telefon nummer</label>
+            <Input
+              id="phone"
+              v-model="v$.phone.$model"
+              v-mask="'### ## ###'"
+              placeholder="123 45 678"
+              @input="v$.phone.$touch()"
+              @blur="v$.phone.$touch()"
+              :class="{'border-red-500': v$.phone.$error}"
+            />
+            <div v-if="v$.phone.$error" class="text-red-500 text-xs mt-1">
+              {{ getErrorMessage(v$.phone) }}
+            </div>
+          </div>
 
-.form-label {
-  font-size: 1rem;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
-  display: flex;
-}
+          <!-- Confirm Password Input -->
+          <div class="flex flex-col mb-6">
+            <label for="confirmPassword" class="text-base font-medium mb-2 flex">
+              Bekreft Passord<span class="text-red-500 ml-0.5">*</span>
+            </label>
+            <div class="relative flex items-center">
+              <div class="absolute left-3 text-gray-400 pointer-events-none">
+                <KeySquare class="w-5 h-5" />
+              </div>
+              <Input
+                id="confirmPassword"
+                v-model="v$.confirmPassword.$model"
+                :type="showConfirmPassword ? 'text' : 'password'"
+                placeholder="Skriv passordet igjen"
+                class="pl-10"
+                :class="{'border-red-500': v$.confirmPassword.$error}"
+                @input="v$.confirmPassword.$touch()"
+                @blur="v$.confirmPassword.$touch()"
+              />
+              <button
+                type="button"
+                @click="showConfirmPassword = !showConfirmPassword"
+                class="absolute right-3 bg-transparent border-none cursor-pointer text-gray-500"
+              >
+              <component :is="showConfirmPassword ? EyeOff : Eye" class="w-5 h-5" />
+              </button>
+            </div>
+            <div v-if="v$.confirmPassword.$error" class="text-red-500 text-xs mt-1">
+              {{ getErrorMessage(v$.confirmPassword) }}
+            </div>
+          </div>
+        </div>
 
-.required {
-  color: #ef4444;
-  margin-left: 0.125rem;
-}
+        <!-- Newsletter & Privacy Policy -->
+        <div class="flex flex-col gap-4 mb-6">
+          <div class="flex items-start">
+            <input
+              id="newsletter"
+              v-model="formData.newsletter"
+              type="checkbox"
+              class="w-4 h-4 mt-1 border border-gray-300 rounded"
+            />
+            <label for="newsletter" class="ml-2 text-sm text-gray-600">
+              Jeg ønsker å motta nyhetsbrev og annen relevant informasjon på e-post.
+            </label>
+          </div>
 
-.input-wrapper {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
+          <div class="flex items-start">
+            <input
+              id="privacy"
+              v-model="v$.privacyPolicy.$model"
+              type="checkbox"
+              class="w-4 h-4 mt-1 border border-gray-300 rounded"
+              @change="v$.privacyPolicy.$touch()"
+            />
+            <label for="privacy" class="ml-2 text-sm text-gray-600">
+              Jeg har lest og godtar <a href="#" class="text-blue-600 hover:underline">personvernerklæringen</a>.
+            </label>
+          </div>
+          <div v-if="v$.privacyPolicy.$error" class="text-red-500 text-xs">
+            {{ getErrorMessage(v$.privacyPolicy) }}
+          </div>
+        </div>
 
-.input-icon {
-  position: absolute;
-  left: 0.75rem;
-  color: #9ca3af;
-  display: flex;
-  align-items: center;
-  pointer-events: none;
-}
+        <!-- Register Button -->
+        <button 
+          type="submit" 
+          class="w-full bg-blue-900 hover:bg-blue-950 text-white font-medium py-3 px-4 rounded transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed mb-4" 
+          :disabled="v$.$invalid || status.loading"
+        >
+          {{ status.loading ? 'Registrerer...' : 'Registrer' }}
+        </button>
 
-.icon {
-  width: 1.25rem;
-  height: 1.25rem;
-}
-
-.input-with-icon {
-  padding-left: 2.5rem !important;
-}
-
-.password-toggle {
-  position: absolute;
-  right: 0.75rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #6b7280;
-}
-
-.error-message {
-  color: #ef4444;
-  font-size: 0.75rem;
-  margin-top: 0.25rem;
-}
-
-.input-error {
-  border-color: #ef4444 !important;
-}
-
-.checkbox-section {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.checkbox-container {
-  display: flex;
-  align-items: flex-start;
-}
-
-.checkbox {
-  width: 1rem;
-  height: 1rem;
-  margin-top: 0.25rem;
-  border: 1px solid #d1d5db;
-  border-radius: 0.25rem;
-}
-
-.checkbox-label {
-  margin-left: 0.5rem;
-  font-size: 0.875rem;
-  color: #4b5563;
-}
-
-.link {
-  color: #2563eb;
-  text-decoration: none;
-}
-
-.link:hover {
-  text-decoration: underline;
-}
-
-.register-button {
-  width: 100%;
-  background-color: #1e3a5f;
-  color: white;
-  font-weight: 500;
-  padding: 0.75rem 1rem;
-  border-radius: 0.25rem;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  margin-bottom: 1rem;
-}
-
-.register-button:hover {
-  background-color: #152f4f;
-}
-
-.login-link {
-  text-align: center;
-  font-size: 0.875rem;
-  color: #4b5563;
-}
-</style>
+        <!-- Login Link -->
+        <div class="text-center text-sm text-gray-600">
+          <p>
+            Har du en konto?
+            <router-link to="/login" class="text-blue-600 hover:underline">Logg inn</router-link>
+          </p>
+        </div>
+      </form>
+    </div>
+  </div>
+</template>
