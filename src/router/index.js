@@ -2,8 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/mainViews/HomeView.vue'
 import LoginView from '../views/mainViews/LoginView.vue'
 import RegisterView from '../views/mainViews/RegisterView.vue'
-import StorageView from '../views/StorageView.vue'
 import HouseholdView from '@/views/householdViews/HouseholdView.vue'
+import StorageView from '@/views/storageViews/StorageView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),

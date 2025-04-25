@@ -6,30 +6,30 @@ import { RouterLink, RouterView } from 'vue-router'
 </script>
 
 <template>
-  <header class="bg-[#f3f3f3] text-[#2c3e50] px-8 py-4 shadow flex items-center justify-center">
+  <header class="bg-white text-black px-8 py-10 flex items-center justify-center">
     <nav class="flex gap-8 items-center text-lg font-medium">
       <a href="#" class="flex items-center gap-2 hover:underline focus:outline-none">
-        <ShoppingBasket class="w-6 h-6 text-[#2c3e50]" />
+        <ShoppingBasket class="w-6 h-6 text-black" />
         Lager innhold
       </a>
       <a href="#" class="flex items-center gap-2 hover:underline focus:outline-none">
-        <Apple class="w-6 h-6 text-[#2c3e50]" />
+        <Apple class="w-6 h-6 text-black" />
         Mat
       </a>
       <a href="#" class="flex items-center gap-2 hover:underline">
-        <Droplet class="w-6 h-6 text-[#2c3e50]" />
+        <Droplet class="w-6 h-6 text-black" />
         Væske
       </a>
       <a href="#" class="flex items-center gap-2 hover:underline">
-        <Pill class="w-6 h-6 text-[#2c3e50]" />
+        <Pill class="w-6 h-6 text-black" />
         Medisiner
       </a>
       <a href="#" class="flex items-center gap-2 hover:underline">
-        <Package class="w-6 h-6 text-[#2c3e50]" />
+        <Package class="w-6 h-6 text-black" />
         Diverse
       </a>
       <a href="#" class="flex items-center gap-2 hover:underline">
-        <UsersRound class="w-6 h-6 text-[#2c3e50]" />
+        <UsersRound class="w-6 h-6 text-black" />
         Meldemmer i husstand
       </a>
     </nav>
