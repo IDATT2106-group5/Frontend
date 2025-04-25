@@ -1,11 +1,12 @@
 import axios from 'axios';
 
 
-const API_BASE_URL = 'http://localhost:8080/api';
+//const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'https://375473ec-973d-40ea-ac59-f12d252f142b.mock.pstmn.io'; //to mock test the API calls
+
 
 /**
- * Axios instance for making API calls.
- * @type {axios.AxiosInstance}
+ @type {axios.AxiosInstance}
  */
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -17,7 +18,6 @@ const apiClient = axios.create({
 
 
 /**
- * Handles errors from API calls.
  * @param error
  * @returns {Promise<never>}
  */
@@ -104,3 +104,4 @@ export default class BaseService {
     };
   }
 }
+

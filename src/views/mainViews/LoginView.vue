@@ -3,14 +3,29 @@
   import { Mail, Lock, Eye, EyeOff } from "lucide-vue-next"
   import { Button } from "@/components/ui/button"
   import { Input } from "@/components/ui/input"
+  import { useUserStore } from "@/stores/userStore"
+  import { useRouter } from "vue-router"
+
 
   const showPassword = ref(false)
+  const userStore = useUserStore()
+  const router = useRouter()
 
-  function onSubmit(event) {
-    event.preventDefault()
-    const formData = new FormData(event.target)
-    console.log("Email:", formData.get("email"))
-    console.log("Password:", formData.get("password"))
+    
+  async function onSubmit(event) {
+  event.preventDefault()
+  const formData = new FormData(event.target)
+  const credentials = {
+    email: formData.get("email"),
+    password: formData.get("password"),
+    }
+  
+    try {
+      await userStore.login(credentials)
+      router.push("/") 
+    }   catch (error) {
+      console.error("Login failed:", error)
+    }
   }
   </script>
 
