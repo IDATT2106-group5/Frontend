@@ -1,42 +1,63 @@
 <script setup>
 import { Newspaper, Globe, ShoppingCart, User } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-import { RouterLink, RouterView } from 'vue-router'
-</script>
+import { RouterLink } from 'vue-router'
+import { useUserStore } from '@/stores/UserStore'
+import { useRouter } from 'vue-router'
 
+const userStore = useUserStore()
+const router = useRouter()
+
+function handleLogout() {
+  userStore.logout()
+  router.push('/login')
+}
+</script>
 <template>
   <header class="bg-[#2c3e50] text-white px-8 py-4 shadow flex items-center justify-between">
+    <!-- Left section: logo -->
     <div class="flex items-center gap-2">
       <RouterLink to="/">
         <img src="/src/assets/icons/Krisefikser.png" alt="Logo" class="w-10 h-10 bg-gray-300" />
       </RouterLink>
     </div>
 
+    <!-- Navigation links -->
     <nav class="flex gap-8 items-center text-sm font-medium">
-      <a href="#" class="flex items-center gap-2 hover:underline focus:outline-none">
+      <a href="#" class="flex items-center gap-2 hover:underline">
         <Newspaper class="w-5 h-5 text-white" />
         Nyheter
       </a>
-      <a href="#" class="flex items-center gap-2 hover:underline focus:outline-none">
-        <Globe class="w-5 h-5 text-teal-300 text-white" />
+      <a href="#" class="flex items-center gap-2 hover:underline">
+        <Globe class="w-5 h-5 text-white" />
         Kart
       </a>
       <a href="#" class="flex items-center gap-2 hover:underline">
-        <ShoppingCart class="w-5 h-5  text-white" />
+        <ShoppingCart class="w-5 h-5 text-white" />
         Min beholdning
       </a>
-    <RouterLink to="/household">
-      <a href="#" class="flex items-center gap-2 hover:underline">
-        <User class="w-5 h-5  text-white" />
-        Min husstand
-      </a>
-    </RouterLink>
+      <RouterLink to="/household">
+        <a href="#" class="flex items-center gap-2 hover:underline">
+          <User class="w-5 h-5 text-white" />
+          Min husstand
+        </a>
+      </RouterLink>
     </nav>
 
-  <RouterLink to="/login">
-    <Button variant="outline" class="text-white border-white bg-[#2c3e50] text-white hover:bg-gray-300">
-      Login
-    </Button>
-  </RouterLink>
+    <!-- Auth button -->
+    <div>
+      <template v-if="userStore.token">
+        <Button @click="handleLogout" variant="outline" class="text-white border-white bg-[#2c3e50] hover:bg-red-600">
+          Logg ut
+        </Button>
+      </template>
+      <template v-else>
+        <RouterLink to="/login">
+          <Button variant="outline" class="text-white border-white bg-[#2c3e50] hover:bg-gray-300">
+            Login
+          </Button>
+        </RouterLink>
+      </template>
+    </div>
   </header>
 </template>
