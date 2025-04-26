@@ -90,14 +90,11 @@ const onSubmit = async () => {
     await userStore.register(userData)
     
     if (userStore.error) {
-      throw new Error(userStore.error)
+      status.error = true
+      status.errorMessage = userStore.error
+    } else {
+      router.push('/verify-email')
     }
-    
-    status.success = true
-    
-    setTimeout(() => {
-      router.push('/dashboard')
-    }, 2000)
   } catch (error) {
     status.error = true
     status.errorMessage = error.message || 'Det oppstod en feil under registrering. Vennligst prøv igjen.'
@@ -105,7 +102,7 @@ const onSubmit = async () => {
   } finally {
     status.loading = false
   }
-}
+  }
 </script>
 
 <template>

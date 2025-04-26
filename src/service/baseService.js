@@ -1,8 +1,7 @@
 import axios from 'axios';
 
 
-//const API_BASE_URL = 'http://localhost:8080/api';
-const API_BASE_URL = 'https://375473ec-973d-40ea-ac59-f12d252f142b.mock.pstmn.io'; //to mock test the API calls
+const API_BASE_URL = 'http://localhost:8080/api';
 
 
 /**
