@@ -9,17 +9,15 @@ import {
 } from '@/components/ui/accordion';
 
 import StorageNavbar from "@/components/StorageNavbar.vue";
-import ItemList from "@/components/ItemList.vue";
-import SearchBar from '@/components/SearchBar.vue'
-import { Button } from '@/components/ui/button/index.js'
+import NestedItemList from "@/components/NestedItemList.vue"; // Import our new component
+import SearchBar from '@/components/SearchBar.vue';
+import { Button } from '@/components/ui/button/index.js';
+
+// Import your mock data
+import { groupedMockItems } from '@/views/storageViews/mockData.vue';
 
 // Component state
-const groupedItems = ref({
-  Væske: [],
-  Mat: [],
-  Medisiner: [],
-  Diverse: [],
-});
+const groupedItems = ref(groupedMockItems);
 
 // Track which accordion items are open
 const openItem = ref(null);
@@ -31,6 +29,12 @@ const toggleAccordion = (value) => {
 // Methods
 const fetchItems = async () => {
   try {
+    // For development with mock data, comment out the API fetch
+    // and use the imported mock data instead
+
+    // Simulating API fetch using mock data
+    // In a real application, you would uncomment this:
+    /*
     const response = await fetch("/api/items");
     const fetchedItems = await response.json();
 
@@ -47,6 +51,11 @@ const fetchItems = async () => {
       Medisiner: [],
       Diverse: [],
     });
+    */
+
+    // Using mock data directly
+    groupedItems.value = groupedMockItems;
+
   } catch (error) {
     console.error("Error fetching data:", error);
     // Ensure we have empty arrays for each category even on error
@@ -75,7 +84,7 @@ onMounted(() => {
       <div class="w-1/4 font-semibold text-sm uppercase text-gray-600">Tidligst utløpsdato</div>
       <div class="w-1/4 font-semibold text-sm uppercase text-gray-600">Antall</div>
       <div class="w-1/4 font-semibold text-sm uppercase text-gray-600">Hvor lenge varer dette</div>
-      <Button type="submit" className="text-black border border-black rounded-2xl px-4 py-2
+      <Button type="submit" class="text-black border border-black rounded-2xl px-4 py-2
       text-sm hover:bg-black hover:text-white transition-colors">Rediger</Button>
     </div>
 
@@ -90,7 +99,7 @@ onMounted(() => {
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            <ItemList :items="groupedItems.Væske" />
+            <NestedItemList :items="groupedItems.Væske" />
           </AccordionContent>
         </AccordionItem>
 
@@ -103,7 +112,7 @@ onMounted(() => {
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            <ItemList :items="groupedItems.Mat" />
+            <NestedItemList :items="groupedItems.Mat" />
           </AccordionContent>
         </AccordionItem>
 
@@ -116,7 +125,7 @@ onMounted(() => {
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            <ItemList :items="groupedItems.Medisiner" />
+            <NestedItemList :items="groupedItems.Medisiner" />
           </AccordionContent>
         </AccordionItem>
 
@@ -129,7 +138,7 @@ onMounted(() => {
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            <ItemList :items="groupedItems.Diverse" />
+            <NestedItemList :items="groupedItems.Diverse" />
           </AccordionContent>
         </AccordionItem>
       </Accordion>
