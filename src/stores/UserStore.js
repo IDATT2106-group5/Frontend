@@ -32,7 +32,8 @@ export const useUserStore = defineStore('user', {
       this.isLoading = true;
       this.error = null;
       try {
-        const { token } = await AuthService.login(credentials);
+        const response = await AuthService.login(credentials);
+        const { token } = response.data; 
         this.token = token;
         apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         localStorage.setItem('jwt', token);
