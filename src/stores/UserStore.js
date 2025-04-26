@@ -1,4 +1,6 @@
 import { defineStore } from 'pinia';
+import AuthService from '@/service/authService';
+import apiClient from '@/service/apiClient';
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -8,8 +10,27 @@ export const useUserStore = defineStore('user', {
     error: null
   }),
   actions: {
+    async register(userData) {
+      this.isLoading = true;
+      this.error = null;
+      try {        
+        const response = await AuthService.register(userData);
+        return true;
+      } catch (err) {        
+        if (err.response && err.response.data && err.response.data.error === "Email already in use") {
+          this.error = "E-postadressen er allerede registrert.";
+        } else {
+          this.error = err.message || "Noe gikk galt under registrering.";
+        }
+        return false; 
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
     async login(credentials) {
       this.isLoading = true;
+      this.error = null;
       try {
         const { token } = await AuthService.login(credentials);
         this.token = token;
@@ -17,34 +38,19 @@ export const useUserStore = defineStore('user', {
         localStorage.setItem('jwt', token);
         await this.fetchUser();
       } catch (err) {
-        this.error = err.message;
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    async register(data) {
-      this.isLoading = true;
-      try {
-        const { token } = await AuthService.register(data);
-        this.token = token;
-        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        localStorage.setItem('jwt', token);
-        await this.fetchUser();
-      }
-        catch (err) {
-          if (err.response?.status === 409) {
-            this.error = "E-postadresse er allerede registrert";
-          } else {
-            this.error = err.message || "Noe gikk galt";
-          }
+        this.error = err.message || "Innlogging feilet.";
+        throw err;
       } finally {
         this.isLoading = false;
       }
     },
 
     async fetchUser() {
-      this.user = await UserService.get('me');
+      try {
+        console.log("Fetch user called - implement UserService");
+      } catch (err) {
+        console.error("Error fetching user:", err);
+      }
     },
 
     logout() {

@@ -12,11 +12,10 @@ const userStore = useUserStore()
 
 const formData = reactive({
   email: '',
-  name: '',
+  fullName: '',
   password: '',
   confirmPassword: '',
-  phone: '',
-  newsletter: false,
+  tlf: '',
   privacyPolicy: false
 })
 
@@ -36,8 +35,12 @@ const rules = computed(() => {
       required: helpers.withMessage('E-post er påkrevd', required),
       email: helpers.withMessage('Vennligst oppgi en gyldig e-postadresse', email)
     },
-    name: {
-      required: helpers.withMessage('Navn er påkrevd', required)
+    fullName: {
+      required: helpers.withMessage('Navn er påkrevd', required),
+      onlyLetters: helpers.withMessage(
+      'Navnet kan kun inneholde bokstaver og mellomrom',
+      (value) => /^[A-Za-zÆØÅæøå\s]+$/.test(value)
+    )
     },
     password: {
       required: helpers.withMessage('Passord er påkrevd', required),
@@ -47,8 +50,8 @@ const rules = computed(() => {
       required: helpers.withMessage('Bekreft passord er påkrevd', required),
       sameAsPassword: helpers.withMessage('Passordene må være like', sameAs(formData.password))
     },
-    phone: {
-      phoneFormat: helpers.withMessage(
+    tlf: {
+      tlfFormat: helpers.withMessage(
         'Telefonnummer må være 8 siffer',
         (value) => !value || value.replace(/\s/g, '').length === 8
       )
@@ -81,23 +84,19 @@ const onSubmit = async () => {
   try {
     const userData = {
       email: formData.email,
-      name: formData.name,
+      fullName: formData.fullName,
       password: formData.password,
-      phone: formData.phone ? formData.phone.replace(/\s/g, '') : '',
-      newsletter: formData.newsletter
+      tlf: formData.tlf ? formData.tlf.replace(/\s/g, '') : ''
     }
-    
-    await userStore.register(userData)
+
+    const success = await userStore.register(userData)
     
     if (userStore.error) {
-      throw new Error(userStore.error)
+      status.error = true
+      status.errorMessage = userStore.error
+    } else if (success) {
+      router.push('/verify-email')
     }
-    
-    status.success = true
-    
-    setTimeout(() => {
-      router.push('/dashboard')
-    }, 2000)
   } catch (error) {
     status.error = true
     status.errorMessage = error.message || 'Det oppstod en feil under registrering. Vennligst prøv igjen.'
@@ -154,20 +153,20 @@ const onSubmit = async () => {
 
           <!-- Name Input -->
           <div class="flex flex-col mb-6">
-            <label for="name" class="text-base font-medium mb-2 flex">
+            <label for="fullName" class="text-base font-medium mb-2 flex">
               Navn<span class="text-red-500 ml-0.5">*</span>
             </label>
             <Input
-              id="name"
-              v-model="v$.name.$model"
+              id="fullName"
+              v-model="v$.fullName.$model"
               type="text"
               placeholder="Fornavn Etternavn"
-              :class="{'border-red-500': v$.name.$error}"
-              @input="v$.name.$touch()"
-              @blur="v$.name.$touch()"
+              :class="{'border-red-500': v$.fullName.$error}"
+              @input="v$.fullName.$touch()"
+              @blur="v$.fullName.$touch()"
             />
-            <div v-if="v$.name.$error" class="text-red-500 text-xs mt-1">
-              {{ getErrorMessage(v$.name) }}
+            <div v-if="v$.fullName.$error" class="text-red-500 text-xs mt-1">
+              {{ getErrorMessage(v$.fullName) }}
             </div>
           </div>
 
@@ -205,18 +204,18 @@ const onSubmit = async () => {
 
           <!-- Phone Number Input -->
           <div class="flex flex-col mb-6">
-            <label for="phone" class="text-base font-medium mb-2">Telefon nummer</label>
+            <label for="tlf" class="text-base font-medium mb-2">Telefon nummer</label>
             <Input
-              id="phone"
-              v-model="v$.phone.$model"
+              id="tlf"
+              v-model="v$.tlf.$model"
               v-mask="'### ## ###'"
               placeholder="123 45 678"
-              @input="v$.phone.$touch()"
-              @blur="v$.phone.$touch()"
-              :class="{'border-red-500': v$.phone.$error}"
+              @input="v$.tlf.$touch()"
+              @blur="v$.tlf.$touch()"
+              :class="{'border-red-500': v$.tlf.$error}"
             />
-            <div v-if="v$.phone.$error" class="text-red-500 text-xs mt-1">
-              {{ getErrorMessage(v$.phone) }}
+            <div v-if="v$.tlf.$error" class="text-red-500 text-xs mt-1">
+              {{ getErrorMessage(v$.tlf) }}
             </div>
           </div>
 
@@ -253,20 +252,8 @@ const onSubmit = async () => {
           </div>
         </div>
 
-        <!-- Newsletter & Privacy Policy -->
         <div class="flex flex-col gap-4 mb-6">
-          <div class="flex items-start">
-            <input
-              id="newsletter"
-              v-model="formData.newsletter"
-              type="checkbox"
-              class="w-4 h-4 mt-1 border border-gray-300 rounded"
-            />
-            <label for="newsletter" class="ml-2 text-sm text-gray-600">
-              Jeg ønsker å motta nyhetsbrev og annen relevant informasjon på e-post.
-            </label>
-          </div>
-
+         
           <div class="flex items-start">
             <input
               id="privacy"
