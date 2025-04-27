@@ -6,13 +6,13 @@ import HouseholdMember from '@/components/HouseholdMember.vue'
 
 const members = ref([
   {
-    name: 'Ola Nordmann',
+    name: 'Tam Le',
     email: 'test@hotmail.com',
     phone: '+123456789',
     isRegistered: true,
   },
   {
-    name: 'Ola Nordmann',
+    name: 'Steven Ha',
     email: 'test@hotmail.com',
     isRegistered: true,
   },
@@ -22,15 +22,15 @@ const members = ref([
     isRegistered: true,
   },
   {
-    name: 'Ola Nordmann',
+    name: 'John Cena',
     isRegistered: true
   },
   {
-    name: 'Ola Nordmann',
+    name: 'Steve Rogers',
     isRegistered: true
   },
   {
-    name: 'Ola Nordmann',
+    name: 'Edvard Harbo',
     isRegistered: false
   }
 ])
@@ -62,6 +62,12 @@ const updateMember = (index, data) => {
     }
   }
 }
+
+const removeMember = (index) => {
+  if (index >= 0 && index < members.value.length) {
+    members.value.splice(index, 1)
+  }
+}
 </script>
 
 <template>
@@ -82,6 +88,7 @@ const updateMember = (index, data) => {
         :expandable="member.isRegistered"
         :index="index"
         @update="updateMember"
+        @remove="removeMember"
       />
 
       <div v-if="showAddForm" class="border rounded-lg bg-white shadow-sm p-4">

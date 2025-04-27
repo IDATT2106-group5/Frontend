@@ -30,10 +30,11 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update'])
+const emit = defineEmits(['update', 'remove'])
 
 const isOpen = ref(false)
 const isEditing = ref(false)
+const showConfirmation = ref(false)
 const editedName = ref(props.name)
 
 const toggleEdit = () => {
@@ -46,6 +47,19 @@ const saveEdit = () => {
     emit('update', props.index, { name: editedName.value })
     isEditing.value = false
   }
+}
+
+const confirmRemove = () => {
+  showConfirmation.value = true
+}
+
+const cancelRemove = () => {
+  showConfirmation.value = false
+}
+
+const removeMember = () => {
+  emit('remove', props.index)
+  showConfirmation.value = false
 }
 </script>
 
@@ -67,6 +81,7 @@ const saveEdit = () => {
           variant="outline"
           :class="isRegistered ? 'bg-blue-900 text-white hover:bg-blue-700' : 'text-red-600 border-red-500 hover:bg-red-100'"
           class="text-sm"
+          @click.stop="confirmRemove"
         >
           Fjern
         </Button>
@@ -106,6 +121,7 @@ const saveEdit = () => {
           <Button 
             variant="outline"
             :class="isRegistered ? 'bg-blue-900 text-white hover:bg-blue-700' : 'bg-red-500 text-white border-red-500 hover:bg-red-700'"
+            @click="confirmRemove"
           >
             Fjern
           </Button>
@@ -136,4 +152,29 @@ const saveEdit = () => {
       </div>
     </div>
   </template>
+
+  <div v-if="showConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
+      <h3 class="text-lg font-medium text-black mb-4">Bekreft fjerning</h3>
+      <p class="text-gray-600 mb-6">
+        Er du sikker på at du vil fjerne <span class="font-semibold">{{ name }}</span> fra husstanden?
+      </p>
+      <div class="flex justify-end gap-3">
+        <Button 
+          variant="outline" 
+          class="text-sm"
+          @click="cancelRemove"
+        >
+          Avbryt
+        </Button>
+        <Button 
+          variant="outline"
+          class="bg-red-600 text-white hover:bg-red-700 border-red-600 text-sm"
+          @click="removeMember"
+        >
+          Bekreft
+        </Button>
+      </div>
+    </div>
+  </div>
 </template>
