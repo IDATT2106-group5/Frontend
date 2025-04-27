@@ -83,25 +83,25 @@ const saveEdit = () => {
   </template>
   
   <template v-else>
-    <div 
-      class="border rounded-lg bg-white shadow-sm p-2"
+    <div
+      class="border rounded-lg bg-white shadow-sm"
       :class="{ 'border-red-500': !isRegistered }"
     >
-      <div v-if="!isEditing" class="flex items-center justify-between">
-        <div 
-          class="font-medium"
+      <div v-if="!isEditing" class="flex items-center justify-between w-full px-4 py-2">
+        <div
+          class="font-medium flex-1"
           :class="isRegistered ? 'text-blue-950' : 'text-red-600'"
         >
           {{ name }}
         </div>
-        <div class="flex gap-2">
+        <div class="flex gap-2 justify-end">
           <Button 
             v-if="!isRegistered"
             variant="outline"
             class="p-2 h-8 w-8 flex items-center justify-center"
             @click="toggleEdit"
           >
-            <Edit2 class="h-4 w-4 " />
+            <Edit2 class="h-4 w-4" />
           </Button>
           <Button 
             variant="outline"
@@ -112,7 +112,7 @@ const saveEdit = () => {
         </div>
       </div>
       
-      <div v-else class="space-y-2">
+      <div v-else class="px-4 py-2 space-y-2">
         <input 
           v-model="editedName"
           type="text" 
