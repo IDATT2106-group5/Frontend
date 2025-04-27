@@ -53,6 +53,7 @@ const addMember = () => {
     toast({
       title: "Medlem lagt til",
       description: `${newMember.value.name} har blitt lagt til i husstanden.`,
+      variant: "success",
     })
     
     newMember.value = {
