@@ -156,13 +156,13 @@ const removeMember = () => {
   <div v-if="showConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
       <h3 class="text-lg font-medium text-black mb-4">Bekreft fjerning</h3>
-      <p class="text-gray-600 mb-6">
-        Er du sikker på at du vil fjerne <span class="font-semibold">{{ name }}</span> fra husstanden?
+      <p class="text-black mb-6">
+        Er du sikker på at du vil fjerne <span class="font-semibold text-red-600 ">{{ name }}</span> fra husstanden?
       </p>
       <div class="flex justify-end gap-3">
         <Button 
           variant="outline" 
-          class="text-sm"
+          class="text-sm text-black hover:bg-gray-300"
           @click="cancelRemove"
         >
           Avbryt
