@@ -1,11 +1,39 @@
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Input } from '@/components/ui/input'
 import { useVuelidate } from '@vuelidate/core'
 import { required, email, minLength, sameAs, helpers } from '@vuelidate/validators'
 import { Mail, KeySquare, Eye, EyeOff } from 'lucide-vue-next'
 import { useUserStore } from '@/stores/UserStore'
+
+onMounted(() => {
+  // Called when hCaptcha is completed successfully
+  window.hcaptchaCallback = (token) => {
+    console.log('hCaptcha token received:', token);
+    formData.hCaptchaToken = token
+  }
+
+  // Called if token expires or there's an error
+  window.hcaptchaReset = () => {
+    formData.hCaptchaToken = ''
+  }
+  const renderCaptcha = () => {
+    if (window.hcaptcha) {
+      window.hcaptcha.render(document.querySelector('.h-captcha'), {
+        sitekey: '739ed064-cf88-460a-8a86-4906b3243888',
+        callback: window.hcaptchaCallback,
+        'expired-callback': window.hcaptchaReset,
+        'error-callback': window.hcaptchaReset
+      });
+    } else {
+      // Retry after short delay if script isn't ready
+      setTimeout(renderCaptcha, 300);
+    }
+  }
+
+  renderCaptcha();
+});
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -16,7 +44,8 @@ const formData = reactive({
   password: '',
   confirmPassword: '',
   tlf: '',
-  privacyPolicy: false
+  privacyPolicy: false,
+  hCaptchaToken: ''
 })
 
 const showPassword = ref(false)
@@ -76,21 +105,32 @@ const onSubmit = async () => {
     console.log('Validation errors:', v$.value.$errors)
     return
   }
-  
+
+  console.log(' Token at form submit:', formData.hCaptchaToken);
+
+  if (!formData.hCaptchaToken) {
+    status.error = true
+    status.errorMessage = 'Vennligst bekreft at du ikke er en robot.'
+    return
+  }
+
   status.loading = true
   status.error = false
   status.success = false
-  
+
   try {
     const userData = {
       email: formData.email,
       fullName: formData.fullName,
       password: formData.password,
-      tlf: formData.tlf ? formData.tlf.replace(/\s/g, '') : ''
+      tlf: formData.tlf ? formData.tlf.replace(/\s/g, '') : '',
+      hCaptchaToken: formData.hCaptchaToken
     }
 
+    console.log('Sending registration data:', userData);
+
     const success = await userStore.register(userData)
-    
+
     if (userStore.error) {
       status.error = true
       status.errorMessage = userStore.error
@@ -115,11 +155,11 @@ const onSubmit = async () => {
       <div v-if="status.loading" class="p-3 rounded bg-gray-200 text-blue-900 mb-4 text-center">
         Registrerer bruker...
       </div>
-      
+
       <div v-if="status.success" class="p-3 rounded bg-green-100 text-green-800 mb-4 text-center">
         Registrering vellykket! Omdirigerer til innlogging...
       </div>
-      
+
       <div v-if="status.error" class="p-3 rounded bg-red-100 text-red-700 mb-4 text-center">
         {{ status.errorMessage }}
       </div>
@@ -252,8 +292,11 @@ const onSubmit = async () => {
           </div>
         </div>
 
+        <!-- TODO: CAPTCHA -->
+        <div class="h-captcha mb-6"></div>
+
         <div class="flex flex-col gap-4 mb-6">
-         
+
           <div class="flex items-start">
             <input
               id="privacy"
@@ -272,9 +315,9 @@ const onSubmit = async () => {
         </div>
 
         <!-- Register Button -->
-        <button 
-          type="submit" 
-          class="w-full bg-blue-900 hover:bg-blue-950 text-white font-medium py-3 px-4 rounded transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed mb-4" 
+        <button
+          type="submit"
+          class="w-full bg-blue-900 hover:bg-blue-950 text-white font-medium py-3 px-4 rounded transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed mb-4"
           :disabled="v$.$invalid || status.loading"
         >
           {{ status.loading ? 'Registrerer...' : 'Registrer' }}
