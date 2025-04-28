@@ -1,165 +1,104 @@
 <script setup>
-import { ref } from 'vue'
-import { User, Plus } from 'lucide-vue-next'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
-import { useToast } from '@/components/ui/toast/use-toast'
-import HouseholdMember from '@/components/HouseholdMember.vue'
+import { useHouseholdStore } from '@/stores/HouseholdStore'
 
-const members = ref([
-  {
-    name: 'Tam Le',
-    email: 'test@hotmail.com',
-    phone: '+123456789',
-    isRegistered: true,
-  },
-  {
-    name: 'Steven Ha',
-    email: 'test@hotmail.com',
-    isRegistered: true,
-  },
-  {
-    name: 'Ola Nordmann',
-    email: 'test123@hotmail.com',
-    isRegistered: true,
-  },
-  {
-    name: 'John Cena',
-    isRegistered: true
-  },
-  {
-    name: 'Steve Rogers',
-    isRegistered: true
-  },
-  {
-    name: 'Edvard Harbo',
-    isRegistered: false
-  }
-])
+const householdStore = useHouseholdStore()
+const router = useRouter()
 
-const showAddForm = ref(false)
-const newMember = ref({
-  name: '',
-  isRegistered: false
+const isLoading = ref(true)
+
+onMounted(async () => {
+  isLoading.value = true
+  await householdStore.checkCurrentHousehold()
+  isLoading.value = false
 })
 
-const { toast } = useToast()
-
-const addMember = () => {
-  if (newMember.value.name.trim()) {
-    members.value.push({
-      ...newMember.value
-    })
-    
-    toast({
-      title: "Medlem lagt til",
-      description: `${newMember.value.name} har blitt lagt til i husstanden.`,
-      variant: "success",
-    })
-    
-    newMember.value = {
-      name: '',
-      isRegistered: false
-    }
-    showAddForm.value = false
-  }
+const goToMembers = () => {
+  router.push('/household/members')
 }
 
-const updateMember = (index, data) => {
-  if (index >= 0 && index < members.value.length) {
-    members.value[index] = {
-      ...members.value[index],
-      ...data
-    }
-    
-    toast({
-      title: "Medlem oppdatert",
-      description: `${members.value[index].name} har blitt oppdatert.`,
-    })
-  }
-}
-
-const removeMember = (index) => {
-  if (index >= 0 && index < members.value.length) {
-    const memberName = members.value[index].name
-    members.value.splice(index, 1)
-    
-    toast({
-      title: "Medlem fjernet",
-      description: `${memberName} har blitt fjernet fra husstanden.`,
-      variant: "success",
-    })
-  }
+const leaveHousehold = async () => {
+  await householdStore.leaveHousehold()
+  await householdStore.checkCurrentHousehold()
 }
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col items-center justify-start p-6 bg-gradient-to-b from-white to-gray-100">
-    <div class="flex items-center gap-2 text-lg font-semibold text-blue-950 mb-6">
-      <User class="w-6 h-6" />
-      <span>Medlemmer i husstanden: <span class="font-bold">{{ members.length }}</span></span>
+  <div class="min-h-screen flex flex-col items-center p-6 bg-gradient-to-b from-white to-gray-100">
+
+    <div v-if="isLoading" class="w-full max-w-md text-center py-8">
+      <p>Laster...</p>
     </div>
 
-    <div class="w-full max-w-md space-y-4">
-      <HouseholdMember
-        v-for="(member, index) in members"
-        :key="index"
-        :name="member.name"
-        :email="member.email"
-        :phone="member.phone"
-        :is-registered="member.isRegistered"
-        :expandable="member.isRegistered"
-        :index="index"
-        @update="updateMember"
-        @remove="removeMember"
-      />
+    <div v-else>
 
-      <div v-if="showAddForm" class="border rounded-lg bg-white shadow-sm p-4">
-        <h3 class="font-medium text-blue-950 mb-3">Legg til nytt medlem</h3>
-        <div class="space-y-3">
-          <div>
-            <label for="memberName" class="block text-sm font-medium text-gray-700 mb-1">Navn</label>
-            <input
-              id="memberName"
-              v-model="newMember.name"
-              type="text"
-              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-              placeholder="Skriv inn navn"
-            />
-          </div>
-          
-          <div class="flex justify-end gap-2 mt-4">
-            <Button
-              variant="outline"
-              class="text-sm"
-              @click="showAddForm = false"
-            >
-              Avbryt
+      <div v-if="!householdStore.hasHousehold" class="text-center space-y-6">
+        <h1 class="text-2xl font-bold text-black mb-2">
+          Du er ikke medlem i en eksisterende husstand
+        </h1>
+        <p class="text-blue-700">
+          Velg om du vil starte en ny husstand eller bli med i en eksisterende
+        </p>
+
+        <div class="flex justify-center gap-6 mt-8">
+          <div class="flex flex-col items-center space-y-2">
+            <h2 class="text-xl font-bold">Opprett ny husstand</h2>
+            <Button class="bg-blue-900 text-white hover:bg-blue-700">
+              + Opprett husstand
             </Button>
-            <Button
-              class="bg-blue-900 text-white hover:bg-blue-700 text-sm"
-              @click="addMember"
-            >
-              Legg til
+          </div>
+
+          <div class="flex flex-col items-center space-y-2">
+            <h2 class="text-xl font-bold">Bli med i husstand</h2>
+            <Button class="bg-blue-900 text-white hover:bg-blue-700">
+              👤 Bli med i husstand
             </Button>
           </div>
         </div>
       </div>
 
-      <div class="flex flex-col items-end gap-2" v-if="!showAddForm">
-        <span class="text-xs text-white bg-red-500 px-2 py-1 rounded-full">Ikke registrert</span>
-        <Button
-          variant="outline"
-          class="bg-blue-900 text-white hover:bg-blue-700 flex items-center gap-1"
-          @click="showAddForm = true"
-        >
-          <Plus class="w-4 h-4" />
-          Legg til medlem
-        </Button>
+      <div v-else class="text-center space-y-6">
+        <h1 class="text-2xl font-bold text-black">
+          {{ householdStore.currentHousehold.name }}
+        </h1>
+
+        <div class="space-y-4">
+          <div class="flex items-center justify-center gap-2">
+            <input
+              type="text"
+              :value="`id: ${householdStore.currentHousehold.id}`"
+              disabled
+              class="border border-gray-400 rounded-md px-3 py-2 text-center"
+            />
+            <Button class="bg-blue-900 text-white hover:bg-blue-700">
+              Bli med
+            </Button>
+          </div>
+
+          <div>
+            <Button
+              variant="outline"
+              class="w-full text-blue-900 border-blue-900 hover:bg-blue-100"
+              @click="goToMembers"
+            >
+              👥 Se medlemmer
+            </Button>
+          </div>
+
+          <div>
+            <Button
+              class="w-full bg-blue-900 text-white hover:bg-blue-700"
+              @click="leaveHousehold"
+            >
+              👤 Forlat husstand
+            </Button>
+          </div>
+        </div>
       </div>
+
     </div>
 
-    <RouterLink to="/household/invite">
-      <Button class="mt-8 bg-blue-900 text-white hover:bg-blue-700 text-sm">+ Send Invitasjon</Button>
-    </RouterLink>
   </div>
 </template>

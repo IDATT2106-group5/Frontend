@@ -23,14 +23,14 @@ const props = defineProps({
   expandable: {
     type: Boolean,
     default: false
-  },
+  }, 
   index: {
     type: Number,
     required: true
   }
 })
 
-const emit = defineEmits(['update', 'remove'])
+const emit = defineEmits(['update', 'remove', 'invite'])
 
 const isOpen = ref(false)
 const isEditing = ref(false)
@@ -61,6 +61,10 @@ const removeMember = () => {
   emit('remove', props.index)
   showConfirmation.value = false
 }
+
+const inviteMember = () => {
+  emit('invite', props.index)
+}
 </script>
 
 <template>
@@ -79,7 +83,7 @@ const removeMember = () => {
         </div>
         <Button 
           variant="outline"
-          :class="isRegistered ? 'bg-blue-900 text-white hover:bg-blue-700' : 'text-red-600 border-red-500 hover:bg-red-100'"
+          :class="isRegistered ? 'bg-red-500 text-white border-red-500 hover:bg-red-700' : 'text-red-600 border-red-500 hover:bg-red-100'"
           class="text-sm"
           @click.stop="confirmRemove"
         >
@@ -118,9 +122,11 @@ const removeMember = () => {
           >
             <Edit2 class="h-4 w-4" />
           </Button>
+          
           <Button 
             variant="outline"
-            :class="isRegistered ? 'bg-blue-900 text-white hover:bg-blue-700' : 'bg-red-500 text-white border-red-500 hover:bg-red-700'"
+            :class="isRegistered ? 'bg-red-500 text-white border-red-500 hover:bg-red-700' : 'bg-red-500 text-white border-red-500 hover:bg-red-700'"
+            class="text-sm"
             @click="confirmRemove"
           >
             Fjern
