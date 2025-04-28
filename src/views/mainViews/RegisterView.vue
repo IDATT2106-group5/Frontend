@@ -17,7 +17,22 @@ onMounted(() => {
   window.hcaptchaReset = () => {
     formData.hCaptchaToken = ''
   }
-})
+  const renderCaptcha = () => {
+    if (window.hcaptcha) {
+      window.hcaptcha.render(document.querySelector('.h-captcha'), {
+        sitekey: '739ed064-cf88-460a-8a86-4906b3243888',
+        callback: window.hcaptchaCallback,
+        'expired-callback': window.hcaptchaReset,
+        'error-callback': window.hcaptchaReset
+      });
+    } else {
+      // Retry after short delay if script isn't ready
+      setTimeout(renderCaptcha, 300);
+    }
+  }
+
+  renderCaptcha();
+});
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -273,14 +288,7 @@ const onSubmit = async () => {
         </div>
 
         <!-- TODO: CAPTCHA -->
-        <div class="mb-6">
-          <div class="h-captcha"
-               data-sitekey="739ed064-cf88-460a-8a86-4906b3243888"
-               data-callback="hcaptchaCallback"
-               data-expired-callback="hcaptchaReset"
-               data-error-callback="hcaptchaReset"
-          ></div>
-        </div>
+        <div class="h-captcha mb-6"></div>
 
         <div class="flex flex-col gap-4 mb-6">
 
