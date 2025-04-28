@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import { Droplet, Apple, Pill, Package } from "lucide-vue-next";
 import {
   Accordion,
@@ -9,78 +9,60 @@ import {
 } from '@/components/ui/accordion';
 
 import StorageNavbar from "@/components/StorageNavbar.vue";
-import NestedItemList from "@/components/NestedItemList.vue"; // Import our new component
+import EditableNestedItemList from "@/components/EditableNestedItemList.vue";
 import SearchBar from '@/components/SearchBar.vue';
-import { Button } from '@/components/ui/button/index.js';
 
-// Import your mock data
+// Mock data (using your provided mock data)
 import { groupedMockItems } from '@/views/storageViews/mockData.vue';
 
 // Component state
-const groupedItems = ref(groupedMockItems);
-
-// Track which accordion items are open
 const openItem = ref(null);
+const isEditing = ref(false);
 
 const toggleAccordion = (value) => {
   openItem.value = openItem.value === value ? null : value;
 };
 
-// Methods
-const fetchItems = async () => {
-  try {
-    // For development with mock data, comment out the API fetch
-    // and use the imported mock data instead
-
-    // Simulating API fetch using mock data
-    // In a real application, you would uncomment this:
-    /*
-    const response = await fetch("/api/items");
-    const fetchedItems = await response.json();
-
-    // Group items by category
-    groupedItems.value = fetchedItems.reduce((groups, item) => {
-      const { category } = item;
-      if (groups[category]) {
-        groups[category].push(item);
-      }
-      return groups;
-    }, {
-      Væske: [],
-      Mat: [],
-      Medisiner: [],
-      Diverse: [],
-    });
-    */
-
-    // Using mock data directly
-    groupedItems.value = groupedMockItems;
-
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    // Ensure we have empty arrays for each category even on error
-    groupedItems.value = {
-      Væske: [],
-      Mat: [],
-      Medisiner: [],
-      Diverse: [],
-    };
-  }
+// Handle item updates (this is mock behavior, no API call)
+const handleItemUpdate = async (id, updatedData) => {
+  console.log("Item updated", id, updatedData);
 };
 
-// Lifecycle hooks
-onMounted(() => {
-  fetchItems();
-});
+// Mock store data
+const itemStore = {
+  groupedItems: groupedMockItems,
+  isLoading: false, // Simulate loading state as false since we are using mock data
+  error: null
+};
 </script>
 
 <template>
   <div>
     <StorageNavbar />
-    <SearchBar/>
+    <SearchBar />
     <div class="pl-20 pr-20">
+      <div class="mb-4 mt-4 flex justify-between items-center">
+        <h2 class="text-xl font-bold">Lager innhold</h2>
+        <div class="flex gap-2">
+          <Button
+            @click="isEditing = !isEditing"
+            class="px-4 py-2 rounded text-sm font-medium"
+            :class="isEditing ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'"
+          >
+            {{ isEditing ? 'Lukk' : 'Rediger' }}
+          </Button>
+        </div>
+      </div>
 
-      <Accordion type="single" collapsible v-model:value="openItem">
+      <div v-if="itemStore.isLoading" class="flex justify-center py-10">
+        <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+
+      <div v-else-if="itemStore.error" class="p-4 bg-red-100 text-red-700 rounded">
+        {{ itemStore.error }}
+      </div>
+
+      <Accordion v-else type="single" collapsible v-model:value="openItem">
         <!-- Væske category -->
         <AccordionItem value="væske">
           <AccordionTrigger @click="toggleAccordion('væske')">
@@ -90,7 +72,11 @@ onMounted(() => {
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            <NestedItemList :items="groupedItems.Væske" />
+            <EditableNestedItemList
+              :items="itemStore.groupedItems.Væske"
+              :isEditing="isEditing"
+              @update-item="handleItemUpdate"
+            />
           </AccordionContent>
         </AccordionItem>
 
@@ -103,7 +89,11 @@ onMounted(() => {
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            <NestedItemList :items="groupedItems.Mat" />
+            <EditableNestedItemList
+              :items="itemStore.groupedItems.Mat"
+              :isEditing="isEditing"
+              @update-item="handleItemUpdate"
+            />
           </AccordionContent>
         </AccordionItem>
 
@@ -116,7 +106,11 @@ onMounted(() => {
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            <NestedItemList :items="groupedItems.Medisiner" />
+            <EditableNestedItemList
+              :items="itemStore.groupedItems.Medisiner"
+              :isEditing="isEditing"
+              @update-item="handleItemUpdate"
+            />
           </AccordionContent>
         </AccordionItem>
 
@@ -129,7 +123,11 @@ onMounted(() => {
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            <NestedItemList :items="groupedItems.Diverse" />
+            <EditableNestedItemList
+              :items="itemStore.groupedItems.Diverse"
+              :isEditing="isEditing"
+              @update-item="handleItemUpdate"
+            />
           </AccordionContent>
         </AccordionItem>
       </Accordion>
