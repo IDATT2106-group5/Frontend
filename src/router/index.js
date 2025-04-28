@@ -3,7 +3,7 @@ import HomeView from '../views/mainViews/HomeView.vue'
 import LoginView from '../views/mainViews/LoginView.vue'
 import RegisterView from '../views/mainViews/RegisterView.vue'
 import HouseholdView from '@/views/householdViews/HouseholdView.vue'
-import StorageView from '@/views/storageViews/StorageView.vue'
+import StorageDetailView from '@/views/storageViews/StorageDetailView.vue'
 import VerifyEmailView from '@/views/mainViews/VerifyEmailView.vue'
 import RegisterSuccessView from '@/views/mainViews/RegisterSucessView.vue'
 import RegisterFailedView from '@/views/mainViews/RegisterFailedView.vue'
@@ -29,9 +29,9 @@ const router = createRouter({
       meta:{hideNavbar: true },
     },
     {
-      path: '/storage',
-      name: 'storage',
-      component: StorageView,
+      path: '/storage-detail',
+      name: 'storage detail',
+      component: StorageDetailView,
     },
     {
       path: '/household',
