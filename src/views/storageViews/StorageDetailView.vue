@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { Droplet, Apple, Pill, Package } from "lucide-vue-next";
 import {
   Accordion,
@@ -7,32 +7,51 @@ import {
   AccordionItem,
   AccordionTrigger
 } from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
 
 import StorageNavbar from "@/components/StorageNavbar.vue";
 import EditableNestedItemList from "@/components/EditableNestedItemList.vue";
 import SearchBar from '@/components/SearchBar.vue';
 
-// Mock data (using your provided mock data)
-import { groupedMockItems } from '@/views/storageViews/mockData.vue';
+// Import the item store
+import { useItemStore } from '@/stores/ItemStore';
 
 // Component state
 const openItem = ref(null);
 const isEditing = ref(false);
 
+// Get the item store
+const itemStore = useItemStore();
+
+// Fetch items when component mounts
+onMounted(async () => {
+  try {
+    await itemStore.fetchAllItems();
+  } catch (error) {
+    console.error("Failed to load items:", error);
+  }
+});
+
 const toggleAccordion = (value) => {
   openItem.value = openItem.value === value ? null : value;
 };
 
-// Handle item updates (this is mock behavior, no API call)
+// Handle item update
 const handleItemUpdate = async (id, updatedData) => {
-  console.log("Item updated", id, updatedData);
+  try {
+    await itemStore.updateItem(id, updatedData);
+  } catch (error) {
+    console.error("Failed to update item:", error);
+  }
 };
 
-// Mock store data
-const itemStore = {
-  groupedItems: groupedMockItems,
-  isLoading: false, // Simulate loading state as false since we are using mock data
-  error: null
+// Handle item deletion
+const handleItemDelete = async (id) => {
+  try {
+    await itemStore.deleteItem(id);
+  } catch (error) {
+    console.error("Failed to delete item:", error);
+  }
 };
 </script>
 
@@ -62,7 +81,7 @@ const itemStore = {
         {{ itemStore.error }}
       </div>
 
-      <Accordion v-else type="single" collapsible v-model:value="openItem">
+      <Accordion v-else-if="!itemStore.isEmpty" type="single" collapsible v-model:value="openItem">
         <!-- Væske category -->
         <AccordionItem value="væske">
           <AccordionTrigger @click="toggleAccordion('væske')">
@@ -76,6 +95,7 @@ const itemStore = {
               :items="itemStore.groupedItems.Væske"
               :isEditing="isEditing"
               @update-item="handleItemUpdate"
+              @delete-item="handleItemDelete"
             />
           </AccordionContent>
         </AccordionItem>
@@ -93,6 +113,7 @@ const itemStore = {
               :items="itemStore.groupedItems.Mat"
               :isEditing="isEditing"
               @update-item="handleItemUpdate"
+              @delete-item="handleItemDelete"
             />
           </AccordionContent>
         </AccordionItem>
@@ -110,6 +131,7 @@ const itemStore = {
               :items="itemStore.groupedItems.Medisiner"
               :isEditing="isEditing"
               @update-item="handleItemUpdate"
+              @delete-item="handleItemDelete"
             />
           </AccordionContent>
         </AccordionItem>
@@ -127,10 +149,15 @@ const itemStore = {
               :items="itemStore.groupedItems.Diverse"
               :isEditing="isEditing"
               @update-item="handleItemUpdate"
+              @delete-item="handleItemDelete"
             />
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      <div v-else class="py-10 text-center text-gray-500">
+        <p>Ingen varer funnet. Legg til varer for å se dem her.</p>
+      </div>
     </div>
   </div>
 </template>
