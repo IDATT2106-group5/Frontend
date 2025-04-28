@@ -280,7 +280,6 @@ const onSubmit = async () => {
                data-expired-callback="hcaptchaReset"
                data-error-callback="hcaptchaReset"
           ></div>
-
         </div>
 
         <div class="flex flex-col gap-4 mb-6">
