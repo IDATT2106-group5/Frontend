@@ -3,7 +3,7 @@
   import { Mail, Lock, Eye, EyeOff } from "lucide-vue-next"
   import { Button } from "@/components/ui/button"
   import { Input } from "@/components/ui/input"
-  import { useUserStore } from "@/stores/userStore"
+  import { useUserStore } from "@/stores/UserStore"
   import { useRouter } from "vue-router"
 
 

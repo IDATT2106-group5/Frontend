@@ -1,20 +1,16 @@
-import BaseService from './baseService';
+import apiClient from '@/service/apiClient'; 
 
-class AuthService extends BaseService {
-  constructor() {
-    super('auth');
+class AuthService {
+  async register(userData) {
+    return apiClient.post('auth/register', userData);
   }
 
-  login(credentials) {
-    return this.post('login', credentials); 
+  async login(credentials) {
+    return apiClient.post('auth/login', credentials);
   }
 
-  register(data) {
-    return this.post('register', data);
-  }
-
-  logout() {
-    return this.post('logout');
+  async confirmEmail(token) {
+    return apiClient.get(`auth/confirm?token=${token}`);
   }
 }
 
