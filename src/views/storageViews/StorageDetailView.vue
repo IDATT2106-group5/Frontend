@@ -78,17 +78,8 @@ onMounted(() => {
   <div>
     <StorageNavbar />
     <SearchBar/>
-    <!-- Info header -->
-    <div class="flex items-end mb-4 pr-20 pl-20 pt-10">
-      <div class="w-1/4 font-semibold text-sm uppercase text-gray-600">Navn</div>
-      <div class="w-1/4 font-semibold text-sm uppercase text-gray-600">Tidligst utløpsdato</div>
-      <div class="w-1/4 font-semibold text-sm uppercase text-gray-600">Antall</div>
-      <div class="w-1/4 font-semibold text-sm uppercase text-gray-600">Hvor lenge varer dette</div>
-      <Button type="submit" class="text-black border border-black rounded-2xl px-4 py-2
-      text-sm hover:bg-black hover:text-white transition-colors">Rediger</Button>
-    </div>
-
     <div class="pl-20 pr-20">
+
       <Accordion type="single" collapsible v-model:value="openItem">
         <!-- Væske category -->
         <AccordionItem value="væske">

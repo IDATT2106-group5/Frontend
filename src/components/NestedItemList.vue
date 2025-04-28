@@ -1,6 +1,17 @@
 <template>
   <div class="p-4 bg-white rounded">
+
+    <div class="flex items-center p-3 font-semibold text-gray-700 px-2 border-b border-gray-300">
+      <div class="flex-1 font-medium pb-3">Item</div>
+      <div class="flex-1 font-medium pb-3">Earliest Expiry</div>
+      <div class="flex-1 font-medium pb-3">Total Quantity</div>
+      <div class="flex-1 font-medium pb-3">Duration</div>
+      <div class="w-6"></div>
+    </div>
+
+
     <div v-if="groupedSubItems && Object.keys(groupedSubItems).length > 0">
+
       <div v-for="(group, groupName) in groupedSubItems" :key="groupName" class="mb-4">
         <!-- Sub-accordion header -->
         <div
@@ -24,18 +35,15 @@
         </div>
 
         <!-- Sub-accordion content -->
-        <div v-if="openSubItems.includes(groupName)" class="pl-4 mt-1 border-l-2 border-gray-200">
-          <table class="table-auto w-full">
-            <tbody>
-            <tr v-for="(subGroup, expiryDate) in groupItemsByExpiryDate(group)" :key="expiryDate"
-                class="hover:bg-gray-50">
-              <td class="p-2 w-1/4">{{ subGroup[0].name }}</td>
-              <td class="p-2 w-1/4">{{ expiryDate }}</td>
-              <td class="p-2 w-1/4">{{ getSubGroupTotalQuantity(subGroup) }} {{ subGroup[0].unit }}</td>
-              <td class="p-2 w-1/4">{{ calculateDuration(getSubGroupTotalQuantity(subGroup), subGroup[0]) }}</td>
-            </tr>
-            </tbody>
-          </table>
+        <div v-if="openSubItems.includes(groupName)" class="mt-1 border-l-2 border-gray-200">
+          <div v-for="(subGroup, expiryDate) in groupItemsByExpiryDate(group)" :key="expiryDate"
+               class="flex items-center p-2 hover:bg-gray-50">
+            <div class="flex-1">{{ subGroup[0].name }}</div>
+            <div class="flex-1">{{ expiryDate }}</div>
+            <div class="flex-1">{{ getSubGroupTotalQuantity(subGroup) }} {{ subGroup[0].unit }}</div>
+            <div class="flex-1">{{ calculateDuration(getSubGroupTotalQuantity(subGroup), subGroup[0]) }}</div>
+            <div class="w-6"></div> <!-- to align with the arrow column -->
+          </div>
         </div>
       </div>
     </div>
