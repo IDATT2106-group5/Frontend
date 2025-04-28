@@ -129,21 +129,6 @@ export const itemService = {
         console.error('Error fetching grouped items:', error);
         throw error;
       });
-  },
-
-  /**
-   * Update item quantity
-   * @param {string|number} id - Item ID
-   * @param {number} quantity - New quantity value
-   * @returns {Promise<Object>} Promise containing the updated item
-   */
-  updateItemQuantity(id, quantity) {
-    return apiClient.patch(`/items/${id}/quantity`, { quantity })
-      .then(response => response.data)
-      .catch(error => {
-        console.error(`Error updating quantity for item ${id}:`, error);
-        throw error;
-      });
   }
 };
 
