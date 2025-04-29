@@ -7,6 +7,7 @@ import StorageDetailView from '@/views/storageViews/StorageDetailView.vue'
 import VerifyEmailView from '@/views/mainViews/VerifyEmailView.vue'
 import RegisterSuccessView from '@/views/mainViews/RegisterSucessView.vue'
 import RegisterFailedView from '@/views/mainViews/RegisterFailedView.vue'
+import StorageView from '@/views/storageViews/StorageView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -32,6 +33,11 @@ const router = createRouter({
       path: '/storage-detail',
       name: 'storage detail',
       component: StorageDetailView,
+    },
+    {
+      path: '/storage',
+      name: 'storage',
+      component: StorageView,
     },
     {
       path: '/household',
