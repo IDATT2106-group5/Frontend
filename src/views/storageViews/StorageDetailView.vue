@@ -1,65 +1,62 @@
 <script setup>
-import { ref, onMounted } from "vue";
-import { Droplet, Apple, Pill, Package } from "lucide-vue-next";
+import {ref, onMounted} from "vue";
+import {Droplet, Apple, Pill, Package} from "lucide-vue-next";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger
 } from '@/components/ui/accordion';
-import { Button } from '@/components/ui/button';
+import {Button} from '@/components/ui/button';
 
 import StorageNavbar from "@/components/StorageNavbar.vue";
 import EditableNestedItemList from "@/components/EditableNestedItemList.vue";
 import SearchBar from '@/components/SearchBar.vue';
 
-// Import the item store
-import { useItemStore } from '@/stores/ItemStore';
+// Pinia store and router
+import {useStorageStore} from '@/stores/storageStore.js';
+import {useRoute} from 'vue-router';
 
 // Component state
 const openItem = ref(null);
 const isEditing = ref(false);
 
-// Get the item store
-const itemStore = useItemStore();
+// Initialize store & route
+const storageStore = useStorageStore();
+const route = useRoute();
 
-// Fetch items when component mounts
+// Extract householdId from route and set in store
+const householdId = Number(route.params.householdId);
+storageStore.setHouseholdId(householdId);
+
+// Fetch all items on mount
 onMounted(async () => {
   try {
-    await itemStore.fetchAllItems();
-  } catch (error) {
-    console.error("Failed to load items:", error);
+    await storageStore.fetchAllItems();
+  } catch (e) {
+    console.error('Failed to load items:', e);
   }
 });
 
+// Accordion toggle
 const toggleAccordion = (value) => {
   openItem.value = openItem.value === value ? null : value;
 };
 
-// Handle item update
-const handleItemUpdate = async (id, updatedData) => {
-  try {
-    await itemStore.updateItem(id, updatedData);
-  } catch (error) {
-    console.error("Failed to update item:", error);
-  }
-};
+// Handle updates/deletes
+const handleItemUpdate = (id, data) =>
+  storageStore.updateStorageItem(id, data);
 
-// Handle item deletion
-const handleItemDelete = async (id) => {
-  try {
-    await itemStore.deleteItem(id);
-  } catch (error) {
-    console.error("Failed to delete item:", error);
-  }
-};
+const handleItemDelete = (id) =>
+  storageStore.removeItemFromStorage(id);
 </script>
 
 <template>
   <div>
-    <StorageNavbar />
-    <SearchBar />
+    <StorageNavbar/>
+    <SearchBar/>
     <div class="pl-20 pr-20">
+
       <div class="mb-4 mt-4 flex justify-between items-center">
         <h2 class="text-xl font-bold">Lager innhold</h2>
         <div class="flex gap-2">
@@ -73,26 +70,28 @@ const handleItemDelete = async (id) => {
         </div>
       </div>
 
-      <div v-if="itemStore.isLoading" class="flex justify-center py-10">
-        <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+      <div v-if="storageStore.isLoading" class="flex justify-center py-10">
+        <div
+          class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
       </div>
 
-      <div v-else-if="itemStore.error" class="p-4 bg-red-100 text-red-700 rounded">
-        {{ itemStore.error }}
+      <div v-else-if="storageStore.error" class="p-4 bg-red-100 text-red-700 rounded">
+        {{ storageStore.error }}
       </div>
 
-      <Accordion v-else-if="!itemStore.isEmpty" type="single" collapsible v-model:value="openItem">
-        <!-- Væske category -->
-        <AccordionItem value="væske">
-          <AccordionTrigger @click="toggleAccordion('væske')">
+      <Accordion v-else-if="!storageStore.isEmpty" type="single" collapsible
+                 v-model:value="openItem">
+        <!-- Væske -->
+        <AccordionItem value="vaske">
+          <AccordionTrigger @click="toggleAccordion('vaske')">
             <div class="flex items-center gap-3">
-              <Droplet class="ml-2 h-6 w-6 shrink-0 text-black" />
-              <span class="text-lg text-black">Væske</span>
+              <Droplet/>
+              Væske
             </div>
           </AccordionTrigger>
           <AccordionContent>
             <EditableNestedItemList
-              :items="itemStore.groupedItems.Væske"
+              :items="storageStore.groupedItems.Væske"
               :isEditing="isEditing"
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
@@ -100,17 +99,17 @@ const handleItemDelete = async (id) => {
           </AccordionContent>
         </AccordionItem>
 
-        <!-- Mat category -->
+        <!-- Mat -->
         <AccordionItem value="mat">
           <AccordionTrigger @click="toggleAccordion('mat')">
             <div class="flex items-center gap-3">
-              <Apple class="ml-2 h-6 w-6 shrink-0 text-black" />
-              <span class="text-lg text-black">Mat</span>
+              <Apple/>
+              Mat
             </div>
           </AccordionTrigger>
           <AccordionContent>
             <EditableNestedItemList
-              :items="itemStore.groupedItems.Mat"
+              :items="storageStore.groupedItems.Mat"
               :isEditing="isEditing"
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
@@ -118,17 +117,17 @@ const handleItemDelete = async (id) => {
           </AccordionContent>
         </AccordionItem>
 
-        <!-- Medisiner category -->
+        <!-- Medisiner -->
         <AccordionItem value="medisiner">
           <AccordionTrigger @click="toggleAccordion('medisiner')">
             <div class="flex items-center gap-3">
-              <Pill class="ml-2 h-6 w-6 shrink-0 text-black" />
-              <span class="text-lg text-black">Medisiner</span>
+              <Pill/>
+              Medisiner
             </div>
           </AccordionTrigger>
           <AccordionContent>
             <EditableNestedItemList
-              :items="itemStore.groupedItems.Medisiner"
+              :items="storageStore.groupedItems.Medisiner"
               :isEditing="isEditing"
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
@@ -136,17 +135,17 @@ const handleItemDelete = async (id) => {
           </AccordionContent>
         </AccordionItem>
 
-        <!-- Diverse category -->
+        <!-- Diverse -->
         <AccordionItem value="diverse">
           <AccordionTrigger @click="toggleAccordion('diverse')">
             <div class="flex items-center gap-3">
-              <Package class="ml-2 h-6 w-6 shrink-0 text-black" />
-              <span class="text-lg text-black">Diverse</span>
+              <Package/>
+              Diverse
             </div>
           </AccordionTrigger>
           <AccordionContent>
             <EditableNestedItemList
-              :items="itemStore.groupedItems.Diverse"
+              :items="storageStore.groupedItems.Diverse"
               :isEditing="isEditing"
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"

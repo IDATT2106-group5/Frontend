@@ -1,3 +1,6 @@
+import { defineStore } from 'pinia';
+import HouseholdService from '@/service/householdService.js';
+
 export const useHouseholdStore = defineStore('household', {
   state: () => ({
     members: [],
@@ -8,7 +11,7 @@ export const useHouseholdStore = defineStore('household', {
     async fetchMembers() {
       try {
         this.isLoading = true;
-        this.members = await HouseholdService.getMembers();
+        this.members = (await HouseholdService.getMembers()).data;
       } catch (err) {
         this.error = err.message || 'Kunne ikke hente medlemmer';
       } finally {

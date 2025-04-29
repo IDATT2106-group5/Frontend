@@ -30,9 +30,10 @@ const router = createRouter({
       meta:{hideNavbar: true },
     },
     {
-      path: '/storage-detail',
+      path: '/household/:householdId/storage',
       name: 'storage detail',
       component: StorageDetailView,
+      props: true
     },
     {
       path: '/storage',
