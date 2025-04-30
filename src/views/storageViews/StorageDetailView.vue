@@ -1,40 +1,49 @@
 <script setup>
-import {ref, onMounted} from "vue";
-import {Droplet, Apple, Pill, Package} from "lucide-vue-next";
+import { ref, onMounted } from "vue";
+import { Droplet, Apple, Pill, Package } from "lucide-vue-next";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger
 } from '@/components/ui/accordion';
-import {Button} from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 
 import StorageNavbar from "@/components/StorageNavbar.vue";
 import EditableNestedItemList from "@/components/EditableNestedItemList.vue";
 import SearchBar from '@/components/SearchBar.vue';
 
-// Pinia store and router
-import {useStorageStore} from '@/stores/StorageStore.js';
-import {useRoute} from 'vue-router';
+// Services and store
+import { useStorageStore } from '@/stores/StorageStore.js';
+import UserService from '@/service/userService';
 
 // Component state
 const openItem = ref(null);
 const isEditing = ref(false);
+const isLoading = ref(true);
+const error = ref(null);
 
-// Initialize store & route
+// Initialize store
 const storageStore = useStorageStore();
-const route = useRoute();
 
-// Extract householdId from route and set in store
-const householdId = Number(route.params.householdId);
-storageStore.setHouseholdId(householdId);
-
-// Fetch all items on mount
+// Fetch household ID and then storage items on mount
 onMounted(async () => {
   try {
+    isLoading.value = true;
+    error.value = null;
+
+    // Get current household from UserService
+    const response = await UserService.getCurrentHouseholdByUserId();
+    const householdId = response.data.id;
+
+    // Set household ID in store and fetch items
+    storageStore.setHouseholdId(householdId);
     await storageStore.fetchAllItems();
   } catch (e) {
-    console.error('Failed to load items:', e);
+    console.error('Failed to initialize storage:', e);
+    error.value = e.message || 'Failed to load storage data';
+  } finally {
+    isLoading.value = false;
   }
 });
 
@@ -44,17 +53,29 @@ const toggleAccordion = (value) => {
 };
 
 // Handle updates/deletes
-const handleItemUpdate = (id, data) =>
-  storageStore.updateStorageItem(id, data);
+const handleItemUpdate = async (id, data) => {
+  try {
+    await storageStore.updateStorageItem(id, data);
+  } catch (e) {
+    console.error('Failed to update item:', e);
+    // You could show an error message to the user here
+  }
+};
 
-const handleItemDelete = (id) =>
-  storageStore.removeItemFromStorage(id);
+const handleItemDelete = async (id) => {
+  try {
+    await storageStore.removeItemFromStorage(id);
+  } catch (e) {
+    console.error('Failed to delete item:', e);
+    // You could show an error message to the user here
+  }
+};
 </script>
 
 <template>
   <div>
-    <StorageNavbar/>
-    <SearchBar/>
+    <StorageNavbar />
+    <SearchBar />
     <div class="pl-20 pr-20">
 
       <div class="mb-4 mt-4 flex justify-between items-center">
@@ -70,22 +91,30 @@ const handleItemDelete = (id) =>
         </div>
       </div>
 
-      <div v-if="storageStore.isLoading" class="flex justify-center py-10">
+      <!-- Show loading state during initial household and items fetch -->
+      <div v-if="isLoading || storageStore.isLoading" class="flex justify-center py-10">
         <div
           class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
       </div>
 
+      <!-- Show primary errors from component level -->
+      <div v-else-if="error" class="p-4 bg-red-100 text-red-700 rounded">
+        {{ error }}
+      </div>
+
+      <!-- Show errors from store -->
       <div v-else-if="storageStore.error" class="p-4 bg-red-100 text-red-700 rounded">
         {{ storageStore.error }}
       </div>
 
+      <!-- Main content when data is available -->
       <Accordion v-else-if="!storageStore.isEmpty" type="single" collapsible
                  v-model:value="openItem">
         <!-- Væske -->
         <AccordionItem value="vaske">
           <AccordionTrigger @click="toggleAccordion('vaske')">
             <div class="flex items-center gap-3">
-              <Droplet/>
+              <Droplet />
               Væske
             </div>
           </AccordionTrigger>
@@ -103,7 +132,7 @@ const handleItemDelete = (id) =>
         <AccordionItem value="mat">
           <AccordionTrigger @click="toggleAccordion('mat')">
             <div class="flex items-center gap-3">
-              <Apple/>
+              <Apple />
               Mat
             </div>
           </AccordionTrigger>
@@ -121,7 +150,7 @@ const handleItemDelete = (id) =>
         <AccordionItem value="medisiner">
           <AccordionTrigger @click="toggleAccordion('medisiner')">
             <div class="flex items-center gap-3">
-              <Pill/>
+              <Pill />
               Medisiner
             </div>
           </AccordionTrigger>
@@ -139,7 +168,7 @@ const handleItemDelete = (id) =>
         <AccordionItem value="diverse">
           <AccordionTrigger @click="toggleAccordion('diverse')">
             <div class="flex items-center gap-3">
-              <Package/>
+              <Package />
               Diverse
             </div>
           </AccordionTrigger>
@@ -154,6 +183,7 @@ const handleItemDelete = (id) =>
         </AccordionItem>
       </Accordion>
 
+      <!-- Show when no items are available -->
       <div v-else class="py-10 text-center text-gray-500">
         <p>Ingen varer funnet. Legg til varer for å se dem her.</p>
       </div>
