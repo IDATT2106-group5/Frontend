@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { Trash, Pencil, Save } from "lucide-vue-next";
+import { Trash, Pencil, Save } from 'lucide-vue-next';
 
 // Props
 const props = defineProps({
@@ -60,13 +60,14 @@ function toggleSubAccordion(groupName) {
 function getEarliestExpiryDate(group) {
   // Find the earliest expiry date in a group
   return group
+    .filter(item => item.expiryDate)
     .map(item => item.expiryDate)
-    .sort((a, b) => new Date(a) - new Date(b))[0];
+    .sort((a, b) => new Date(a) - new Date(b))[0] || 'N/A';
 }
 
 function getTotalQuantity(group) {
   // Sum up the quantities in a group
-  return group.reduce((sum, item) => sum + parseFloat(item.quantity), 0);
+  return group.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0);
 }
 
 function calculateDuration(quantity, item) {
@@ -78,8 +79,8 @@ function startEditing(item) {
   editingItem.value = item.id;
   editingData.value = {
     name: item.name,
-    expiryDate: item.expiryDate,
-    quantity: item.quantity
+    expiryDate: item.expiryDate || '',
+    quantity: item.quantity || 0
   };
 }
 
@@ -101,6 +102,24 @@ function saveItemEdit(itemId) {
 function deleteItem(itemId) {
   // Emit an event to parent component to delete the item
   emit('delete-item', itemId);
+}
+
+function groupItemsByExpiryDate(items) {
+  // Group items by expiry date
+  const grouped = {};
+  items.forEach(item => {
+    const date = item.expiryDate || 'N/A';
+    if (!grouped[date]) {
+      grouped[date] = [];
+    }
+    grouped[date].push(item);
+  });
+  return grouped;
+}
+
+function getSubGroupTotalQuantity(subGroup) {
+  // Sum up quantities for items with the same expiry date
+  return subGroup.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0);
 }
 </script>
 
@@ -137,13 +156,13 @@ function deleteItem(itemId) {
           </div>
         </div>
 
-        <!-- Sub-accordion content -->
-        <div v-if="openSubItems.includes(groupName)" class="mt-1 border-l-2 border-gray-200">
+        <!-- Sub-accordion content - show individual items if in edit mode -->
+        <div v-if="openSubItems.includes(groupName) && isEditing" class="mt-1 border-l-2 border-gray-200">
           <div v-for="item in group" :key="item.id"
                class="flex items-center p-2 hover:bg-gray-50">
             <div class="flex-1">
               <input
-                v-if="isEditing && editingItem === item.id"
+                v-if="editingItem === item.id"
                 v-model="editingData.name"
                 class="w-full px-2 py-1 border rounded"
               />
@@ -151,15 +170,15 @@ function deleteItem(itemId) {
             </div>
             <div class="flex-1">
               <input
-                v-if="isEditing && editingItem === item.id"
+                v-if="editingItem === item.id"
                 type="date"
                 v-model="editingData.expiryDate"
                 class="w-full px-2 py-1 border rounded"
               />
-              <span v-else>{{ item.expiryDate }}</span>
+              <span v-else>{{ item.expiryDate || 'N/A' }}</span>
             </div>
             <div class="flex-1">
-              <div v-if="isEditing && editingItem === item.id" class="flex items-center">
+              <div v-if="editingItem === item.id" class="flex items-center">
                 <input
                   v-model="editingData.quantity"
                   type="number"
@@ -173,7 +192,7 @@ function deleteItem(itemId) {
             <div class="w-20 flex justify-end space-x-2">
               <!-- Edit button -->
               <button
-                v-if="isEditing && editingItem !== item.id"
+                v-if="editingItem !== item.id"
                 @click.stop="startEditing(item)"
                 class="text-gray-600 hover:text-blue-600"
               >
@@ -181,7 +200,7 @@ function deleteItem(itemId) {
               </button>
               <!-- Save button -->
               <button
-                v-if="isEditing && editingItem === item.id"
+                v-if="editingItem === item.id"
                 @click.stop="saveItemEdit(item.id)"
                 class="text-gray-600 hover:text-green-600"
               >
@@ -189,13 +208,24 @@ function deleteItem(itemId) {
               </button>
               <!-- Delete button -->
               <button
-                v-if="isEditing"
                 @click.stop="deleteItem(item.id)"
                 class="text-gray-600 hover:text-red-600"
               >
                 <Trash class="h-5 w-5" />
               </button>
             </div>
+          </div>
+        </div>
+
+        <!-- Sub-accordion content - show expiry date groups if not in edit mode -->
+        <div v-else-if="openSubItems.includes(groupName)" class="mt-1 border-l-2 border-gray-200">
+          <div v-for="(subGroup, expiryDate) in groupItemsByExpiryDate(group)" :key="expiryDate"
+               class="flex items-center p-2 hover:bg-gray-50">
+            <div class="flex-1">{{ subGroup[0].name }}</div>
+            <div class="flex-1">{{ expiryDate }}</div>
+            <div class="flex-1">{{ getSubGroupTotalQuantity(subGroup) }} {{ subGroup[0].unit }}</div>
+            <div class="flex-1">{{ calculateDuration(getSubGroupTotalQuantity(subGroup), subGroup[0]) }}</div>
+            <div class="w-6"></div> <!-- to align with the arrow column -->
           </div>
         </div>
       </div>

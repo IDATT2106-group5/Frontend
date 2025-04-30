@@ -1,82 +1,85 @@
-<script>
-export default {
-  name: "NestedItemList",
-  props: {
-    items: {
-      type: Array,
-      required: true,
-    }
-  },
-  data() {
-    return {
-      openSubItems: [],
-    };
-  },
-  computed: {
-    groupedSubItems() {
-      // Group items by name (e.g., group all "Water" items together)
-      const grouped = {};
-      this.items.forEach(item => {
-        const baseName = this.getBaseName(item.name);
-        if (!grouped[baseName]) {
-          grouped[baseName] = [];
-        }
-        grouped[baseName].push(item);
-      });
-      return grouped;
-    }
-  },
-  methods: {
-    getBaseName(fullName) {
-      // Extract the base name (e.g., "Water" from "Water (Brand A)")
-      // You can customize this logic based on your naming pattern
-      const match = fullName.match(/^([^(]+)/);
-      return match ? match[1].trim() : fullName;
-    },
-    toggleSubAccordion(groupName) {
-      if (this.openSubItems.includes(groupName)) {
-        this.openSubItems = this.openSubItems.filter(item => item !== groupName);
-      } else {
-        this.openSubItems.push(groupName);
-      }
-    },
-    getEarliestExpiryDate(group) {
-      // Find the earliest expiry date in a group
-      return group
-        .map(item => item.expiryDate)
-        .sort((a, b) => new Date(a) - new Date(b))[0];
-    },
-    getTotalQuantity(group) {
-      // Sum up the quantities in a group
-      return group.reduce((sum, item) => sum + parseFloat(item.quantity), 0);
-    },
-    getSubGroupTotalQuantity(subGroup) {
-      // Sum up quantities for items with the same expiry date
-      return subGroup.reduce((sum, item) => sum + parseFloat(item.quantity), 0);
-    },
-    groupItemsByExpiryDate(items) {
-      // Group items by expiry date
-      const grouped = {};
-      items.forEach(item => {
-        if (!grouped[item.expiryDate]) {
-          grouped[item.expiryDate] = [];
-        }
-        grouped[item.expiryDate].push(item);
-      });
-      return grouped;
-    },
-    calculateDuration(quantity, item) {
-      // Return the duration value from the item or calculate it if needed
-      // You may need to adjust this based on how your duration is calculated
-      return item.duration || `${Math.ceil(quantity / 3)} dager`;
-    }
+<script setup>
+import { ref, computed } from 'vue';
+
+// Props
+const props = defineProps({
+  items: {
+    type: Array,
+    required: true,
   }
-};
+});
+
+// Reactive state
+const openSubItems = ref([]);
+
+// Computed properties
+const groupedSubItems = computed(() => {
+  // Group items by name (e.g., group all "Water" items together)
+  const grouped = {};
+  props.items.forEach(item => {
+    const baseName = getBaseName(item.name);
+    if (!grouped[baseName]) {
+      grouped[baseName] = [];
+    }
+    grouped[baseName].push(item);
+  });
+  return grouped;
+});
+
+// Methods
+function getBaseName(fullName) {
+  // Extract the base name (e.g., "Water" from "Water (Brand A)")
+  const match = fullName.match(/^([^(]+)/);
+  return match ? match[1].trim() : fullName;
+}
+
+function toggleSubAccordion(groupName) {
+  if (openSubItems.value.includes(groupName)) {
+    openSubItems.value = openSubItems.value.filter(item => item !== groupName);
+  } else {
+    openSubItems.value.push(groupName);
+  }
+}
+
+function getEarliestExpiryDate(group) {
+  // Find the earliest expiry date in a group
+  return group
+    .filter(item => item.expiryDate)
+    .map(item => item.expiryDate)
+    .sort((a, b) => new Date(a) - new Date(b))[0] || 'N/A';
+}
+
+function getTotalQuantity(group) {
+  // Sum up the quantities in a group
+  return group.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0);
+}
+
+function calculateDuration(quantity, item) {
+  // Return the duration value from the item or calculate it if needed
+  return item.duration || `${Math.ceil(quantity / 3)} dager`;
+}
+
+function groupItemsByExpiryDate(items) {
+  // Group items by expiry date
+  const grouped = {};
+  items.forEach(item => {
+    const date = item.expiryDate || 'N/A';
+    if (!grouped[date]) {
+      grouped[date] = [];
+    }
+    grouped[date].push(item);
+  });
+  return grouped;
+}
+
+function getSubGroupTotalQuantity(subGroup) {
+  // Sum up quantities for items with the same expiry date
+  return subGroup.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0);
+}
 </script>
 
 <template>
   <div class="p-4 bg-white rounded">
-
     <div class="flex items-center p-3 font-semibold text-gray-700 px-2 border-b border-gray-300">
       <div class="flex-1 font-medium pb-3">Navn:</div>
       <div class="flex-1 font-medium pb-3">Utløps dato:</div>
@@ -85,9 +88,7 @@ export default {
       <div class="w-6"></div>
     </div>
 
-
     <div v-if="groupedSubItems && Object.keys(groupedSubItems).length > 0">
-
       <div v-for="(group, groupName) in groupedSubItems" :key="groupName" class="mb-4">
         <!-- Sub-accordion header -->
         <div
