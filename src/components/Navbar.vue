@@ -35,7 +35,7 @@ function handleLogout() {
         <Globe class="w-5 h-5 text-white" />
         Kart
       </a>
-      <RouterLink to="/household/${householdId}/storage">
+      <RouterLink to="/storage">
       <a href="#" class="flex items-center gap-2 hover:underline">
         <ShoppingCart class="w-5 h-5 text-white" />
         Min beholdning

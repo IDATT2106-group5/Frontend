@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import { Hourglass, Droplet, Package, Apple, Pill } from 'lucide-vue-next'
+import { RouterLink } from 'vue-router'
 
 // Mock data - replace with actual data in your implementation
 const remainingDays = ref(14)
@@ -78,9 +79,11 @@ const storageItems = ref([
       </div>
 
       <div class="mt-8 flex justify-end">
+        <RouterLink to="/household/${householdId}/storage">
         <Button variant="secondary" class="px-4">
           Se detaljert lagerinnhold
         </Button>
+        </RouterLink>
       </div>
     </div>
     <div class="border rounded-lg p-6">
