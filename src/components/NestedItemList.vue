@@ -2,10 +2,10 @@
   <div class="p-4 bg-white rounded">
 
     <div class="flex items-center p-3 font-semibold text-gray-700 px-2 border-b border-gray-300">
-      <div class="flex-1 font-medium pb-3">Item</div>
-      <div class="flex-1 font-medium pb-3">Earliest Expiry</div>
-      <div class="flex-1 font-medium pb-3">Total Quantity</div>
-      <div class="flex-1 font-medium pb-3">Duration</div>
+      <div class="flex-1 font-medium pb-3">Navn:</div>
+      <div class="flex-1 font-medium pb-3">Utløps dato:</div>
+      <div class="flex-1 font-medium pb-3">Kvantitet:</div>
+      <div class="flex-1 font-medium pb-3">Går ut på dato om:</div>
       <div class="w-6"></div>
     </div>
 
