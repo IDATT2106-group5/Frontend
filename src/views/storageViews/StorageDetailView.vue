@@ -14,7 +14,7 @@ import EditableNestedItemList from "@/components/EditableNestedItemList.vue";
 import SearchBar from '@/components/SearchBar.vue';
 
 // Pinia store and router
-import {useStorageStore} from '@/stores/storageStore.js';
+import {useStorageStore} from '@/stores/StorageStore.js';
 import {useRoute} from 'vue-router';
 
 // Component state
