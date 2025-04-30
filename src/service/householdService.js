@@ -6,7 +6,7 @@ class HouseholdService extends BaseService {
   }
 
   // Fetch household details using userId 
-  async getHouseholdDetailsByUserId(userId) {
+  async getHouseholdDetailsByUserId(userId) { 
     if (!userId) {
       throw new Error('[ERROR] userId is undefined or null when calling getHouseholdDetailsByUserId');
     }
@@ -80,17 +80,22 @@ class HouseholdService extends BaseService {
     }
   }
 
-  // Update a member's information
-  async updateMember(householdId, memberId, data) {
+  // Update a unregistered member's information
+  async updateUnregisteredMember(householdId, memberId, data) {
     try {
       if (data.isRegistered) {
         throw new Error("Cannot update registered members.");
       }
-      return this.post(`/edit-unregistered-member`, {
-        id: memberId,
-        fullName: data.name,
+
+      const payload = {
+        memberId: memberId,
+        newFullName: data.name,
         householdId: householdId
-      });
+      };
+
+      console.log('[POST] edit-unregistered-member → Sending payload:', payload);
+
+      return this.post(`/edit-unregistered-member`, payload);
     } catch (error) {
       console.error("Error updating unregistered member:", error);
       throw error;
@@ -98,18 +103,24 @@ class HouseholdService extends BaseService {
   }
 
   // Remove a member from the household
-  async removeMember(householdId, memberId, isRegistered) {
+  async removeRegisteredMember(email) {
     try {
-      if (isRegistered) {
-        return this.post(`/remove-user`, memberId);
-      } else {
-        return this.deleteReq(`/delete-unregistered-member`, {
-          fullName: memberId,
-          householdId: householdId
-        });
-      }
+      console.log('[REMOVE REGISTERED] Email:', email);
+      return this.post(`/remove-user`, email);
     } catch (error) {
-      console.error("Error removing member:", error);
+      console.error("Error removing registered member:", error);
+      throw error;
+    }
+  }
+
+  // Remove an unregistered user (expects memberId in DELETE path)
+  async removeUnregisteredMember(memberId) {
+    try {
+      console.log('[REMOVE UNREGISTERED] ID:', memberId);
+      // FIX: Don't use this.buildUrl() which adds the base path again
+      return this.deleteItem(`/delete-unregistered-member/${memberId}`);
+    } catch (error) {
+      console.error("Error removing unregistered member:", error);
       throw error;
     }
   }
@@ -160,7 +171,8 @@ class HouseholdService extends BaseService {
   // Support DELETE with body
   async deleteReq(path = '', data) {
     try {
-      const url = this.buildUrl(path);
+      // FIX: Don't use this.buildUrl() which adds the base path again
+      const url = path;
       const config = { data };
       const response = await this.deleteItem(url, config);
       return response;

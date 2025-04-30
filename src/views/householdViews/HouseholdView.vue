@@ -230,6 +230,7 @@ const giveOwnership = async (user) => {
     }
   }
 }
+
 </script>
 
 <template>
@@ -395,8 +396,8 @@ const giveOwnership = async (user) => {
             </div>
           </div>
 
-          <!-- Ownership input -->
-          <div class="mb-4">
+                    <!-- Ownership input -->
+                    <div class="mb-4">
             <label class="block text-sm font-semibold mb-1">Gi eierskap til et medlem</label>
             <div class="relative">
               <input
@@ -435,6 +436,61 @@ const giveOwnership = async (user) => {
                 </div>
               </div>
             </div>
+          </div>
+
+            <!-- Forespørsler -->
+           <h3 class="text-lg font-semibold mb-2">Forespørsler</h3>
+          <div class="bg-white rounded p-4 shadow">
+            <div v-if="householdStore.ownershipRequests.length">
+              <div v-for="request in householdStore.ownershipRequests" :key="request.id" class="flex justify-between items-center mb-2">
+                <span>{{ request.fullName }}</span>
+                <div class="flex gap-2">
+                  <Button class="bg-green-600 text-white hover:bg-green-700" size="sm">Godta</Button>
+                  <Button variant="outline" class="text-red-600 border-red-500 hover:bg-red-50" size="sm">Avslå</Button>
+                </div>
+              </div>
+            </div>
+            <p v-else class="text-sm text-gray-500 italic">Ingen forespørsler</p>
+          </div>
+
+          <!-- Sendte invitasjoner -->
+          <h3 class="text-lg font-semibold mb-2">Sendte invitasjoner</h3>
+          <div class="bg-white rounded p-4 shadow">
+            <table class="w-full text-sm text-left">
+              <thead>
+                <tr class="text-gray-700 border-b">
+                  <th class="py-2">E-post</th>
+                  <th class="py-2">Dato sendt</th>
+                  <th class="py-2">Status</th>
+                  <th class="py-2">Handling</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="invite in householdStore.sentInvitations" :key="invite.email" class="border-b">
+                  <td class="py-2">{{ invite.email }}</td>
+                  <td class="py-2">{{ invite.date }}</td>
+                  <td class="py-2">
+                    <span 
+                      :class="{
+                        'bg-yellow-200 text-yellow-800 px-2 py-1 rounded': invite.status === 'Venter',
+                        'bg-green-200 text-green-800 px-2 py-1 rounded': invite.status === 'Godtatt',
+                        'bg-red-200 text-red-800 px-2 py-1 rounded': invite.status === 'Avslått'
+                      }"
+                    >
+                      {{ invite.status }}
+                    </span>
+                  </td>
+                  <td class="py-2">
+                    <Button variant="outline" class="text-red-600 border-red-500 hover:bg-red-50" size="sm">
+                      Avbryt
+                    </Button>
+                  </td>
+                </tr>
+                <tr v-if="householdStore.sentInvitations.length === 0">
+                  <td colspan="4" class="py-2 text-gray-500 italic text-center">Ingen sendte invitasjoner</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 

@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from 'vue'
-import { UserIcon, Mail, Edit, Save, X, Phone } from 'lucide-vue-next'
+import { UserIcon, Mail, Trash2, Edit, Save, X, Phone } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { useHouseholdStore } from '@/stores/HouseholdStore'
 
@@ -20,6 +20,7 @@ const editName = ref('');
 const editEmail = ref('');
 const isSaving = ref(false);
 const error = ref('');
+const nameRegex = /^[A-Za-zæøåÆØÅ\s\-']+$/;
 
 const startEdit = () => {
   editName.value = props.member.fullName;
@@ -42,7 +43,17 @@ const saveEdit = async () => {
   error.value = '';
 
   try {
-    await householdStore.updateMember(
+    if (!editName.value.trim()) {
+      error.value = 'Navn kan ikke være tomt';
+      return;
+    }
+
+    if (!nameRegex.test(editName.value)) {
+      error.value = 'Navnet kan ikke inneholde tall eller spesialtegn';
+      return;
+    }
+    
+    await householdStore.updateUnregisteredMember(
       props.member.id,
       {
         name: editName.value,
@@ -59,9 +70,15 @@ const saveEdit = async () => {
   }
 };
 
-const confirmRemove = () => {
-  if (confirm(`Er du sikker på at du vil fjerne ${props.member.fullName}?`)) {
-    emit('remove-member', props.member);
+const confirmRemove = async () => {
+  try {
+    if (confirm(`Er du sikker på at du vil fjerne ${props.member.fullName}?`)) {
+      // Ensure we pass the member object with id property
+      await householdStore.removeMember(props.member, props.member.isRegistered);
+    }
+  } catch (err) {
+    console.error("Error removing member:", err);
+    error.value = err.message || 'Kunne ikke fjerne medlemmet';
   }
 };
 </script>

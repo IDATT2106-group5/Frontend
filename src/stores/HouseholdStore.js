@@ -9,6 +9,8 @@ export const useHouseholdStore = defineStore('household', {
       registered: [],
       unregistered: []
     },
+    ownershipRequests: [],      
+    sentInvitations: [],  
     error: null,
     isLoading: false,
     hasHousehold: false
@@ -88,27 +90,29 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
-    async updateMember(memberId, data, isRegistered) {
+    async updateUnregisteredMember(memberId, data, isRegistered) {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husholdning');
       }
-
       try {
         this.isLoading = true;
-        const updatedMember = await HouseholdService.updateMember(
+    
+        // Call backend
+        await HouseholdService.updateUnregisteredMember(
           this.currentHousehold.id,
           memberId,
-          { ...data, isRegistered }
+          data
         );
-
+  
+        // Update state locally so the UI reflects it immediately
         const targetArray = isRegistered ? 'registered' : 'unregistered';
         const index = this.members[targetArray].findIndex(member => member.id === memberId);
-
+    
         if (index !== -1) {
-          this.members[targetArray][index] = updatedMember;
+          this.members[targetArray][index].fullName = data.name;
         }
-
-        return updatedMember;
+    
+        return this.members[targetArray][index]; // bonus: return updated member
       } catch (err) {
         this.error = err.response?.data?.error || err.message || 'Kunne ikke oppdatere medlem';
         throw err;
@@ -116,20 +120,46 @@ export const useHouseholdStore = defineStore('household', {
         this.isLoading = false;
       }
     },
-
-    async removeMember(memberId, isRegistered) {
+    
+    async removeMember(member, isRegistered) {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husholdning');
       }
-
+    
       try {
         this.isLoading = true;
-        await HouseholdService.removeMember(this.currentHousehold.id, memberId, isRegistered);
-
-        const targetArray = isRegistered ? 'registered' : 'unregistered';
-        this.members[targetArray] = this.members[targetArray].filter(
-          member => member.id !== memberId
-        );
+    
+        console.log('[REMOVE] member:', member); // Debug log
+        console.log('[REMOVE] isRegistered:', isRegistered);
+    
+        // Handle if member is passed as just an ID number
+        const memberId = typeof member === 'number' ? member : member.id;
+        
+        if (isRegistered) {
+          // For registered members, we need the email
+          let memberEmail;
+          if (typeof member === 'object' && member.email) {
+            memberEmail = member.email;
+          } else {
+            // Try to find the member in our registered members list
+            const foundMember = this.members.registered.find(m => m.id === memberId);
+            if (!foundMember || !foundMember.email) {
+              throw new Error('E-post mangler for registrert medlem');
+            }
+            memberEmail = foundMember.email;
+          }
+          
+          await HouseholdService.removeRegisteredMember(memberEmail);
+          this.members.registered = this.members.registered.filter(m => m.id !== memberId);
+        } else {
+          // For unregistered members, we need the ID
+          if (!memberId) {
+            throw new Error('ID mangler for uregistrert medlem');
+          }
+          
+          await HouseholdService.removeUnregisteredMember(memberId);
+          this.members.unregistered = this.members.unregistered.filter(m => m.id !== memberId);
+        }
       } catch (err) {
         this.error = err.response?.data?.error || err.message || 'Kunne ikke fjerne medlem';
         throw err;
@@ -137,6 +167,7 @@ export const useHouseholdStore = defineStore('household', {
         this.isLoading = false;
       }
     },
+    
 
     async inviteMember(email) {
       if (!this.currentHousehold?.id) {
@@ -148,6 +179,19 @@ export const useHouseholdStore = defineStore('household', {
         await HouseholdService.inviteMember(this.currentHousehold.id, email);
       } catch (err) {
         this.error = err.response?.data?.error || err.message || 'Kunne ikke sende invitasjon';
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async cancelInvitation(email) {
+      try {
+        this.isLoading = true;
+        await HouseholdService.cancelInvitation(email);
+        this.sentInvitations = this.sentInvitations.filter(i => i.email !== email);
+      } catch (err) {
+        this.error = err.response?.data?.error || err.message;
         throw err;
       } finally {
         this.isLoading = false;
