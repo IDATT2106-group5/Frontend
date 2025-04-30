@@ -1,14 +1,18 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
 import { Search, Copy } from 'lucide-vue-next'
 import HouseholdMember from '@/components/HouseholdMember.vue'
+import { useHouseholdStore } from '@/stores/HouseholdStore'
+import { useUserStore } from '@/stores/UserStore'
 
 const route = useRoute()
 const router = useRouter()
+const householdStore = useHouseholdStore()
+const userStore = useUserStore()
 
-const householdId = ref('HUS123456')
+// UI state
 const activeTab = ref('members')
 const searchHousehold = ref('')
 const perPage = 5
@@ -20,33 +24,35 @@ const error = ref('')
 const addingMember = ref(false)
 const searchQuery = ref('')
 
-// Household data
-const registered = ref([
-  { id: 1, name: 'Ola Nordmann', email: 'ola1@example.com', tlf:12342122 , isRegistered: true },
-  { id: 2, name: 'Kari Nordmann', email: 'kari@example.com', isRegistered: true },
-  { id: 3, name: 'Petter Smart', email: 'petter@example.com', isRegistered: true },
-  { id: 4, name: 'Marie Nordmann', email: 'Bob@example.com', isRegistered: true },
-  { id: 5, name: 'Johan Nordmann', email: 'Tets@mail.com', isRegistered: true },
-  { id: 6, name: 'Anne Nordmann', email: 'adushd@test.com', isRegistered: true },
-])
+// Ownership management
+const ownershipName = ref('')
+const selectedOwnershipUser = ref(null)
+const hoveredIndex = ref(-1)
+const invitationEmail = ref('')
+const showInviteForm = ref(false)
+const inviting = ref(false)
 
-const unregistered = ref([
-  { id: 7, name: 'Ukjent Bruker', email: null, isRegistered: false },
-  { id: 8, name: 'Test Person', email: null, isRegistered: false }
-])
+// Load household data
+onMounted(async () => {
+  try {
+    const hasHousehold = await householdStore.checkCurrentHousehold()
+    if (!hasHousehold) {
+      error.value = 'Ingen husstand funnet.'
+    }
+  } catch (err) {
+    error.value = err.message || 'Kunne ikke laste husholdningsdata'
+  }
+})
 
-const invitations = ref([
-  { email: 'marie@example.com', date: '25.04.2025', status: 'Venter' },
-  { email: 'johan@example.com', date: '23.04.2025', status: 'Godkjent' }
-])
 
-const ownershipRequests = ref([
-  { id: 101, name: 'Anders Andersen' },
-  { id: 102, name: 'Berit Berntsen' }
-])
-
-// Members management
-const members = computed(() => [...registered.value, ...unregistered.value])
+// Computed properties
+const members = computed(() => householdStore.allMembers)
+const registeredMembers = computed(() => householdStore.members.registered)
+const unregisteredMembers = computed(() => householdStore.members.unregistered)
+const householdId = computed(() => householdStore.currentHousehold?.id || '')
+const householdName = computed(() => householdStore.currentHousehold?.name || 'Ingen husstand')
+const householdAddress = computed(() => householdStore.currentHousehold?.address || '')
+const isLoading = computed(() => householdStore.isLoading)
 
 const filteredMembers = computed(() => {
   if (!searchQuery.value) return members.value
@@ -62,6 +68,17 @@ const displayedMembers = computed(() => {
   return filteredMembers.value.slice(start, start + perPage)
 })
 
+const totalPages = computed(() => Math.ceil(filteredMembers.value.length / perPage) || 1)
+
+const filteredOwnershipSuggestions = computed(() => {
+  if (!ownershipName.value) return []
+  const query = ownershipName.value.toLowerCase()
+  return registeredMembers.value.filter(m =>
+    m.name.toLowerCase().includes(query)
+  ).slice(0, 5)
+})
+
+// Actions
 const resetPagination = () => {
   page.value = 1
 }
@@ -70,39 +87,7 @@ const watchSearchQuery = () => {
   resetPagination()
 }
 
-// Member actions
-const removeMember = (member) => {
-  const list = member.isRegistered ? registered.value : unregistered.value
-  const index = list.findIndex(m => m.id === member.id)
-  if (index !== -1) list.splice(index, 1)
-}
-
-const addMember = async () => {
-  if (!newMemberName.value && !newMemberEmail.value) {
-    error.value = 'Vennligst fyll ut enten navn eller e-post'
-    return
-  }
-  
-  addingMember.value = true
-  
-  const member = {
-    name: newMemberName.value,
-    email: newMemberEmail.value || null,
-    isRegistered: !!newMemberEmail.value,
-    id: registered.value.length + unregistered.value.length + 1
-  }
-  
-  const list = member.isRegistered ? registered.value : unregistered.value
-  list.push(member)
-  
-  newMemberName.value = ''
-  newMemberEmail.value = ''
-  showAddForm.value = false
-  error.value = ''
-  addingMember.value = false
-}
-
-// method to cope the household ID
+// Copy household ID to clipboard
 const copyHouseholdId = async () => {
   try {
     await navigator.clipboard.writeText(householdId.value)
@@ -112,29 +97,96 @@ const copyHouseholdId = async () => {
   }
 }
 
-// Search functionality
-const joinHousehold = () => {
-  alert(`Bli med i husstand med ID: ${searchHousehold.value}`)
+// Member actions
+const removeMember = async (member) => {
+  try {
+    await householdStore.removeMember(member.id, member.isRegistered)
+  } catch (err) {
+    error.value = err.message || 'Kunne ikke fjerne medlem'
+  }
 }
 
-// Ownership search logic
-const ownershipName = ref('')
-const selectedOwnershipUser = ref(null)
-const hoveredIndex = ref(-1)
+const addMember = async () => {
+  if (!newMemberName.value) {
+    error.value = 'Vennligst fyll ut navn'
+    return
+  }
+  
+  addingMember.value = true
+  error.value = ''
+  
+  try {
+    const newMember = {
+      name: newMemberName.value,
+      email: newMemberEmail.value || null
+    }
+    
+    await householdStore.addMember(newMember)
+    
+    // Reset form
+    newMemberName.value = ''
+    newMemberEmail.value = ''
+    showAddForm.value = false
+  } catch (err) {
+    error.value = err.message || 'Kunne ikke legge til medlem'
+  } finally {
+    addingMember.value = false
+  }
+}
 
-const filteredOwnershipSuggestions = computed(() => {
-  if (!ownershipName.value) return []
-  const query = ownershipName.value.toLowerCase()
-  return members.value.filter(m =>
-    m.isRegistered &&
-    m.name.toLowerCase().includes(query)
-  ).slice(0, 5)
-})
+// Invite member
+const inviteMember = async () => {
+  if (!invitationEmail.value) {
+    error.value = 'Vennligst oppgi e-postadresse'
+    return
+  }
+  
+  inviting.value = true
+  error.value = ''
+  
+  try {
+    await householdStore.inviteMember(invitationEmail.value)
+    invitationEmail.value = ''
+    showInviteForm.value = false
+    alert('Invitasjon sendt!')
+  } catch (err) {
+    error.value = err.message || 'Kunne ikke sende invitasjon'
+  } finally {
+    inviting.value = false
+  }
+}
 
+// Join household
+const joinHousehold = async () => {
+  if (!searchHousehold.value) {
+    error.value = 'Vennligst oppgi husstands-ID'
+    return
+  }
+  
+  try {
+    // Logic to join household would go here
+    // This would typically involve a call to your HouseholdService
+    alert(`Søker etter husstand med ID: ${searchHousehold.value}`)
+  } catch (err) {
+    error.value = err.message || 'Kunne ikke bli med i husstand'
+  }
+}
+
+// Leave household
+const leaveHousehold = async () => {
+  if (confirm('Er du sikker på at du vil forlate husstanden?')) {
+    try {
+      await householdStore.leaveHousehold()
+      alert('Du har forlatt husstanden')
+    } catch (err) {
+      error.value = err.message || 'Kunne ikke forlate husstand'
+    }
+  }
+}
+
+// Ownership management
 const selectOwnershipName = (name) => {
-  const selected = members.value.find(
-    m => m.name === name && m.isRegistered
-  )
+  const selected = registeredMembers.value.find(m => m.name === name)
   if (selected) {
     ownershipName.value = selected.name
     selectedOwnershipUser.value = selected
@@ -143,9 +195,7 @@ const selectOwnershipName = (name) => {
 }
 
 watch(ownershipName, (val) => {
-  const matched = members.value.find(
-    m => m.name === val && m.isRegistered
-  )
+  const matched = registeredMembers.value.find(m => m.name === val)
   selectedOwnershipUser.value = matched || null
 })
 
@@ -167,248 +217,246 @@ const handleOwnershipKeyDown = (e) => {
   }
 }
 
-const giveOwnership = (user) => {
-  alert(`Gi eierskap til ${user.name}`)
-}
-
-const acceptRequest = (request) => {
-  const index = ownershipRequests.value.findIndex(r => r.id === request.id)
-  if (index !== -1) ownershipRequests.value.splice(index, 1)
-  alert(`Godkjent forespørsel fra ${request.name}`)
-}
-
-const declineRequest = (request) => {
-  const index = ownershipRequests.value.findIndex(r => r.id === request.id)
-  if (index !== -1) ownershipRequests.value.splice(index, 1)
-  alert(`Avslått forespørsel fra ${request.name}`)
-}
-
-const cancelInvitation = (invitation) => {
-  const index = invitations.value.findIndex(i => i.email === invitation.email)
-  if (index !== -1) invitations.value.splice(index, 1)
-  alert(`Avbrutt invitasjon til ${invitation.email}`)
+const giveOwnership = async (user) => {
+  if (!user) return
+  
+  if (confirm(`Er du sikker på at du vil gi eierskap til ${user.name}?`)) {
+    try {
+      // This would typically involve a call to your HouseholdService
+      // await householdService.transferOwnership(householdId.value, user.id)
+      alert(`Eierskap overført til ${user.name}`)
+    } catch (err) {
+      error.value = err.message || 'Kunne ikke overføre eierskap'
+    }
+  }
 }
 </script>
 
 <template>
   <div class="min-h-screen bg-[#f3f3f3]">
     <div class="max-w-3xl mx-auto p-6 space-y-4">
-      <div class="flex justify-between items-center">
-        <div>
-          <h1 class="text-2xl font-bold">🏠 Nordmann Husstand</h1>
-          <p class="text-sm text-gray-600">Storgata 1, 0182 Oslo</p>
-          <div class="flex items-center gap-2 text-xs text-gray-500">
-         <span>ID: {{ householdId }}</span>
-        <button @click="copyHouseholdId" class="hover:text-gray-700">
-          <Copy class="w-4 h-4" />
-        </button>
-    </div>  
-        </div>
-        <div class="space-x-2">
-          <Button variant="outline">Forlat husstand</Button>
-          <Button variant="destructive">Slett husstand</Button>
+      <!-- Loading indicator -->
+      <div v-if="isLoading" class="text-center py-8">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+        <p>Laster inn...</p>
+      </div>
+      
+      <!-- Error message -->
+      <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
+        {{ error }}
+        
+        <div class="mt-4" v-if="!householdStore.hasHousehold">
+          <Button @click="router.push('/create-household')">Opprett ny husstand</Button>
         </div>
       </div>
-
-      <!-- Top separation line -->
-      <hr class="border-t border-gray-300 mb-2" />
-
-      <!-- Tab buttons -->
-      <div class="flex space-x-4 border-b border-gray-200">
-        <button
-          @click="activeTab = 'members'"
-          :class="[
-            'text-sm px-4 py-2 font-medium transition',
-            activeTab === 'members'
-              ? 'text-blue-600 border-b-2 border-blue-500 bg-blue-50 rounded-t'
-              : 'text-gray-500 hover:text-gray-700'
-          ]"
-        >
-          Se medlemmer
-        </button>
-        <button
-          @click="activeTab = 'search'"
-          :class="[
-            'text-sm px-4 py-2 font-medium transition',
-            activeTab === 'search'
-              ? 'text-blue-600 border-b-2 border-blue-500 bg-blue-50 rounded-t'
-              : 'text-gray-500 hover:text-gray-700'
-          ]"
-        >
-          Søk husstand
-        </button>
-      </div>
-
-      <div v-if="activeTab === 'members'" class="space-y-4">
-        <!-- Header -->
+      
+      <div v-else-if="householdStore.hasHousehold">
+        <!-- Household header -->
         <div class="flex justify-between items-center">
-          <h2 class="font-bold text-lg">Medlemmer i husstanden: {{ members.length }}</h2>
+          <div>
+            <h1 class="text-2xl font-bold">🏠 {{ householdName }}</h1>
+            <p class="text-sm text-gray-600">{{ householdAddress }}</p>
+            <div class="flex items-center gap-2 text-xs text-gray-500">
+              <span>ID: {{ householdId }}</span>
+              <button @click="copyHouseholdId" class="hover:text-gray-700">
+                <Copy class="w-4 h-4" />
+              </button>
+            </div>  
+          </div>
           <div class="space-x-2">
-            <Button>+ Send invitasjon</Button>
-            <Button class="bg-green-600 text-white hover:bg-green-700" @click="showAddForm = true">+ Legg til medlem</Button>
+            <Button variant="outline" @click="leaveHousehold">Forlat husstand</Button>
           </div>
         </div>
 
-        <!-- Search bar -->
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search class="h-5 w-5 text-gray-400" />
-          </div>
-          <input
-            v-model="searchQuery"
-            @input="watchSearchQuery"
-            type="text"
-            placeholder="Søk etter medlemmer..."
-            class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2"
-          />
+        <!-- Top separation line -->
+        <hr class="border-t border-gray-300 mb-2" />
+
+        <!-- Tab buttons -->
+        <div class="flex space-x-4 border-b border-gray-200">
+          <button
+            @click="activeTab = 'members'"
+            :class="[
+              'text-sm px-4 py-2 font-medium transition',
+              activeTab === 'members'
+                ? 'text-blue-600 border-b-2 border-blue-500 bg-blue-50 rounded-t'
+                : 'text-gray-500 hover:text-gray-700'
+            ]"
+          >
+            Se medlemmer
+          </button>
+          <button
+            @click="activeTab = 'search'"
+            :class="[
+              'text-sm px-4 py-2 font-medium transition',
+              activeTab === 'search'
+                ? 'text-blue-600 border-b-2 border-blue-500 bg-blue-50 rounded-t'
+                : 'text-gray-500 hover:text-gray-700'
+            ]"
+          >
+            Søk husstand
+          </button>
         </div>
 
-        <!-- Member list -->
-        <div v-if="displayedMembers.length > 0">
-          <HouseholdMember 
-            v-for="member in displayedMembers" 
-            :key="member.id" 
-            :member="member" 
-            @remove-member="removeMember"
-          />
-        </div>
-
-        <!-- No results message -->
-        <div v-else class="bg-white p-4 text-center rounded-md shadow">
-          <p>Ingen medlemmer funnet</p>
-        </div>
-
-        <!-- Pagination -->
-        <div class="flex justify-center items-center space-x-2">
-          <Button :disabled="page === 1" @click="page--">&larr;</Button>
-          <span>Side {{ page }} av {{ Math.ceil(filteredMembers.length / perPage) || 1 }}</span>
-          <Button :disabled="page * perPage >= filteredMembers.length" @click="page++">&rarr;</Button>
-        </div>
-
-        <!-- Add member form -->
-        <div v-if="showAddForm" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
-          <div class="bg-white p-6 rounded shadow-lg w-full max-w-md">
-            <h3 class="text-xl font-bold mb-4">Legg til medlem</h3>
-
-            <label class="block text-sm font-medium text-gray-700 mb-1">Navn på medlem</label>
-            <input v-model="newMemberName" placeholder="Navn på medlem" class="w-full px-3 py-2 border rounded mb-3" />
-
-            <p class="text-sm text-gray-600 mb-4">
-              Dette vil legge til et ikke-registrert medlem i husstanden.<br />
-              For å invitere registrerte brukere, bruk <strong>Send Invitasjon</strong>.
-            </p>
-
-            <div class="flex justify-end gap-2">
-              <Button variant="outline" @click="showAddForm = false">Avbryt</Button>
-              <Button class="bg-green-600 text-white" :disabled="addingMember" @click="addMember">
-                {{ addingMember ? 'Legger til...' : 'Legg til' }}
-              </Button>
-            </div>
-
-            <p class="text-red-500 mt-2" v-if="error">{{ error }}</p>
-          </div>
-        </div>
-
-        <!-- Ownership input -->
-        <div class="mb-4">
-          <label class="block text-sm font-semibold mb-1">Gi eierskap til et medlem</label>
-          <div class="relative">
-            <input
-              v-model="ownershipName"
-              @keydown="handleOwnershipKeyDown"
-              type="text"
-              placeholder="Skriv inn navn på medlem"
-              class="w-full rounded-md border p-2 pr-28"
-            />
-            <Button
-              class="absolute top-1/2 -translate-y-1/2 right-1 rounded-l-none"
-              :disabled="!selectedOwnershipUser"
-              @click="giveOwnership(selectedOwnershipUser)"
-            >
-              Gi eierskap
-            </Button>
-
-            <!-- Suggestions dropdown -->
-            <div
-              v-if="filteredOwnershipSuggestions.length"
-              class="absolute z-10 bg-white shadow-md border w-full mt-1 rounded-md overflow-hidden"
-            >
-              <div
-                v-for="(suggestion, index) in filteredOwnershipSuggestions"
-                :key="suggestion.id"
-                class="px-3 py-2 cursor-pointer"
-                :class="{
-                  'bg-gray-100': hoveredIndex === index,
-                  'hover:bg-gray-100': hoveredIndex !== index
-                }"
-                @click="selectOwnershipName(suggestion.name)"
-              >
-                <p class="font-medium">{{ suggestion.name }}</p>
-                <p class="text-sm text-gray-500" v-if="suggestion.email">{{ suggestion.email }}</p>
-                <p class="text-sm text-gray-400 italic" v-else>Ikke registrert</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Requests -->
-        <div>
-          <h3 class="font-bold mt-6 mb-2">Forespørsler</h3>
-          <div v-for="request in ownershipRequests" :key="request.id" class="flex justify-between bg-white p-3 rounded-md mb-2 shadow-sm">
-            <span>{{ request.name }}</span>
+        <div v-if="activeTab === 'members'" class="space-y-4">
+          <!-- Header -->
+          <div class="flex justify-between items-center">
+            <h2 class="font-bold text-lg">Medlemmer i husstanden: {{ members.length }}</h2>
             <div class="space-x-2">
-              <Button class="bg-green-500 text-white" @click="acceptRequest(request)">Godta</Button>
-              <Button variant="destructive" @click="declineRequest(request)">Avslå</Button>
+              <Button @click="showInviteForm = true">+ Send invitasjon</Button>
+              <Button class="bg-green-600 text-white hover:bg-green-700" @click="showAddForm = true">+ Legg til medlem</Button>
             </div>
           </div>
-        </div>
 
-        <!-- Invitations -->
-        <div>
-          <h3 class="font-bold mt-6 mb-2">Sendte invitasjoner</h3>
-
-          <div class="font-semibold text-sm text-black grid grid-cols-3 px-4 py-2 border-b border-gray-200 bg-white rounded-t-md">
-            <span>E-post</span>
-            <span>Dato sendt</span>
-            <span>Status</span>
+          <!-- Search bar -->
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search class="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              v-model="searchQuery"
+              @input="watchSearchQuery"
+              type="text"
+              placeholder="Søk etter medlemmer..."
+              class="pl-10 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 border p-2"
+            />
           </div>
 
-          <div class="bg-white divide-y divide-gray-200 rounded-b-md">
-            <div
-              v-for="invite in invitations"
-              :key="invite.email"
-              class="grid grid-cols-3 items-center px-4 py-3 text-sm"
-            >
-              <span>{{ invite.email }}</span>
-              <span>{{ invite.date }}</span>
-              <div class="flex justify-between items-center">
-                <span :class="{
-                  'text-yellow-600': invite.status === 'Venter',
-                  'text-green-600': invite.status === 'Godkjent'
-                }">
-                  {{ invite.status }}
-                </span>
-                <Button
-                  v-if="invite.status === 'Venter'"
-                  variant="destructive"
-                  size="sm"
-                  class="ml-2"
-                  @click="cancelInvitation(invite)"
-                >
-                  Avbryt
+          <!-- Member list -->
+          <div v-if="displayedMembers.length > 0">
+            <HouseholdMember 
+              v-for="member in displayedMembers" 
+              :key="member.id" 
+              :member="member" 
+              @remove-member="removeMember"
+            />
+          </div>
+
+          <!-- No results message -->
+          <div v-else class="bg-white p-4 text-center rounded-md shadow">
+            <p>Ingen medlemmer funnet</p>
+          </div>
+
+          <!-- Pagination -->
+          <div class="flex justify-center items-center space-x-2">
+            <Button :disabled="page === 1" @click="page--">&larr;</Button>
+            <span>Side {{ page }} av {{ totalPages }}</span>
+            <Button :disabled="page * perPage >= filteredMembers.length" @click="page++">&rarr;</Button>
+          </div>
+
+          <!-- Add member form -->
+          <div v-if="showAddForm" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+            <div class="bg-white p-6 rounded shadow-lg w-full max-w-md">
+              <h3 class="text-xl font-bold mb-4">Legg til medlem</h3>
+
+              <label class="block text-sm font-medium text-gray-700 mb-1">Navn på medlem</label>
+              <input v-model="newMemberName" placeholder="Navn på medlem" class="w-full px-3 py-2 border rounded mb-3" />
+
+              <p class="text-sm text-gray-600 mb-4">
+                Dette vil legge til et ikke-registrert medlem i husstanden.<br />
+                For å invitere registrerte brukere, bruk <strong>Send Invitasjon</strong>.
+              </p>
+
+              <div class="flex justify-end gap-2">
+                <Button variant="outline" @click="showAddForm = false">Avbryt</Button>
+                <Button class="bg-green-600 text-white" :disabled="addingMember" @click="addMember">
+                  {{ addingMember ? 'Legger til...' : 'Legg til' }}
                 </Button>
               </div>
+
+              <p class="text-red-500 mt-2" v-if="error">{{ error }}</p>
+            </div>
+          </div>
+          
+          <!-- Invite member form -->
+          <div v-if="showInviteForm" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+            <div class="bg-white p-6 rounded shadow-lg w-full max-w-md">
+              <h3 class="text-xl font-bold mb-4">Inviter medlem</h3>
+
+              <label class="block text-sm font-medium text-gray-700 mb-1">E-post</label>
+              <input 
+                v-model="invitationEmail" 
+                type="email" 
+                placeholder="bruker@eksempel.no" 
+                class="w-full px-3 py-2 border rounded mb-3" 
+              />
+
+              <p class="text-sm text-gray-600 mb-4">
+                Dette sender en invitasjon til en bruker via e-post.
+              </p>
+
+              <div class="flex justify-end gap-2">
+                <Button variant="outline" @click="showInviteForm = false">Avbryt</Button>
+                <Button class="bg-blue-600 text-white" :disabled="inviting" @click="inviteMember">
+                  {{ inviting ? 'Sender...' : 'Send invitasjon' }}
+                </Button>
+              </div>
+
+              <p class="text-red-500 mt-2" v-if="error">{{ error }}</p>
+            </div>
+          </div>
+
+          <!-- Ownership input -->
+          <div class="mb-4">
+            <label class="block text-sm font-semibold mb-1">Gi eierskap til et medlem</label>
+            <div class="relative">
+              <input
+                v-model="ownershipName"
+                @keydown="handleOwnershipKeyDown"
+                type="text"
+                placeholder="Skriv inn navn på medlem"
+                class="w-full rounded-md border p-2 pr-28"
+              />
+              <Button
+                class="absolute top-1/2 -translate-y-1/2 right-1 rounded-l-none"
+                :disabled="!selectedOwnershipUser"
+                @click="giveOwnership(selectedOwnershipUser)"
+              >
+                Gi eierskap
+              </Button>
+
+              <!-- Suggestions dropdown -->
+              <div
+                v-if="filteredOwnershipSuggestions.length"
+                class="absolute z-10 bg-white shadow-md border w-full mt-1 rounded-md overflow-hidden"
+              >
+                <div
+                  v-for="(suggestion, index) in filteredOwnershipSuggestions"
+                  :key="suggestion.id"
+                  class="px-3 py-2 cursor-pointer"
+                  :class="{
+                    'bg-gray-100': hoveredIndex === index,
+                    'hover:bg-gray-100': hoveredIndex !== index
+                  }"
+                  @click="selectOwnershipName(suggestion.name)"
+                >
+                  <p class="font-medium">{{ suggestion.name }}</p>
+                  <p class="text-sm text-gray-500" v-if="suggestion.email">{{ suggestion.email }}</p>
+                  <p class="text-sm text-gray-400 italic" v-else>Ikke registrert</p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div v-if="activeTab === 'search'" class="space-y-4">
-        <h2 class="font-semibold">Søk husstand</h2>
-        <input v-model="searchHousehold" placeholder="Søk husstand..." class="w-full px-3 py-2 border rounded" />
-        <div class="flex items-center justify-between bg-gray-100 px-4 py-2 mt-2 rounded shadow">
-          <span class="text-blue-700 font-semibold">Id: 123456</span>
-          <Button @click="joinHousehold">Bli med</Button>
+        <div v-if="activeTab === 'search'" class="space-y-4">
+          <h2 class="font-semibold">Søk husstand</h2>
+          <input 
+            v-model="searchHousehold" 
+            placeholder="Søk husstand..." 
+            class="w-full px-3 py-2 border rounded" 
+          />
+          <Button @click="joinHousehold" class="w-full">Bli med</Button>
+        </div>
+      </div>
+      
+      <div v-else>
+        <div class="text-center py-12 bg-white rounded-lg shadow">
+          <h2 class="text-xl font-bold mb-4">Ingen husstand funnet</h2>
+          <p class="mb-6">Du er ikke tilknyttet en husstand ennå.</p>
+          <div class="space-x-4">
+            <Button @click="router.push('/create-household')">Opprett husstand</Button>
+            <Button variant="outline" @click="activeTab = 'search'">Søk husstand</Button>
+          </div>
         </div>
       </div>
     </div>

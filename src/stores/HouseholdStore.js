@@ -29,43 +29,33 @@ export const useHouseholdStore = defineStore('household', {
         this.isLoading = true;
         const userStore = useUserStore();
         
-        if (!userStore.user || !userStore.user.householdId) {
+        if (!userStore.user || !userStore.user.id) {
           this.hasHousehold = false;
           return false;
         }
+        const response = await HouseholdService.getHouseholdDetailsByUserId(userStore.user.id);
+        console.log('[RESPONSE] getHouseholdDetailsByUserId:', response);
+        this.currentHousehold = response.household;
+        this.members.registered = (response.users || []).map(user => ({
+          id: user.id,
+          fullName: user.fullName,
+          tlf: user.tlf,         
+          email: user.email,
+          isRegistered: true
+        }))       
 
-        const response = await HouseholdService.getHouseholdDetails(userStore.user.householdId);
-        
-        this.currentHousehold = response; 
+        this.members.unregistered = (response.unregisteredMembers || []).map(member => ({
+          id: member.id,
+          fullName: member.fullName,      
+          isRegistered: false
+        }))
         this.hasHousehold = true;
         return true;
       } catch (err) {
         console.error("Household check failed:", err);
-        this.error = err.response?.data || err.message || 'Kunne ikke finne husholdning';
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke finne husholdning';
         this.hasHousehold = false;
         return false;
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    async fetchMembers() {
-      try {
-        if (!this.currentHousehold || !this.currentHousehold.id) {
-          const hasHousehold = await this.checkCurrentHousehold();
-          if (!hasHousehold) {
-            this.error = 'Ingen aktiv husholdning funnet';
-            return;
-          }
-        }
-
-        this.isLoading = true;
-        const members = await HouseholdService.getHouseholdMembers(this.currentHousehold.id);
-        
-        this.members.registered = members.filter(member => member.isRegistered);
-        this.members.unregistered = members.filter(member => !member.isRegistered);
-      } catch (err) {
-        this.error = err.response?.data || err.message || 'Kunne ikke hente medlemmer';
       } finally {
         this.isLoading = false;
       }
@@ -91,7 +81,7 @@ export const useHouseholdStore = defineStore('household', {
 
         return addedMember;
       } catch (err) {
-        this.error = err.response?.data || err.message || 'Kunne ikke legge til medlem';
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke legge til medlem';
         throw err;
       } finally {
         this.isLoading = false;
@@ -120,7 +110,7 @@ export const useHouseholdStore = defineStore('household', {
 
         return updatedMember;
       } catch (err) {
-        this.error = err.response?.data || err.message || 'Kunne ikke oppdatere medlem';
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke oppdatere medlem';
         throw err;
       } finally {
         this.isLoading = false;
@@ -141,7 +131,7 @@ export const useHouseholdStore = defineStore('household', {
           member => member.id !== memberId
         );
       } catch (err) {
-        this.error = err.response?.data || err.message || 'Kunne ikke fjerne medlem';
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke fjerne medlem';
         throw err;
       } finally {
         this.isLoading = false;
@@ -157,7 +147,7 @@ export const useHouseholdStore = defineStore('household', {
         this.isLoading = true;
         await HouseholdService.inviteMember(this.currentHousehold.id, email);
       } catch (err) {
-        this.error = err.response?.data || err.message || 'Kunne ikke sende invitasjon';
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke sende invitasjon';
         throw err;
       } finally {
         this.isLoading = false;
@@ -172,7 +162,7 @@ export const useHouseholdStore = defineStore('household', {
         this.hasHousehold = true;
         return newHousehold;
       } catch (err) {
-        this.error = err.response?.data || err.message || 'Kunne ikke opprette husholdning';
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke opprette husholdning';
         throw err;
       } finally {
         this.isLoading = false;
@@ -186,14 +176,14 @@ export const useHouseholdStore = defineStore('household', {
 
       try {
         this.isLoading = true;
-        const authStore = useAuthStore();
-        await HouseholdService.leaveHousehold(authStore.user.email);
+        const userStore = useUserStore();
+        await HouseholdService.leaveHousehold(userStore.user.email);
 
         this.currentHousehold = null;
         this.hasHousehold = false;
         this.members = { registered: [], unregistered: [] };
       } catch (err) {
-        this.error = err.response?.data || err.message || 'Kunne ikke forlate husholdning';
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke forlate husholdning';
         throw err;
       } finally {
         this.isLoading = false;

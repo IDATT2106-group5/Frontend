@@ -2,15 +2,21 @@ import BaseService from '@/service/baseService';
 
 class HouseholdService extends BaseService {
   constructor() {
-    super('/household/{householdId}');
+    super('/household');
   }
-  // Fetch household details using householdId
-  async getHouseholdDetails(householdId) {
+
+  // Fetch household details using userId 
+  async getHouseholdDetailsByUserId(userId) {
+    if (!userId) {
+      throw new Error('[ERROR] userId is undefined or null when calling getHouseholdDetailsByUserId');
+    }
     try {
-      const response = await this.get(`/household-details?householdId=${householdId}`);
+      console.log('[GET] details/', userId);
+      const response = await this.get(`/details/${userId}`);
+      console.log('[RESPONSE] getHouseholdDetailsByUserId:', response);
       return response;
     } catch (error) {
-      console.error("Error fetching household details:", error);
+      console.error("Error fetching household details by user ID:", error);
       throw error;
     }
   }
@@ -78,21 +84,15 @@ class HouseholdService extends BaseService {
   async updateMember(householdId, memberId, data) {
     try {
       if (data.isRegistered) {
-        return this.put(`/update-user`, {
-          userId: memberId,
-          email: data.email,
-          fullName: data.name,
-          householdId: householdId
-        });
-      } else {
-        return this.put(`/update-unregistered-member`, {
-          id: memberId,
-          fullName: data.name,
-          householdId: householdId
-        });
+        throw new Error("Cannot update registered members.");
       }
+      return this.post(`/edit-unregistered-member`, {
+        id: memberId,
+        fullName: data.name,
+        householdId: householdId
+      });
     } catch (error) {
-      console.error("Error updating member:", error);
+      console.error("Error updating unregistered member:", error);
       throw error;
     }
   }
