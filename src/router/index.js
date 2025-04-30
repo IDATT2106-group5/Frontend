@@ -7,6 +7,7 @@ import StorageDetailView from '@/views/storageViews/StorageDetailView.vue'
 import VerifyEmailView from '@/views/mainViews/VerifyEmailView.vue'
 import RegisterSuccessView from '@/views/mainViews/RegisterSucessView.vue'
 import RegisterFailedView from '@/views/mainViews/RegisterFailedView.vue'
+import HouseholdInviteView from '@/views/householdViews/HouseholdInviteView.vue'
 import StorageView from '@/views/storageViews/StorageView.vue'
 
 const router = createRouter({
@@ -30,7 +31,7 @@ const router = createRouter({
       meta:{hideNavbar: true },
     },
     {
-      path: '/household/:householdId/storage',
+      path: '/storage-detail',
       name: 'storage detail',
       component: StorageDetailView,
       props: true
@@ -44,6 +45,11 @@ const router = createRouter({
       path: '/household',
       name: 'household',
       component: HouseholdView,
+    },
+    {
+      path: '/household/invite',
+      name: 'household-invite',
+      component: HouseholdInviteView,
     },
     {
       path: '/verify-email',
