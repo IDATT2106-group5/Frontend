@@ -91,7 +91,7 @@
         <div class="bg-[#2c3e50] text-white p-6 rounded-lg w-52 h-52 mx-auto flex flex-col justify-between">
           <p class="text-xl font-bold text-center drop-shadow-md">Under</p>
           <div class="flex items-center justify-between">
-            <span class="text-lg font-bold">Les mer</span>
+            <span class="text-lg font-bold">Legits mer</span>
             <span class="bg-white text-[#2c3e50] rounded-md px-3 py-1 text-xl font-bold leading-none">→</span>
           </div>
         </div>
