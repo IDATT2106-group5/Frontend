@@ -15,6 +15,7 @@ import SearchBar from '@/components/SearchBar.vue';
 
 // Services and store
 import { useStorageStore } from '@/stores/StorageStore.js';
+import { useUserStore } from '@/stores/UserStore.js';
 import UserService from '@/service/userService';
 
 // Component state
@@ -25,6 +26,7 @@ const error = ref(null);
 
 // Initialize store
 const storageStore = useStorageStore();
+const userStore = useUserStore();
 
 // Fetch household ID and then storage items on mount
 onMounted(async () => {
@@ -33,8 +35,12 @@ onMounted(async () => {
     error.value = null;
 
     // Get current household from UserService
-    const response = await UserService.getCurrentHouseholdByUserId();
+    const response = await UserService.getCurrentHouseholdByUserId(userStore.user.id);
     const householdId = response.data.id;
+
+    console.log('User ID:', response)
+
+    console.log('Household ID:', householdId);
 
     // Set household ID in store and fetch items
     storageStore.setHouseholdId(householdId);
