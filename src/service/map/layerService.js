@@ -1,6 +1,14 @@
+// service/map/layerService.js
 import L from 'leaflet';
+import BaseService from '@/service/baseService';
 
-export default {
+class LayerService extends BaseService {
+  constructor() {
+    super('maps/layers'); // Use your actual API endpoint for layers
+    // TODO...
+  }
+
+  // Local layer definitions
   getLayerDefinitions() {
     return {
       standard: {
@@ -22,7 +30,7 @@ export default {
         })
       }
     };
-  },
+  }
 
   getLayerOptions() {
     return [
@@ -43,4 +51,17 @@ export default {
       }
     ];
   }
-};
+
+  // New methods for API interaction
+  async fetchLayers() {
+    try {
+      return await this.get();
+    } catch (error) {
+      console.error('Error fetching layers:', error);
+      // Fall back to local definitions if API fails
+      return this.getLayerOptions();
+    }
+  }
+}
+
+export default new LayerService();

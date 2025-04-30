@@ -1,5 +1,6 @@
 // service/map/markerService.js
 import L from 'leaflet';
+import BaseService from '@/service/baseService';
 import {
   Heart,
   Stethoscope,
@@ -9,7 +10,7 @@ import {
   Users
 } from 'lucide-vue-next';
 
-// Create a custom Leaflet icon using an HTML element
+// Function to create Leaflet icon for markers
 const createLeafletIcon = (iconType, color) => {
   // Create a custom divIcon for Leaflet
   return L.divIcon({
@@ -41,85 +42,116 @@ const getSVGPath = (iconType) => {
   }
 };
 
-export default {
-  getMarkerTypes() {
-    return [
-      {
-        id: 'nødhjelp',
-        name: 'Nødhjelp',
-        icon: createLeafletIcon('Stethoscope', '#e53935'),
-        lucideIcon: Stethoscope,
-        color: '#e53935',
-        visible: true
-      },
-      {
-        id: 'hjertestarter',
-        name: 'Hjertestarter',
-        icon: createLeafletIcon('Heart', '#d81b60'),
-        lucideIcon: Heart,
-        color: '#d81b60',
-        visible: true
-      },
-      {
-        id: 'matstasjon',
-        name: 'Matstasjon',
-        icon: createLeafletIcon('UtensilsCrossed', '#7b1fa2'),
-        lucideIcon: UtensilsCrossed,
-        color: '#7b1fa2',
-        visible: true
-      },
-      {
-        id: 'tilfluktsrom',
-        name: 'Tilfluktsrom',
-        icon: createLeafletIcon('Home', '#1976d2'),
-        lucideIcon: Home,
-        color: '#1976d2',
-        visible: true
-      },
-      {
-        id: 'sykehus',
-        name: 'Sykehus',
-        icon: createLeafletIcon('Building', '#388e3c'),
-        lucideIcon: Building,
-        color: '#388e3c',
-        visible: true
-      },
-      {
-        id: 'møteplass',
-        name: 'Møteplass',
-        icon: createLeafletIcon('Users', '#f57c00'),
-        lucideIcon: Users,
-        color: '#f57c00',
-        visible: true
-      }
-    ];
+// Map of icon configurations for each marker type
+const iconConfig = {
+  'nødhjelp': {
+    iconType: 'Stethoscope',
+    lucideIcon: Stethoscope,
+    color: '#e53935'
   },
-
-  // Rest of the code remains the same
-  getMarkerData() {
-    return {
-      'nødhjelp': [
-        { lat: 63.4275, lng: 10.3975, name: 'Nødhjelp Sentrum' },
-        { lat: 63.4350, lng: 10.4050, name: 'Nødhjelp Øst' }
-      ],
-      'hjertestarter': [
-        { lat: 63.4305, lng: 10.3920, name: 'Hjertestarter Torget' },
-        { lat: 63.4285, lng: 10.3990, name: 'Hjertestarter Kjøpesenter' }
-      ],
-      'matstasjon': [
-        { lat: 63.4330, lng: 10.4030, name: 'Matstasjon 1' },
-        { lat: 63.4290, lng: 10.3880, name: 'Matstasjon 2' }
-      ],
-      'tilfluktsrom': [
-        { lat: 63.4315, lng: 10.4010, name: 'Tilfluktsrom Sentrum' }
-      ],
-      'sykehus': [
-        { lat: 63.4230, lng: 10.3960, name: 'St. Olavs Hospital' }
-      ],
-      'møteplass': [
-        { lat: 63.4295, lng: 10.3930, name: 'Møteplass Torget' },
-        { lat: 63.4325, lng: 10.4080, name: 'Møteplass Bakklandet' }
-      ]
-    };
+  'hjertestarter': {
+    iconType: 'Heart',
+    lucideIcon: Heart,
+    color: '#d81b60'
+  },
+  'matstasjon': {
+    iconType: 'UtensilsCrossed',
+    lucideIcon: UtensilsCrossed,
+    color: '#7b1fa2'
+  },
+  'tilfluktsrom': {
+    iconType: 'Home',
+    lucideIcon: Home,
+    color: '#1976d2'
+  },
+  'sykehus': {
+    iconType: 'Building',
+    lucideIcon: Building,
+    color: '#388e3c'
+  },
+  'møteplass': {
+    iconType: 'Users',
+    lucideIcon: Users,
+    color: '#f57c00'
   }
 };
+
+class MarkerService extends BaseService {
+  constructor() {
+    super('maps/markers'); // Use your actual API endpoint for markers
+    // TODO... connect med edvard
+  }
+
+  // Method to get icon configurations
+  getIconConfig() {
+    return iconConfig;
+  }
+
+  // API methods
+  async fetchMarkerTypes() {
+    try {
+      const types = await this.get('types');
+
+      // Process the API response to include icon information
+      return types.map(type => ({
+        ...type,
+        icon: createLeafletIcon(
+          iconConfig[type.id]?.iconType || 'Building',
+          iconConfig[type.id]?.color || '#000000'
+        ),
+        lucideIcon: iconConfig[type.id]?.lucideIcon || Building,
+        color: iconConfig[type.id]?.color || '#000000'
+      }));
+    } catch (error) {
+      console.error('Error fetching marker types:', error);
+      throw error;
+    }
+  }
+
+  async fetchAllMarkers() {
+    try {
+      return await this.get();
+    } catch (error) {
+      console.error('Error fetching all markers:', error);
+      throw error;
+    }
+  }
+
+  async fetchMarkersByType(typeId) {
+    try {
+      return await this.get(`type/${typeId}`);
+    } catch (error) {
+      console.error(`Error fetching markers of type ${typeId}:`, error);
+      throw error;
+    }
+  }
+
+  async createMarker(markerData) {
+    try {
+      return await this.post('', markerData);
+    } catch (error) {
+      console.error('Error creating marker:', error);
+      throw error;
+    }
+  }
+
+  async updateMarker(markerId, markerData) {
+    try {
+      return await this.put(`${markerId}`, markerData);
+    } catch (error) {
+      console.error(`Error updating marker ${markerId}:`, error);
+      throw error;
+    }
+  }
+
+  async deleteMarker(markerId) {
+    try {
+      return await this.deleteItem(`${markerId}`);
+    } catch (error) {
+      console.error(`Error deleting marker ${markerId}:`, error);
+      throw error;
+    }
+  }
+}
+
+export default new MarkerService();

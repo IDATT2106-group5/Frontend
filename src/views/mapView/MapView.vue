@@ -2,6 +2,18 @@
   <div class="map-container">
     <div id="map" ref="mapContainer"></div>
 
+    <!-- Loading indicator -->
+    <div v-if="isLoadingMarkers" class="map-loading-overlay">
+      <div class="map-loading-spinner"></div>
+      <div class="map-loading-text">Loading map data...</div>
+    </div>
+
+    <!-- Error message -->
+    <div v-if="markersLoadError" class="map-error-message">
+      {{ markersLoadError }}
+      <button @click="retryLoadMarkers" class="retry-button">Retry</button>
+    </div>
+
     <!-- Custom Layer Controls -->
     <div class="layer-control-container">
       <div class="layer-controls">
@@ -16,61 +28,76 @@
         </button>
       </div>
     </div>
+
     <!-- Marker Filter -->
     <div class="marker-filter-container">
-      <MarkerFilter />
+      <MarkerFilter v-if="!isLoadingMarkers && !markersLoadError" />
     </div>
   </div>
 </template>
 
 <script>
-import { onMounted, ref, onUnmounted } from 'vue'
-import { useMapStore } from '@/stores/map/mapStore'
-import { storeToRefs } from 'pinia'
-import MarkerFilter from '@/components/map/MarkerFilter.vue'
-import 'leaflet/dist/leaflet.css'
+import { onMounted, ref, onUnmounted } from 'vue';
+import { useMapStore } from '@/stores/map/mapStore';
+import { storeToRefs } from 'pinia';
+import MarkerFilter from '@/components/map/MarkerFilter.vue';
+import 'leaflet/dist/leaflet.css';
 
 export default {
   name: 'EmergencyMap',
-  components: { MarkerFilter },
+  components: {
+    MarkerFilter
+  },
   setup() {
-    const mapContainer = ref(null)
-    const mapStore = useMapStore()
+    const mapContainer = ref(null);
+    const mapStore = useMapStore();
 
     // Use storeToRefs for reactive properties
-    const { layerOptions, activeLayerId } = storeToRefs(mapStore)
+    const {
+      layerOptions,
+      activeLayerId,
+      isLoadingMarkers,
+      markersLoadError
+    } = storeToRefs(mapStore);
 
     onMounted(() => {
-      mapStore.initMap(mapContainer.value)
+      mapStore.initMap(mapContainer.value);
 
       // Add resize event listener
-      window.addEventListener('resize', handleResize)
-    })
+      window.addEventListener('resize', handleResize);
+    });
 
     onUnmounted(() => {
       // Clean up event listener
-      window.removeEventListener('resize', handleResize)
+      window.removeEventListener('resize', handleResize);
 
       // Clean up map
-      mapStore.cleanupMap()
-    })
+      mapStore.cleanupMap();
+    });
 
     const handleResize = () => {
-      mapStore.resizeMap()
-    }
+      mapStore.resizeMap();
+    };
 
     const setActiveLayer = (layerId) => {
-      mapStore.setActiveLayer(layerId)
-    }
+      mapStore.setActiveLayer(layerId);
+    };
+
+    const retryLoadMarkers = () => {
+      mapStore.initMarkers();
+    };
 
     return {
       mapContainer,
       layerOptions,
       activeLayerId,
       setActiveLayer,
-    }
-  },
-}
+      isLoadingMarkers,
+      markersLoadError,
+      retryLoadMarkers
+    };
+  }
+};
 </script>
 
 <style scoped>
@@ -202,5 +229,66 @@ export default {
   align-items: center;
   justify-content: center;
   padding: 4px;
+}
+
+.map-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.7);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.map-loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 10px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.map-loading-text {
+  font-size: 16px;
+  color: #333;
+}
+
+.map-error-message {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  text-align: center;
+  z-index: 1000;
+}
+
+.retry-button {
+  margin-top: 12px;
+  padding: 8px 16px;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.retry-button:hover {
+  background-color: #2980b9;
 }
 </style>

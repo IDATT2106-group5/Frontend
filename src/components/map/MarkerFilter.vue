@@ -4,47 +4,52 @@
       <h3>Filtrer</h3>
     </div>
 
-    <div class="filter-actions">
-      <Button
-        variant="outline"
-        size="sm"
-        class="show-all-btn"
-        @click="showAllMarkers"
-      >
-        Vis alle
-      </Button>
-      <Button
-        variant="outline"
-        size="sm"
-        class="hide-all-btn"
-        @click="hideAllMarkers"
-      >
-        Skjul alle
-      </Button>
-    </div>
-
-    <div class="filter-options">
-      <div
-        v-for="marker in markerTypes"
-        :key="marker.id"
-        class="filter-option"
-      >
-        <label class="checkbox-container">
-          <input
-            type="checkbox"
-            :checked="marker.visible"
-            @change="toggleMarker(marker.id)"
-          />
-          <span class="checkmark"></span>
-
-          <div class="marker-details">
-            <div class="marker-icon" :style="{ color: marker.color }">
-              <component :is="marker.lucideIcon" size="20" :color="marker.color" />
-            </div>
-            <div class="marker-name">{{ marker.name }}</div>
-          </div>
-        </label>
+    <div v-if="markerTypes.length > 0">
+      <div class="filter-actions">
+        <Button
+          variant="outline"
+          size="sm"
+          class="show-all-btn"
+          @click="showAllMarkers"
+        >
+          Vis alle
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          class="hide-all-btn"
+          @click="hideAllMarkers"
+        >
+          Skjul alle
+        </Button>
       </div>
+
+      <div class="filter-options">
+        <div
+          v-for="marker in markerTypes"
+          :key="marker.id"
+          class="filter-option"
+        >
+          <label class="checkbox-container">
+            <input
+              type="checkbox"
+              :checked="marker.visible"
+              @change="toggleMarker(marker.id)"
+            />
+            <span class="checkmark"></span>
+
+            <div class="marker-details">
+              <div class="marker-icon" :style="{ color: marker.color }">
+                <component :is="marker.lucideIcon" size="20" :color="marker.color" />
+              </div>
+              <div class="marker-name">{{ marker.name }}</div>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div v-else class="empty-state">
+      No marker types available
     </div>
   </div>
 </template>

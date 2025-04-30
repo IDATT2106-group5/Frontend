@@ -1,3 +1,4 @@
+// stores/map/mapStore.js
 import { defineStore } from 'pinia';
 import MapService from '@/service/map/mapService';
 import LayerService from '@/service/map/layerService';
@@ -12,7 +13,9 @@ export const useMapStore = defineStore('map', {
     layerOptions: [],
     markerTypes: [],
     markerLayers: {},
-    markerData: {}
+    markerData: {},
+    isLoadingMarkers: false,
+    markersLoadError: null
   }),
 
   actions: {
@@ -48,31 +51,66 @@ export const useMapStore = defineStore('map', {
       }
     },
 
-    initMarkers() {
-      // Get marker types and data
-      this.markerTypes = MarkerService.getMarkerTypes();
-      this.markerData = MarkerService.getMarkerData();
+    async initMarkers() {
+      this.isLoadingMarkers = true;
+      this.markersLoadError = null;
 
-      // Create layer groups for each marker type
-      this.markerLayers = {};
-      this.markerTypes.forEach(markerType => {
-        this.markerLayers[markerType.id] = L.layerGroup();
+      try {
+        // Clear any existing markers
+        if (this.markerLayers) {
+          Object.values(this.markerLayers).forEach(layer => {
+            if (this.map && layer) {
+              layer.removeFrom(this.map);
+            }
+          });
+        }
 
-        // Add markers to the layer group
-        const markers = this.markerData[markerType.id] || [];
-        markers.forEach(markerData => {
-          const marker = L.marker([markerData.lat, markerData.lng], {
-            icon: markerType.icon
-          }).bindPopup(markerData.name);
+        // Initialize empty objects
+        this.markerLayers = {};
+        this.markerData = {};
 
-          this.markerLayers[markerType.id].addLayer(marker);
+        // Fetch marker types from API
+        this.markerTypes = await MarkerService.fetchMarkerTypes();
+
+        // Initialize empty layer groups for each marker type
+        this.markerTypes.forEach(markerType => {
+          this.markerLayers[markerType.id] = L.layerGroup();
         });
 
-        // Add layer to map if it should be visible initially
-        if (markerType.visible) {
-          this.markerLayers[markerType.id].addTo(this.map);
-        }
-      });
+        // Fetch marker data from API
+        const markersFromApi = await MarkerService.fetchAllMarkers();
+        this.markerData = markersFromApi;
+
+        // Add markers to layer groups
+        Object.entries(this.markerData).forEach(([typeId, markers]) => {
+          markers.forEach(markerData => {
+            const markerType = this.markerTypes.find(type => type.id === typeId);
+            if (!markerType) return;
+
+            const marker = L.marker([markerData.lat, markerData.lng], {
+              icon: markerType.icon
+            }).bindPopup(markerData.name);
+
+            this.markerLayers[typeId].addLayer(marker);
+          });
+
+          // Add layer to map if it should be visible initially
+          const markerType = this.markerTypes.find(type => type.id === typeId);
+          if (markerType && markerType.visible) {
+            this.markerLayers[typeId].addTo(this.map);
+          }
+        });
+      } catch (error) {
+        console.error('Error initializing markers:', error);
+        this.markersLoadError = 'Failed to load markers. Please try again later.';
+
+        // Initialize empty objects to prevent UI errors
+        this.markerTypes = [];
+        this.markerLayers = {};
+        this.markerData = {};
+      } finally {
+        this.isLoadingMarkers = false;
+      }
     },
 
     setAllMarkersVisibility(isVisible) {
@@ -82,9 +120,9 @@ export const useMapStore = defineStore('map', {
 
         // Add or remove from map
         if (isVisible) {
-          this.markerLayers[markerType.id].addTo(this.map);
+          this.markerLayers[markerType.id]?.addTo(this.map);
         } else {
-          this.markerLayers[markerType.id].removeFrom(this.map);
+          this.markerLayers[markerType.id]?.removeFrom(this.map);
         }
       });
     },
@@ -99,9 +137,9 @@ export const useMapStore = defineStore('map', {
 
       // Add or remove from map
       if (markerType.visible) {
-        this.markerLayers[markerId].addTo(this.map);
+        this.markerLayers[markerId]?.addTo(this.map);
       } else {
-        this.markerLayers[markerId].removeFrom(this.map);
+        this.markerLayers[markerId]?.removeFrom(this.map);
       }
     },
 
