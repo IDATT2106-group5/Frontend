@@ -78,19 +78,34 @@ const iconConfig = {
 
 class MarkerService extends BaseService {
   constructor() {
-    super('maps/markers'); // Use your actual API endpoint for markers
-    // TODO... connect med edvard
+    super('map-icons');
   }
 
-  // Method to get icon configurations
-  getIconConfig() {
-    return iconConfig;
-  }
+  // Default map coordinates - Trondheim, Norway
+  defaultLat = 63.4305;
+  defaultLng = 10.3951;
+  defaultRadius = 10; // 10 km radius
 
   // API methods
   async fetchMarkerTypes() {
     try {
-      const types = await this.get('types');
+      console.log('Fetching marker types from backend');
+
+      // First, we need to fetch all markers to determine the available types
+      const allMarkers = await this.fetchAllMarkers();
+
+      // Extract unique types from markers
+      const typeSet = new Set();
+      Object.keys(allMarkers).forEach(typeId => {
+        typeSet.add(typeId);
+      });
+
+      // Convert to array of marker type objects
+      const types = Array.from(typeSet).map(typeId => ({
+        id: typeId,
+        title: this.formatTypeTitle(typeId),
+        visible: true
+      }));
 
       // Process the API response to include icon information
       return types.map(type => ({
@@ -108,47 +123,62 @@ class MarkerService extends BaseService {
     }
   }
 
+  // Helper to format type ID into a readable title
+  formatTypeTitle(typeId) {
+    // Capitalize first letter
+    return typeId.charAt(0).toUpperCase() + typeId.slice(1);
+  }
+
   async fetchAllMarkers() {
     try {
-      return await this.get();
+      console.log(`Fetching markers from: ${this.buildUrl('')} with params:`, {
+        latitude: this.defaultLat,
+        longitude: this.defaultLng,
+        radiusKm: this.defaultRadius
+      });
+
+      // Get with required parameters
+      const response = await this.get('', {
+        params: {
+          latitude: this.defaultLat,
+          longitude: this.defaultLng,
+          radiusKm: this.defaultRadius
+        }
+      });
+
+      // Process the response and organize by marker type
+      const markersByType = {};
+
+      // Ensure we have a response
+      if (!response || !Array.isArray(response)) {
+        console.warn('API returned invalid response format:', response);
+        return {};
+      }
+
+      // Process API response
+      response.forEach(marker => {
+        if (!marker.type) {
+          console.warn('Marker missing type property:', marker);
+          return;
+        }
+
+        if (!markersByType[marker.type]) {
+          markersByType[marker.type] = [];
+        }
+
+        markersByType[marker.type].push({
+          id: marker.id,
+          name: marker.name || 'Unnamed',
+          lat: marker.latitude,
+          lng: marker.longitude,
+          description: marker.description || ''
+        });
+      });
+
+      console.log('Processed markers by type:', markersByType);
+      return markersByType;
     } catch (error) {
       console.error('Error fetching all markers:', error);
-      throw error;
-    }
-  }
-
-  async fetchMarkersByType(typeId) {
-    try {
-      return await this.get(`type/${typeId}`);
-    } catch (error) {
-      console.error(`Error fetching markers of type ${typeId}:`, error);
-      throw error;
-    }
-  }
-
-  async createMarker(markerData) {
-    try {
-      return await this.post('', markerData);
-    } catch (error) {
-      console.error('Error creating marker:', error);
-      throw error;
-    }
-  }
-
-  async updateMarker(markerId, markerData) {
-    try {
-      return await this.put(`${markerId}`, markerData);
-    } catch (error) {
-      console.error(`Error updating marker ${markerId}:`, error);
-      throw error;
-    }
-  }
-
-  async deleteMarker(markerId) {
-    try {
-      return await this.deleteItem(`${markerId}`);
-    } catch (error) {
-      console.error(`Error deleting marker ${markerId}:`, error);
       throw error;
     }
   }

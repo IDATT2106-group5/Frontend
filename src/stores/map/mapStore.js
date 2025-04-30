@@ -69,17 +69,16 @@ export const useMapStore = defineStore('map', {
         this.markerLayers = {};
         this.markerData = {};
 
-        // Fetch marker types from API
+        // Fetch marker data from API first
+        this.markerData = await MarkerService.fetchAllMarkers();
+
+        // Then fetch marker types - this now depends on the markers from the API
         this.markerTypes = await MarkerService.fetchMarkerTypes();
 
         // Initialize empty layer groups for each marker type
         this.markerTypes.forEach(markerType => {
           this.markerLayers[markerType.id] = L.layerGroup();
         });
-
-        // Fetch marker data from API
-        const markersFromApi = await MarkerService.fetchAllMarkers();
-        this.markerData = markersFromApi;
 
         // Add markers to layer groups
         Object.entries(this.markerData).forEach(([typeId, markers]) => {
@@ -89,7 +88,12 @@ export const useMapStore = defineStore('map', {
 
             const marker = L.marker([markerData.lat, markerData.lng], {
               icon: markerType.icon
-            }).bindPopup(markerData.name);
+            }).bindPopup(`
+              <div>
+                <h3>${markerData.name}</h3>
+                <p>${markerData.description || ''}</p>
+              </div>
+            `);
 
             this.markerLayers[typeId].addLayer(marker);
           });
