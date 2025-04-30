@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Trash, Pencil, Save } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button';
 
 // Props
 const props = defineProps({
@@ -191,28 +192,28 @@ function getSubGroupTotalQuantity(subGroup) {
             <div class="flex-1">{{ calculateDuration(item.quantity, item) }}</div>
             <div class="w-20 flex justify-end space-x-2">
               <!-- Edit button -->
-              <button
+              <Button
                 v-if="editingItem !== item.id"
                 @click.stop="startEditing(item)"
                 class="text-gray-600 hover:text-blue-600"
               >
                 <Pencil class="h-5 w-5" />
-              </button>
+              </Button>
               <!-- Save button -->
-              <button
+              <Button
                 v-if="editingItem === item.id"
                 @click.stop="saveItemEdit(item.id)"
                 class="text-gray-600 hover:text-green-600"
               >
                 <Save class="h-5 w-5" />
-              </button>
+              </Button>
               <!-- Delete button -->
-              <button
+              <Button
                 @click.stop="deleteItem(item.id)"
                 class="text-gray-600 hover:text-red-600"
               >
                 <Trash class="h-5 w-5" />
-              </button>
+              </Button>
             </div>
           </div>
         </div>
