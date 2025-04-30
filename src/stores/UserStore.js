@@ -34,6 +34,7 @@ export const useUserStore = defineStore('user', {
       try {
         const response = await AuthService.login(credentials);
         const { token } = response.data; 
+        console.log('✅ Login successful, received token:', token);
         this.token = token;
         apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         localStorage.setItem('jwt', token);
@@ -48,9 +49,12 @@ export const useUserStore = defineStore('user', {
 
     async fetchUser() {
       try {
-        console.log("Fetch user called - implement UserService");
+        const response = await apiClient.get('/user/me'); 
+        this.user = response.data;
+        console.log('✅ User fetched from backend:', this.user);
       } catch (err) {
         console.error("Error fetching user:", err);
+        this.logout(); 
       }
     },
 

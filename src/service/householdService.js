@@ -1,48 +1,173 @@
 import BaseService from '@/service/baseService';
 
-const MOCK_MODE = true; 
-
 class HouseholdService extends BaseService {
   constructor() {
-    super('household');
+    super('/household/{householdId}');
   }
-  getCurrentHousehold() {
-    if (MOCK_MODE) {
-      return Promise.resolve({
-        id: 999, 
-        name: 'Mocked Household',
+  // Fetch household details using householdId
+  async getHouseholdDetails(householdId) {
+    try {
+      const response = await this.get(`/household-details?householdId=${householdId}`);
+      return response;
+    } catch (error) {
+      console.error("Error fetching household details:", error);
+      throw error;
+    }
+  }
+
+  // Get all members of a household
+  async getHouseholdMembers(householdId) {
+    try {
+      const response = await this.get(`/members?householdId=${householdId}`);
+      
+      const registeredMembers = response['registered members'] || [];
+      const unregisteredMembers = response['unregistered members'] || [];
+      
+      const registered = registeredMembers.map(member => ({
+        id: member.id,
+        name: member.fullName,
+        email: member.email,
+        isRegistered: true
+      }));
+
+      const unregistered = unregisteredMembers.map(member => ({
+        id: member.id,
+        name: member.fullName,
+        isRegistered: false
+      }));
+
+      return [...registered, ...unregistered];
+    } catch (error) {
+      console.error("Error fetching household members:", error);
+      throw error;
+    }
+  }
+
+  // Add a member to the household
+  async addMember(householdId, data) {
+    try {
+      if (data.email) {
+        await this.post('/add-user', {
+          email: data.email,
+          householdId: householdId
+        });
+        return {
+          id: Date.now(),
+          name: data.name,
+          email: data.email,
+          isRegistered: true
+        };
+      } else {
+        await this.post('/add-unregistered-member', {
+          fullName: data.name,
+          householdId: householdId
+        });
+        return {
+          id: Date.now(),
+          name: data.name,
+          isRegistered: false
+        };
+      }
+    } catch (error) {
+      console.error("Error adding member:", error);
+      throw error;
+    }
+  }
+
+  // Update a member's information
+  async updateMember(householdId, memberId, data) {
+    try {
+      if (data.isRegistered) {
+        return this.put(`/update-user`, {
+          userId: memberId,
+          email: data.email,
+          fullName: data.name,
+          householdId: householdId
+        });
+      } else {
+        return this.put(`/update-unregistered-member`, {
+          id: memberId,
+          fullName: data.name,
+          householdId: householdId
+        });
+      }
+    } catch (error) {
+      console.error("Error updating member:", error);
+      throw error;
+    }
+  }
+
+  // Remove a member from the household
+  async removeMember(householdId, memberId, isRegistered) {
+    try {
+      if (isRegistered) {
+        return this.post(`/remove-user`, memberId);
+      } else {
+        return this.deleteReq(`/delete-unregistered-member`, {
+          fullName: memberId,
+          householdId: householdId
+        });
+      }
+    } catch (error) {
+      console.error("Error removing member:", error);
+      throw error;
+    }
+  }
+
+  // Invite a member by email
+  async inviteMember(householdId, email) {
+    try {
+      return this.post(`/invite-user`, {
+        email: email,
+        householdId: householdId
       });
+    } catch (error) {
+      console.error("Error inviting member:", error);
+      throw error;
     }
-    return this.get('../user/household');
   }
-  getHouseholdMembers(householdId) {
-    if (MOCK_MODE) {
-      return Promise.resolve([
-        { id: 1, name: 'Alice Johnson', email: 'alice@example.com', phone: '12345678', isRegistered: true },
-        { id: 2, name: 'Bob Smith', email: '', phone: '', isRegistered: false },
-      ]);
+
+  // Create a new household
+  async createHousehold(data) {
+    try {
+      const response = await this.post('/create', {
+        name: data.name,
+        address: data.address,
+        ownerId: data.ownerId
+      });
+      
+      return {
+        id: response.id || Math.floor(Math.random() * 1000),
+        name: data.name,
+        address: data.address
+      };
+    } catch (error) {
+      console.error("Error creating household:", error);
+      throw error;
     }
-    return this.get(`${householdId}/members`);
-  }
-  
-  addMember(householdId, data) {
-    return this.post(`${householdId}/members`, data);
   }
 
-  updateMember(householdId, memberId, data) {
-    return this.put(`${householdId}/members/${memberId}`, data);
+  // Leave the current household
+  async leaveHousehold(email) {
+    try {
+      return this.post(`/remove-user`, email);
+    } catch (error) {
+      console.error("Error leaving household:", error);
+      throw error;
+    }
   }
 
-  removeMember(householdId, memberId) {
-    return this.deleteItem(`${householdId}/members/${memberId}`);
-  }
-
-  inviteMember(householdId, memberId) {
-    return this.post(`${householdId}/members/${memberId}/invite`);
-  }
-
-  createHousehold(data) {
-    return this.post('', data);
+  // Support DELETE with body
+  async deleteReq(path = '', data) {
+    try {
+      const url = this.buildUrl(path);
+      const config = { data };
+      const response = await this.deleteItem(url, config);
+      return response;
+    } catch (error) {
+      console.error("Error in delete request:", error);
+      throw error;
+    }
   }
 }
 

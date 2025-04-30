@@ -1,186 +1,42 @@
 <script setup>
-import { ref } from 'vue'
-import { ChevronDown, Edit2 } from 'lucide-vue-next'
+import { User, Mail, Phone } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 
 const props = defineProps({
-  name: {
-    type: String,
-    required: true
-  },
-  email: {
-    type: String,
-    default: ''
-  },
-  phone: {
-    type: String,
-    default: ''
-  },
-  isRegistered: {
-    type: Boolean,
-    default: true
-  },
-  expandable: {
-    type: Boolean,
-    default: false
-  }, 
-  index: {
-    type: Number,
-    required: true
-  }
+  member: Object
 })
 
-const emit = defineEmits(['update', 'remove', 'invite'])
-
-const isOpen = ref(false)
-const isEditing = ref(false)
-const showConfirmation = ref(false)
-const editedName = ref(props.name)
-
-const toggleEdit = () => {
-  isEditing.value = !isEditing.value
-  editedName.value = props.name
-}
-
-const saveEdit = () => {
-  if (editedName.value.trim()) {
-    emit('update', props.index, { name: editedName.value })
-    isEditing.value = false
-  }
-}
-
-const confirmRemove = () => {
-  showConfirmation.value = true
-}
-
-const cancelRemove = () => {
-  showConfirmation.value = false
-}
-
-const removeMember = () => {
-  emit('remove', props.index)
-  showConfirmation.value = false
-}
-
-const inviteMember = () => {
-  emit('invite', props.index)
-}
+const emit = defineEmits(['remove-member'])
 </script>
 
 <template>
-  <template v-if="expandable">
-    <div class="border rounded-lg bg-white shadow-sm" :class="{ 'border-red-500': !isRegistered }">
-      <div
-        class="w-full flex items-center justify-between px-4 py-2 cursor-pointer"
-        @click="isOpen = !isOpen"
-      >
-        <div class="flex items-center gap-2" :class="isRegistered ? 'text-blue-950' : 'text-red-600'">
-          <span class="font-medium">{{ name }}</span>
-          <ChevronDown 
-            class="h-4 w-4 transition-transform duration-200"
-            :class="{ 'transform rotate-180': isOpen }"
-          />
-        </div>
-        <Button 
-          variant="outline"
-          :class="isRegistered ? 'bg-red-500 text-white border-red-500 hover:bg-red-700' : 'text-red-600 border-red-500 hover:bg-red-100'"
-          class="text-sm"
-          @click.stop="confirmRemove"
-        >
-          Fjern
-        </Button>
-      </div>
-      
-      <div v-show="isOpen" class="p-4 bg-white border-t rounded-b-lg space-y-2">
-        <div class="flex justify-between items-center">
-          <span class="text-sm text-gray-700">{{ email }}</span>
-          <div class="bg-blue-900 text-white text-xs px-3 py-1 rounded">Registrert</div>
-        </div>
-        <div class="text-sm text-gray-600">{{ phone }}</div>
-      </div>
-    </div>
-  </template>
-  
-  <template v-else>
-    <div
-      class="border rounded-lg bg-white shadow-sm"
-      :class="{ 'border-red-500': !isRegistered }"
-    >
-      <div v-if="!isEditing" class="flex items-center justify-between w-full px-4 py-2">
-        <div
-          class="font-medium flex-1"
-          :class="isRegistered ? 'text-blue-950' : 'text-red-600'"
-        >
-          {{ name }}
-        </div>
-        <div class="flex gap-2 justify-end">
-          <Button 
-            v-if="!isRegistered"
-            variant="outline"
-            class="p-2 h-8 w-8 flex items-center justify-center"
-            @click="toggleEdit"
-          >
-            <Edit2 class="h-4 w-4" />
-          </Button>
-          
-          <Button 
-            variant="outline"
-            :class="isRegistered ? 'bg-red-500 text-white border-red-500 hover:bg-red-700' : 'bg-red-500 text-white border-red-500 hover:bg-red-700'"
-            class="text-sm"
-            @click="confirmRemove"
-          >
-            Fjern
-          </Button>
-        </div>
-      </div>
-      
-      <div v-else class="px-4 py-2 space-y-2">
-        <input 
-          v-model="editedName"
-          type="text" 
-          class="w-full px-3 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-        />
-        <div class="flex justify-end gap-2">
-          <Button 
-            variant="outline"
-            class="text-sm py-1 px-3 h-8"
-            @click="toggleEdit"
-          >
-            Avbryt
-          </Button>
-          <Button 
-            class="bg-blue-900 text-white hover:bg-blue-700 text-sm py-1 px-3 h-8"
-            @click="saveEdit"
-          >
-            Lagre
-          </Button>
-        </div>
-      </div>
-    </div>
-  </template>
+  <div class="flex justify-between bg-white shadow p-3 rounded-md mb-2">
+    <div class="flex items-center gap-3">
+      <User class="w-10 h-10 text-gray-500" />
+      <div>
+        <p class="font-medium">{{ member.name }}</p>
 
-  <div v-if="showConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-lg p-6 max-w-md w-full mx-4">
-      <h3 class="text-lg font-medium text-black mb-4">Bekreft fjerning</h3>
-      <p class="text-black mb-6">
-        Er du sikker på at du vil fjerne <span class="font-semibold text-red-600 ">{{ name }}</span> fra husstanden?
-      </p>
-      <div class="flex justify-end gap-3">
-        <Button 
-          variant="outline" 
-          class="text-sm text-black hover:bg-gray-300"
-          @click="cancelRemove"
+        <p v-if="member.isRegistered" class="text-sm text-gray-600 flex items-center gap-2">
+          <Mail class="w-4 h-4" />
+          {{ member.email }}
+        </p>
+
+        <span 
+          v-else 
+          class="inline-block px-3 py-1 text-sm text-slate-700 bg-slate-100 border border-slate-400 rounded-full"
         >
-          Avbryt
-        </Button>
-        <Button 
-          variant="outline"
-          class="bg-red-600 text-white hover:bg-red-700 border-red-600 text-sm"
-          @click="removeMember"
-        >
-          Bekreft
-        </Button>
+          Ikke registrert
+        </span>   
+
+        <p v-if="member.isRegistered" class="text-sm text-gray-600 flex items-center gap-2">
+          <Phone class="w-4 h-4" />
+          {{ member.tlf || '(Ingen telefonnummer)' }}
+        </p>
       </div>
+    </div>
+
+    <div class="flex items-center">
+      <Button variant="destructive" @click="$emit('remove-member', member)">Fjern</Button>
     </div>
   </div>
 </template>
