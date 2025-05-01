@@ -61,8 +61,7 @@ const filteredMembers = computed(() => {
   if (!searchQuery.value) return members.value
   const query = searchQuery.value.toLowerCase()
   return members.value.filter(member => 
-    member.name.toLowerCase().includes(query) || 
-    (member.email && member.email.toLowerCase().includes(query))
+    member.fullName.toLowerCase().includes(query)
   )
 })
 
