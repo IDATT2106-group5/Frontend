@@ -101,6 +101,27 @@ export const useUserStore = defineStore('user', {
 
     },
 
+
+    /**
+     * Resends a 2FA (Two-Factor Authentication) code to the specified email address.
+     * Sets the loading state while the operation is in progress and handles errors if they occur.
+     *
+     * @async
+     * @param {string} email - The email address to which the 2FA code should be sent.
+     * @returns {Promise<void>} A promise that resolves when the operation is complete.
+     */
+    async resend2FACode(email) {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        await TwoFactorAuthService.generate2FA(email);
+      } catch(err) {
+        this.error = err.message || "Sending av ny 2FA-kode feilet.";
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
     logout() {
       this.token = null;
       this.user = null;
