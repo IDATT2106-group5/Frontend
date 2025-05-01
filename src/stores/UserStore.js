@@ -67,6 +67,18 @@ export const useUserStore = defineStore('user', {
       }
     },
 
+
+    /**
+     * Verifies the user's two-factor authentication (2FA) credentials.
+     *
+     * @async
+     * @param {Object} credentials - The 2FA credentials provided by the user.
+     * @param {string} credentials.email - The users email.
+     * @param {string} credentials.otp - The 2FA code entered by the user.
+     * @returns {Promise<boolean>} A promise that resolves to `true` if verification is successful,
+     *                             or `false` if it fails.
+     * @throws {Error} If an unexpected error occurs during the verification process.
+     */
     async verify2FA(credentials) {
       this.loading = true;
       this.error = null;
