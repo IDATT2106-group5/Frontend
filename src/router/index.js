@@ -7,6 +7,7 @@ import StorageDetailView from '@/views/storageViews/StorageDetailView.vue'
 import VerifyEmailView from '@/views/mainViews/VerifyEmailView.vue'
 import RegisterSuccessView from '@/views/mainViews/RegisterSucessView.vue'
 import RegisterFailedView from '@/views/mainViews/RegisterFailedView.vue'
+import Admin2FaView from '@/views/adminViews/Admin2FaView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -56,6 +57,13 @@ const router = createRouter({
       meta:{hideNavbar: true },
 
     },
+    {
+      path: '/2FA',
+      name: '2FA',
+      component: Admin2FaView,
+      props: (route) => ({ email: route.query.email || 'test' }),
+      meta:{hideNavbar: true },
+    }
   ],
 })
 
