@@ -11,7 +11,6 @@
   const userStore = useUserStore()
   const router = useRouter()
 
-    
   async function onSubmit(event) {
   event.preventDefault()
   const formData = new FormData(event.target)
@@ -19,10 +18,13 @@
     email: formData.get("email"),
     password: formData.get("password"),
     }
-  
+
     try {
-      await userStore.login(credentials)
-      router.push("/") 
+      const resp = await userStore.login(credentials)
+
+      if (resp) {
+        router.push("/")
+      }
     }   catch (error) {
       console.error("Login failed:", error)
     }
