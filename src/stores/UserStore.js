@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import AuthService from '@/service/authService';
-import TwoFactorAuthService from '@/service/adminService';
+import TwoFactorAuthService from '@/service/twoFactorAuthService';
 import apiClient from '@/service/apiClient';
 import router from '@/router';
 
@@ -36,20 +36,22 @@ export const useUserStore = defineStore('user', {
       try {
         const response = await AuthService.login(credentials);
 
-        const { requires2Fa } = response.data;
+        const requires2FA = response.data.requires2FA;
 
-        if (requires2Fa) {
+        if (requires2FA) {
           await TwoFactorAuthService.generate2FA(credentials.email);
           router.push({
             name: "2FA",
             query: { email: credentials.email }
           });
+          return false;
         } else {
           const { token } = response.data;
           this.token = token;
           apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
           localStorage.setItem('jwt', token);
           await this.fetchUser();
+          return true;
         }
       } catch (err) {
         this.error = err.message || "Innlogging feilet.";
