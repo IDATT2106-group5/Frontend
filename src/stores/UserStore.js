@@ -12,6 +12,21 @@ export const useUserStore = defineStore('user', {
     error: null
   }),
   actions: {
+
+    /**
+     * Registers a new user with the provided user data.
+     *
+     * @async
+     * @param {Object} userData               - The data of the user to register.
+     * @param {string} userData.email         - The email address of the user.
+     * @param {string} userData.fullName      - The full name of the user.
+     * @param {string} userData.password      - The password for the user account.
+     * @param {string} [userData.tlf]         - The phone number of the user (optional, spaces removed).
+     * @param {string} userData.hCaptchaToken - The hCaptcha token for verification.
+     * @returns {Promise<boolean>} A promise that resolves to `true` if registration is successful,
+     *                             or `false` if an error occurs.
+     * @throws {Error} Throws an error if the registration process fails unexpectedly.
+     */
     async register(userData) {
       this.isLoading = true;
       this.error = null;
@@ -30,6 +45,19 @@ export const useUserStore = defineStore('user', {
       }
     },
 
+    /**
+     * Logs in a user using the provided credentials.
+     * Handles two-factor authentication (2FA) if required.
+     *
+     * @async
+     * @function
+     * @param {Object} credentials       - The login credentials.
+     * @param {string} credentials.email - The user's email address.
+     * @param {string} credentials.password - The user's password.
+     * @returns {Promise<boolean>}       - Resolves to `true` if login is successful,
+     *                                    `false` if 2FA is required.
+     * @throws {Error} - Throws an error if the login process fails.
+     */
     async login(credentials) {
       this.isLoading = true;
       this.error = null;
@@ -124,6 +152,11 @@ export const useUserStore = defineStore('user', {
       }
     },
 
+
+    /**
+     * Logs the user out by clearing the authentication token, user data,
+     * and removing the authorization header from the API client.
+     */
     logout() {
       this.token = null;
       this.user = null;
@@ -131,6 +164,12 @@ export const useUserStore = defineStore('user', {
       localStorage.removeItem('jwt');
     },
 
+
+    /**
+     * Automatically logs in the user if a valid JWT token is found in local storage.
+     * Sets the token for the current session and updates the API client with the
+     * appropriate authorization header. Fetches the user data after setting the token.
+     */
     autoLogin() {
       const token = localStorage.getItem('jwt');
       if (token) {
