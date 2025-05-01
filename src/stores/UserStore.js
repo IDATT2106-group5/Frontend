@@ -40,7 +40,10 @@ export const useUserStore = defineStore('user', {
 
         if (requires2Fa) {
           await TwoFactorAuthService.generate2FA(credentials.email);
-          router.push("/2FA", credentials.email);
+          router.push({
+            name: "2FA",
+            query: { email: credentials.email }
+          });
         } else {
           const { token } = response.data;
           this.token = token;
