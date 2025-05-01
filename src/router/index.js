@@ -7,6 +7,9 @@ import StorageDetailView from '@/views/storageViews/StorageDetailView.vue'
 import VerifyEmailView from '@/views/mainViews/VerifyEmailView.vue'
 import RegisterSuccessView from '@/views/mainViews/RegisterSucessView.vue'
 import RegisterFailedView from '@/views/mainViews/RegisterFailedView.vue'
+import BeforeView from '@/views/informationViews/BeforeView.vue'
+import UnderView from '@/views/informationViews/UnderView.vue'
+import AfterView from '@/views/informationViews/AfterView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -55,6 +58,21 @@ const router = createRouter({
       component: RegisterFailedView,
       meta:{hideNavbar: true, hideFooter: true },
 
+    },
+    {
+      path: '/before',
+      name: 'before',
+      component: BeforeView,
+    },
+    {
+      path: '/under',
+      name: 'under',
+      component: UnderView,
+    },
+    {
+      path: '/after',
+      name: 'after',
+      component: AfterView,
     },
   ],
 })
