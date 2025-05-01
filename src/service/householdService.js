@@ -11,7 +11,7 @@ class HouseholdService extends BaseService {
     }
     try {
       console.log('[POST] details with userId:', userId);
-      const response = await this.post('/details', { userId });  
+      const response = await this.post('details', { userId });  
       console.log('[RESPONSE] getHouseholdDetailsByUserId:', response);
       return response;
     } catch (error) {
@@ -24,7 +24,7 @@ class HouseholdService extends BaseService {
   async addMember(householdId, data) {
     try {
       if (data.email) {
-        await this.post('/add-user', {
+        await this.post('add-user', {
           email: data.email,
           householdId: householdId
         });
@@ -35,7 +35,7 @@ class HouseholdService extends BaseService {
           isRegistered: true
         };
       } else {
-        await this.post('/add-unregistered-member', {
+        await this.post('add-unregistered-member', {
           fullName: data.fullName,
           householdId: householdId
         });
@@ -66,7 +66,7 @@ class HouseholdService extends BaseService {
   
       console.log('[POST] edit-unregistered-member → Sending payload:', payload);
   
-      return this.post(`/edit-unregistered-member`, payload);
+      return this.post(`edit-unregistered-member`, payload);
     } catch (error) {
       console.error("Error updating unregistered member:", error);
       throw error;
@@ -76,7 +76,7 @@ class HouseholdService extends BaseService {
   async removeRegisteredMember(userId, householdId) {
     try {
       console.log('[REMOVE REGISTERED] userId:', userId, 'householdId:', householdId);
-      return this.post(`/remove-user`, {
+      return this.post(`remove-user`, {
         userId,
         householdId
       });
@@ -90,7 +90,7 @@ class HouseholdService extends BaseService {
   async removeUnregisteredMember(memberId) {
     try {
       console.log('[REMOVE UNREGISTERED] ID:', memberId);
-      return this.post(`/delete-unregistered-member`, { memberId });
+      return this.post(`delete-unregistered-member`, { memberId });
     } catch (error) {
       console.error("Error removing unregistered member:", error);
       throw error;
@@ -100,7 +100,7 @@ class HouseholdService extends BaseService {
   // Invite a member by email
   async inviteMember(householdId, email) {
     try {
-      return this.post(`/invite-user`, {
+      return this.post(`invite-user`, {
         email: email,
         householdId: householdId
       });
@@ -113,7 +113,7 @@ class HouseholdService extends BaseService {
   // Create a new household
   async createHousehold(data) {
     try {
-      const response = await this.post('/create', {
+      const response = await this.post('create', {
         name: data.name,
         address: data.address,
         ownerId: data.ownerId
@@ -133,7 +133,7 @@ class HouseholdService extends BaseService {
   // Leave the current household
   async leaveHousehold(email) {
     try {
-      return this.post(`/remove-user`, email);
+      return this.post(`remove-user`, email);
     } catch (error) {
       console.error("Error leaving household:", error);
       throw error;

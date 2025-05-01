@@ -5,7 +5,7 @@ const handleErrors = (error) => {
     console.error("Backend returned code", error.response.status, "body was:", error.response.data);
     return Promise.reject({
       status: error.response.status,
-      message: error.response.data.message || 'Unknown error occurred',
+      message: error.response.data.error || error.response.data.message || 'Unknown error occurred',
     });
   } else if (error.request) {
     console.error("No response received");

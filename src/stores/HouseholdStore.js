@@ -3,7 +3,6 @@ import HouseholdService from '@/service/householdService';
 import { useUserStore } from '@/stores/UserStore'; 
 import RequestService from '@/service/requestService'; 
 
-
 export const useHouseholdStore = defineStore('household', {
   state: () => ({
     currentHousehold: null,
@@ -173,21 +172,27 @@ export const useHouseholdStore = defineStore('household', {
       try {
         this.isLoading = true;
     
-        const userStore = useUserStore();
         const request = {
-          userId: userStore.user?.id,
-          householdId: this.currentHousehold.id,
-          email: email
+          email: email,
+          householdId: this.currentHousehold.id
         };
     
         await RequestService.sendInvitation(request);
+        await this.fetchSentInvitations();
+    
+        return true;
       } catch (err) {
-        this.error = err.response?.data?.error || err.message || 'Kunne ikke sende invitasjon';
+        if (err.status === 400 && err.message?.includes('User with email not found')) {
+          this.error = 'Ingen registrert bruker med denne e-posten.';
+        } else {
+          this.error = err.message || 'Kunne ikke sende invitasjon';
+        }
         throw err;
       } finally {
         this.isLoading = false;
       }
     },
+    
     
     async cancelInvitation(email) {
       try {
@@ -203,24 +208,37 @@ export const useHouseholdStore = defineStore('household', {
     },
 
     async fetchSentInvitations() {
-      const userStore = useUserStore();
-      if (!userStore.user?.id) return;
+      if (!this.currentHousehold?.id) {
+        console.warn('[FETCH INVITATIONS] No active household');
+        return;
+      }
     
       try {
-        const invites = await RequestService.getSentInvitations(userStore.user.id);
+    
+        const invites = await RequestService.getSentInvitationsByHousehold(this.currentHousehold.id);
+    
         this.sentInvitations = Array.isArray(invites)
-          ? invites.map(invite => ({
-              email: invite.sender?.email || 'Ukjent',
+        ? invites.map(invite => {
+      
+            const mapped = {
+              email: invite.recipient?.email || 'Ukjent',
               date: invite.sentAt?.split('T')[0] || 'Ukjent dato',
               status: invite.status
-            }))
-          : [];
+            };
+      
+            return mapped;
+          })
+        : [];      
+    
+    
       } catch (err) {
         this.error = err.response?.data?.error || err.message || 'Kunne ikke hente invitasjoner';
         this.sentInvitations = [];
+        console.error('[FETCH INVITATIONS] Error:', this.error);
         throw err;
       }
     },
+    
 
     async fetchJoinRequests() {
       if (!this.currentHousehold?.id) return;

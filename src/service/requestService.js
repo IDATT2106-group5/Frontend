@@ -5,42 +5,44 @@ class RequestService extends BaseService {
     super('/membership-requests');
   }
 
-  async sendInvitation(request) {
-    try {
-      return await this.post('/send-invitation', request);
-    } catch (error) {
-      console.error('[ERROR] Sending invitation:', error);
-      throw error;
+    async sendInvitation(invitationData) {
+      try {
+        console.log('[SENDING INVITATION] To email:', invitationData.email, 'For household:', invitationData.householdId);
+        return await this.post('send-invitation', invitationData);
+      } catch (error) {
+        console.error('[ERROR] Sending invitation:', error);
+        throw error;
+      }
     }
-  }
   
-  async getSentInvitations(userId) {
-    try {
-      const response = await this.post('/invitations/sent', { userId });
-      
-      console.log('[FULL RESPONSE]', response);
-      
-      if (Array.isArray(response)) {
-        return response;
+    async getSentInvitationsByHousehold(householdId) {
+      try {
+        const response = await this.post('invitations/sent/by-household', {
+          householdId
+        });
+    
+        if (Array.isArray(response)) {
+          return response;
+        }
+    
+        if (response && response.data) {
+          return response.data;
+        }
+    
+        console.warn('Could not find invitations array in response');
+        return [];
+      } catch (error) {
+        console.error("Error fetching invitations by household:", error);
+        throw error;
       }
-      
-      if (response && response.data) {
-        return response.data;
-      }
-
-            console.warn('Could not find invitations array in response');
-      return [];
-    } catch (error) {
-      console.error("Error fetching sent invitations:", error);
-      throw error;
     }
-  }
+  
 
   async getReceivedJoinRequests(householdId) {
     try {
       console.log('[REQUEST] Sending householdId to backend:', householdId);
   
-      const data = await this.post('/join-requests/received', { householdId });
+      const data = await this.post('join-requests/received', { householdId });
   
       console.log('[RESPONSE] Received from backend:', data);
   
@@ -64,7 +66,7 @@ class RequestService extends BaseService {
 
   async acceptJoinRequest(requestId) {
     try {
-      return await this.post('/accept', { requestId });
+      return await this.post('accept', { requestId });
     } catch (error) {
       console.error('[ERROR] Accepting join request:', error);
       throw error;
@@ -74,7 +76,7 @@ class RequestService extends BaseService {
   
   async declineJoinRequest(requestId) {
     try {
-      return await this.post('/decline', { requestId });
+      return await this.post('decline', { requestId });
     } catch (error) {
       console.error('[ERROR] Declining join request:', error);
       throw error;

@@ -21,6 +21,7 @@ const showAddForm = ref(false)
 const newMemberName = ref('')
 const newMemberEmail = ref('')
 const error = ref('')
+const formError = ref('') // New error state specifically for forms
 const addingMember = ref(false)
 const searchQuery = ref('')
 
@@ -111,12 +112,12 @@ const removeMember = async (member) => {
 
 const addMember = async () => {
   if (!newMemberName.value) {
-    error.value = 'Vennligst fyll ut navn'
+    formError.value = 'Vennligst fyll ut navn'
     return
   }
   
   addingMember.value = true
-  error.value = ''
+  formError.value = ''
 
   try {
     const newMember = {
@@ -132,33 +133,50 @@ const addMember = async () => {
     newMemberEmail.value = ''
     showAddForm.value = false
   } catch (err) {
-    error.value = err.message || 'Kunne ikke legge til medlem'
+    formError.value = err.message || 'Kunne ikke legge til medlem'
   } finally {
     addingMember.value = false
   }
 }
 
+watch(invitationEmail, () => {
+  formError.value = '' // Clear form error when email changes
+})
+
 // Invite member
 const inviteMember = async () => {
   if (!invitationEmail.value) {
-    error.value = 'Vennligst oppgi e-postadresse'
+    formError.value = 'Vennligst oppgi e-postadresse'
     return
   }
-  
+
   inviting.value = true
-  error.value = ''
-  
+  formError.value = ''
+
   try {
     await householdStore.inviteMember(invitationEmail.value)
-    invitationEmail.value = ''
-    showInviteForm.value = false
+    formError.value = ''
     alert('Invitasjon sendt!')
+    invitationEmail.value = ''
+    showInviteForm.value = false 
   } catch (err) {
-    error.value = err.message || 'Kunne ikke sende invitasjon'
+    formError.value = err.message || 'Ingen registrert bruker funnet med denne e-postadressen'
   } finally {
     inviting.value = false
   }
 }
+
+const invitePage = ref(1)
+const perPageInvites = 5
+
+const displayedInvitations = computed(() => {
+  const start = (invitePage.value - 1) * perPageInvites
+  return householdStore.sentInvitations.slice(start, start + perPageInvites)
+})
+
+const totalInvitePages = computed(() =>
+  Math.ceil(householdStore.sentInvitations.length / perPageInvites)
+)
 
 // Join household
 const joinHousehold = async () => {
@@ -186,6 +204,17 @@ const leaveHousehold = async () => {
       error.value = err.message || 'Kunne ikke forlate husstand'
     }
   }
+}
+
+// Reset form errors when opening forms
+const openAddMemberForm = () => {
+  formError.value = ''
+  showAddForm.value = true
+}
+
+const openInviteForm = () => {
+  formError.value = ''
+  showInviteForm.value = true
 }
 
 // Ownership management
@@ -307,8 +336,8 @@ const giveOwnership = async (user) => {
           <div class="flex justify-between items-center">
             <h2 class="font-bold text-lg">Medlemmer i husstanden: {{ members.length }}</h2>
             <div class="space-x-2">
-              <Button @click="showInviteForm = true">+ Send invitasjon</Button>
-              <Button class="bg-green-600 text-white hover:bg-green-700" @click="showAddForm = true">+ Legg til medlem</Button>
+              <Button @click="openInviteForm">+ Send invitasjon</Button>
+              <Button class="bg-green-600 text-white hover:bg-green-700" @click="openAddMemberForm">+ Legg til medlem</Button>
             </div>
           </div>
 
@@ -361,14 +390,15 @@ const giveOwnership = async (user) => {
                 For å invitere registrerte brukere, bruk <strong>Send Invitasjon</strong>.
               </p>
 
+              <!-- Show form-specific error message -->
+              <p class="text-red-500 text-sm mb-3" v-if="formError">{{ formError }}</p>
+
               <div class="flex justify-end gap-2">
                 <Button variant="outline" @click="showAddForm = false">Avbryt</Button>
                 <Button class="bg-green-600 text-white" :disabled="addingMember" @click="addMember">
                   {{ addingMember ? 'Legger til...' : 'Legg til' }}
                 </Button>
               </div>
-
-              <p class="text-red-500 mt-2" v-if="error">{{ error }}</p>
             </div>
           </div>
           
@@ -386,8 +416,11 @@ const giveOwnership = async (user) => {
               />
 
               <p class="text-sm text-gray-600 mb-4">
-                Dette sender en invitasjon til en bruker via e-post.
+                Fyll inn eposten til medlemmet du ønsker å invitere.
               </p>
+
+              <!-- Show form-specific error message -->
+              <p class="text-red-500 text-sm mb-3" v-if="formError">{{ formError }}</p>
 
               <div class="flex justify-end gap-2">
                 <Button variant="outline" @click="showInviteForm = false">Avbryt</Button>
@@ -395,13 +428,11 @@ const giveOwnership = async (user) => {
                   {{ inviting ? 'Sender...' : 'Send invitasjon' }}
                 </Button>
               </div>
-
-              <p class="text-red-500 mt-2" v-if="error">{{ error }}</p>
             </div>
           </div>
 
-                    <!-- Ownership input -->
-                    <div class="mb-4">
+          <!-- Ownership input -->
+          <div class="mb-4">
             <label class="block text-sm font-semibold mb-1">Gi eierskap til et medlem</label>
             <div class="relative">
               <input
@@ -442,8 +473,8 @@ const giveOwnership = async (user) => {
             </div>
           </div>
 
-            <!-- Forespørsler -->
-           <h3 class="text-lg font-semibold mb-2">Forespørsler</h3>
+          <!-- Forespørsler -->
+          <h3 class="text-lg font-semibold mb-2">Forespørsler</h3>
           <div class="bg-white rounded p-4 shadow">
             <div v-if="householdStore.ownershipRequests.length">
               <div v-for="request in householdStore.ownershipRequests" :key="request.id" class="flex justify-between items-center mb-2">
@@ -481,28 +512,22 @@ const giveOwnership = async (user) => {
                   <th class="py-2 text-black">E-post</th>
                   <th class="py-2 text-black">Dato sendt</th>
                   <th class="py-2 text-black">Status</th>
-                  <th class="py-2 text-black">Handling</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="invite in householdStore.sentInvitations" :key="invite.email" class="border-b">
+                <tr v-for="invite in displayedInvitations" :key="invite.email" class="border-b">
                   <td class="py-2">{{ invite.email }}</td>
                   <td class="py-2">{{ invite.date }}</td>
                   <td class="py-2">
                     <span 
                         :class="{
                         'text-yellow-600 font-medium': invite.status === 'PENDING',
-                        'text-green-600 font-medium': invite.status === 'Godtatt',
-                        'text-red-600 font-medium': invite.status === 'Avslått'
+                        'text-green-600 font-medium': invite.status === 'ACCEPTED',
+                        'text-red-600 font-medium': invite.status === 'DECLINED'
                       }"
                     >
                       {{ invite.status }}
                     </span>
-                  </td>
-                  <td class="py-2">
-                    <Button variant="outline" class="text-red-600 border-red-500 hover:bg-red-50" size="sm">
-                      Avbryt
-                    </Button>
                   </td>
                 </tr>
                 <tr v-if="Array.isArray(householdStore.sentInvitations) && householdStore.sentInvitations.length === 0">
@@ -510,6 +535,12 @@ const giveOwnership = async (user) => {
                 </tr>
               </tbody>
             </table>
+            <!-- Pagination for invitations -->
+            <div class="flex justify-center items-center space-x-2 mt-4">
+              <Button :disabled="invitePage === 1" @click="invitePage--">&larr;</Button>
+              <span>Side {{ invitePage }} av {{ totalInvitePages }}</span>
+              <Button :disabled="invitePage * perPageInvites >= householdStore.sentInvitations.length" @click="invitePage++">&rarr;</Button>
+            </div>
           </div>
         </div>
 
