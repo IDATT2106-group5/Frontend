@@ -9,28 +9,52 @@ class RequestService extends BaseService {
     try {
       const response = await this.post('/invitations/sent', { userId });
       
-      // Add additional logging to see what the response actually contains
       console.log('[FULL RESPONSE]', response);
       
-      // Depending on your API's response structure, you may need to extract data differently
-      // If the response directly contains the array (without a data property):
       if (Array.isArray(response)) {
         return response;
       }
       
-      // If it's in a data property:
       if (response && response.data) {
         return response.data;
       }
-      
-      // If you're not sure where it is, log the full response and return an empty array for safety
-      console.warn('Could not find invitations array in response');
+
+            console.warn('Could not find invitations array in response');
       return [];
     } catch (error) {
       console.error("Error fetching sent invitations:", error);
       throw error;
     }
   }
+
+  async getReceivedJoinRequests(householdId) {
+    try {
+      console.log('[REQUEST] Sending householdId to backend:', householdId);
+  
+      const data = await this.post('/join-requests/received', { householdId });
+  
+      console.log('[RESPONSE] Received from backend:', data);
+  
+      return data;
+    } catch (error) {
+      console.error('[ERROR] Failed to fetch join requests:', error);
+  
+      if (error.response) {
+        console.error('[ERROR RESPONSE DATA]', error.response.data);
+        console.error('[ERROR RESPONSE STATUS]', error.response.status);
+        console.error('[ERROR RESPONSE HEADERS]', error.response.headers);
+      } else if (error.request) {
+        console.error('[ERROR REQUEST]', error.request);
+      } else {
+        console.error('[ERROR MESSAGE]', error.message);
+      }
+  
+      throw error;
+    }
+  }
+  
 }
+
+
 
 export default new RequestService();

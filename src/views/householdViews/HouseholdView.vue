@@ -41,6 +41,7 @@ onMounted(async () => {
     }
     if (hasHousehold) {
       await householdStore.fetchSentInvitations(); 
+      await householdStore.fetchJoinRequests(); 
     }
   } catch (err) {
     error.value = err.message || 'Kunne ikke laste husholdningsdata'
@@ -446,7 +447,7 @@ const giveOwnership = async (user) => {
           <div class="bg-white rounded p-4 shadow">
             <div v-if="householdStore.ownershipRequests.length">
               <div v-for="request in householdStore.ownershipRequests" :key="request.id" class="flex justify-between items-center mb-2">
-                <span>{{ request.fullName }}</span>
+                <span>{{ request.email }}</span>
                 <div class="flex gap-2">
                   <Button class="bg-green-600 text-white hover:bg-green-700" size="sm">Godta</Button>
                   <Button variant="outline" class="text-red-600 border-red-500 hover:bg-red-50" size="sm">Avslå</Button>

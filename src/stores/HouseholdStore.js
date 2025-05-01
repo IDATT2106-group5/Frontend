@@ -112,14 +112,12 @@ export const useHouseholdStore = defineStore('household', {
       try {
         this.isLoading = true;
     
-        // Call backend
         await HouseholdService.updateUnregisteredMember(
           this.currentHousehold.id,
           memberId,
           data
         );
   
-        // Update state locally so the UI reflects it immediately
         const targetArray = isRegistered ? 'registered' : 'unregistered';
         const index = this.members[targetArray].findIndex(member => member.id === memberId);
     
@@ -127,7 +125,7 @@ export const useHouseholdStore = defineStore('household', {
           this.members[targetArray][index].fullName = data.name;
         }
     
-        return this.members[targetArray][index]; // bonus: return updated member
+        return this.members[targetArray][index]; 
       } catch (err) {
         this.error = err.response?.data?.error || err.message || 'Kunne ikke oppdatere medlem';
         throw err;
@@ -216,6 +214,25 @@ export const useHouseholdStore = defineStore('household', {
         this.error = err.response?.data?.error || err.message || 'Kunne ikke hente invitasjoner';
         this.sentInvitations = [];
         throw err;
+      }
+    },
+
+    async fetchJoinRequests() {
+      if (!this.currentHousehold?.id) return;
+    
+      try {
+        const requests = await RequestService.getReceivedJoinRequests(this.currentHousehold.id);
+        this.ownershipRequests = Array.isArray(requests)
+          ? requests.map(req => ({
+              id: req.sender?.id || req.id,
+              fullName: req.sender?.fullName || 'Ukjent',
+              email: req.sender?.email || 'Ukjent',
+              status: req.status || 'PENDING'
+            }))
+          : [];
+      } catch (err) {
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke hente forespørsler';
+        this.ownershipRequests = [];
       }
     },
     
