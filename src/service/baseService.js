@@ -68,30 +68,6 @@ export default class BaseService {
     }
   }
 
-  async deleteReq(path = '', data, options = {}) {
-    try {
-      const url = this.buildUrl(path);
-      const config = {
-        ...this.mergeOptions(options),
-        data
-      };
-      const response = await apiClient.delete(url, config);
-      return response.data;
-    } catch (error) {
-      return handleErrors(error);
-    }
-  }
-
-  async patch(path = '', data, options = {}) {
-    try {
-      const url = this.buildUrl(path);
-      const response = await apiClient.patch(url, data, this.mergeOptions(options));
-      return response.data;
-    } catch (error) {
-      return handleErrors(error);
-    }
-  }
-
   buildUrl(path) {
     if (!path) {
       return this.endpoint;
