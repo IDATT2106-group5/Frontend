@@ -52,9 +52,25 @@ class RequestService extends BaseService {
       throw error;
     }
   }
+
+  async acceptJoinRequest(requestId) {
+    try {
+      return await this.post('/accept', { requestId });
+    } catch (error) {
+      console.error('[ERROR] Accepting join request:', error);
+      throw error;
+    }
+  }
   
+  
+  async declineJoinRequest(requestId) {
+    try {
+      return await this.post('/decline', { requestId });
+    } catch (error) {
+      console.error('[ERROR] Declining join request:', error);
+      throw error;
+    }
+  }
 }
-
-
 
 export default new RequestService();

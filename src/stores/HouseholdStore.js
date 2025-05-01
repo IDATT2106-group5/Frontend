@@ -75,7 +75,6 @@ export const useHouseholdStore = defineStore('household', {
       try {
         this.isLoading = true;
         
-        // Call the service and get the added member
         const addedMember = await HouseholdService.addMember(
           this.currentHousehold.id, 
           {
@@ -84,7 +83,6 @@ export const useHouseholdStore = defineStore('household', {
           }
         );
         
-        // Now update the state with the returned member data
         if (addedMember.isRegistered) {
           this.members.registered.push({
             ...addedMember,
@@ -224,7 +222,7 @@ export const useHouseholdStore = defineStore('household', {
         const requests = await RequestService.getReceivedJoinRequests(this.currentHousehold.id);
         this.ownershipRequests = Array.isArray(requests)
           ? requests.map(req => ({
-              id: req.sender?.id || req.id,
+              id: req.id,
               fullName: req.sender?.fullName || 'Ukjent',
               email: req.sender?.email || 'Ukjent',
               status: req.status || 'PENDING'
@@ -233,6 +231,29 @@ export const useHouseholdStore = defineStore('household', {
       } catch (err) {
         this.error = err.response?.data?.error || err.message || 'Kunne ikke hente forespørsler';
         this.ownershipRequests = [];
+      }
+    },
+
+    async updateJoinRequestStatus(requestId, action) {
+      try {
+        this.isLoading = true;
+    
+        if (action === 'ACCEPTED') {
+          await RequestService.acceptJoinRequest(requestId);
+        } else if (action === 'REJECTED') {
+          await RequestService.declineJoinRequest(requestId);
+        } else {
+          throw new Error('Ugyldig handling for forespørsel');
+        }
+    
+        const request = this.ownershipRequests.find(r => r.id === requestId);
+        if (request) request.status = action;
+      } catch (err) {
+        const actionText = action === 'ACCEPTED' ? 'godta' : 'avslå';
+        this.error = err.response?.data?.error || err.message || `Kunne ikke ${actionText} forespørsel`;
+        throw err;
+      } finally {
+        this.isLoading = false;
       }
     },
     

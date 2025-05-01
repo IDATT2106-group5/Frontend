@@ -412,7 +412,7 @@ const giveOwnership = async (user) => {
                 class="w-full rounded-md border p-2 pr-28"
               />
               <Button
-                class="absolute top-1/2 -translate-y-1/2 right-1 rounded-l-none"
+                class="absolute top-1/2 -translate-y-1/2 right-1"
                 :disabled="!selectedOwnershipUser"
                 @click="giveOwnership(selectedOwnershipUser)"
               >
@@ -448,10 +448,25 @@ const giveOwnership = async (user) => {
             <div v-if="householdStore.ownershipRequests.length">
               <div v-for="request in householdStore.ownershipRequests" :key="request.id" class="flex justify-between items-center mb-2">
                 <span>{{ request.email }}</span>
-                <div class="flex gap-2">
-                  <Button class="bg-green-600 text-white hover:bg-green-700" size="sm">Godta</Button>
-                  <Button variant="outline" class="text-red-600 border-red-500 hover:bg-red-50" size="sm">Avslå</Button>
+                <div v-if="request.status === 'PENDING'" class="flex gap-2">
+                  <Button 
+                    class="bg-green-600 text-white hover:bg-green-700" 
+                    size="sm" 
+                    @click="householdStore.updateJoinRequestStatus(request.id, 'ACCEPTED')"
+                  >
+                    Godta
+                  </Button>
+                  <Button
+                    variant="outline"
+                    class="text-red-600 border-red-500 hover:bg-red-50"
+                    size="sm"
+                    @click="householdStore.updateJoinRequestStatus(request.id, 'REJECTED')"
+                  >
+                    Avslå
+                  </Button>                
                 </div>
+                <span v-else-if="request.status === 'ACCEPTED'" class="text-green-600 font-medium">Godtatt</span>
+                <span v-else-if="request.status === 'REJECTED'" class="text-red-600 font-medium">Avslått</span>
               </div>
             </div>
             <p v-else class="text-sm text-gray-500 italic">Ingen forespørsler</p>
