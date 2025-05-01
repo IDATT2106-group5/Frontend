@@ -64,6 +64,12 @@ export default {
   components: {
     Button
   },
+  props: {
+    isMobileView: {
+      type: Boolean,
+      default: false
+    }
+  },
   setup() {
     const mapStore = useMapStore();
     const { markerTypes } = storeToRefs(mapStore);
@@ -94,9 +100,9 @@ export default {
 .filter-container {
   background-color: white;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
   padding: 16px;
   width: 240px;
+  max-width: 100%;
 }
 
 .filter-header {
@@ -125,6 +131,8 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .filter-option {
@@ -208,5 +216,60 @@ export default {
 
 .marker-name {
   font-size: 14px;
+}
+
+.empty-state {
+  padding: 12px;
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+}
+
+/* Mobile styles */
+@media (max-width: 767px) {
+  .filter-container {
+    width: 100%;
+    border-radius: 8px;
+    padding: 12px;
+  }
+
+  .filter-header h3 {
+    font-size: 14px;
+  }
+
+  .filter-actions {
+    margin-bottom: 12px;
+  }
+
+  .filter-options {
+    gap: 8px;
+    max-height: 200px;
+  }
+
+  .checkbox-container {
+    padding: 8px 4px;
+  }
+
+  .checkmark {
+    height: 16px;
+    width: 16px;
+  }
+
+  .checkbox-container .checkmark:after {
+    left: 5px;
+    top: 2px;
+    width: 4px;
+    height: 8px;
+  }
+
+  .marker-icon {
+    width: 24px;
+    height: 24px;
+    margin-right: 8px;
+  }
+
+  .marker-name {
+    font-size: 13px;
+  }
 }
 </style>

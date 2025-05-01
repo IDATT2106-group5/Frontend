@@ -23,9 +23,9 @@ class MapService {
 
     const map = L.map(container, { ...defaultOptions, ...options });
 
-    // Add zoom control in bottom right
+    // Add zoom control in top right
     L.control.zoom({
-      position: 'bottomright'
+      position: 'topright'
     }).addTo(map);
 
     return map;
