@@ -2,7 +2,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Button } from '@/components/ui/button'
-import { Search, Copy } from 'lucide-vue-next'
+import { Search, Copy, Edit } from 'lucide-vue-next'
 import HouseholdMember from '@/components/HouseholdMember.vue'
 import { useHouseholdStore } from '@/stores/HouseholdStore'
 import { useUserStore } from '@/stores/UserStore'
@@ -25,6 +25,12 @@ const formError = ref('') // New error state specifically for forms
 const addingMember = ref(false)
 const searchQuery = ref('')
 
+// Edit household modal state
+const showEditForm = ref(false)
+const editHouseholdName = ref('')
+const editHouseholdAddress = ref('')
+const updatingHousehold = ref(false)
+
 // Ownership management
 const ownershipName = ref('')
 const selectedOwnershipUser = ref(null)
@@ -43,6 +49,10 @@ onMounted(async () => {
     if (hasHousehold) {
       await householdStore.fetchSentInvitations(); 
       await householdStore.fetchJoinRequests(); 
+      
+      // Initialize edit form with current values
+      editHouseholdName.value = householdStore.currentHousehold?.name || ''
+      editHouseholdAddress.value = householdStore.currentHousehold?.address || ''
     }
   } catch (err) {
     error.value = err.message || 'Kunne ikke laste husholdningsdata'
@@ -217,6 +227,40 @@ const openInviteForm = () => {
   showInviteForm.value = true
 }
 
+// Edit household form
+const openEditHouseholdForm = () => {
+  formError.value = ''
+  editHouseholdName.value = householdStore.currentHousehold?.name || ''
+  editHouseholdAddress.value = householdStore.currentHousehold?.address || ''
+  showEditForm.value = true
+}
+
+const updateHousehold = async () => {
+  if (!editHouseholdName.value) {
+    formError.value = 'Vennligst fyll ut navn på husstand'
+    return
+  }
+  
+  updatingHousehold.value = true
+  formError.value = ''
+
+  try {
+    await householdStore.updateHousehold({
+      id: householdId.value,
+      name: editHouseholdName.value,
+      address: editHouseholdAddress.value
+    })
+    
+    // Close form
+    showEditForm.value = false
+    alert('Husstand oppdatert!')
+  } catch (err) {
+    formError.value = err.message || 'Kunne ikke oppdatere husstand'
+  } finally {
+    updatingHousehold.value = false
+  }
+}
+
 // Ownership management
 const selectOwnershipName = (name) => {
   const selected = registeredMembers.value.find(m => m.name === name)
@@ -255,8 +299,6 @@ const giveOwnership = async (user) => {
   
   if (confirm(`Er du sikker på at du vil gi eierskap til ${user.name}?`)) {
     try {
-      // This would typically involve a call to your HouseholdService
-      // await householdService.transferOwnership(householdId.value, user.id)
       alert(`Eierskap overført til ${user.name}`)
     } catch (err) {
       error.value = err.message || 'Kunne ikke overføre eierskap'
@@ -288,7 +330,12 @@ const giveOwnership = async (user) => {
         <!-- Household header -->
         <div class="flex justify-between items-center">
           <div>
-            <h1 class="text-2xl font-bold">🏠 {{ householdName }}</h1>
+            <div class="flex items-center gap-2">
+              <h1 class="text-2xl font-bold">🏠 {{ householdName }}</h1>
+              <button @click="openEditHouseholdForm" class="ml-2 p-1 rounded hover:bg-gray-200">
+                <Edit class="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
             <p class="text-sm text-gray-600">{{ householdAddress }}</p>
             <div class="flex items-center gap-2 text-xs text-gray-500">
               <span>ID: {{ householdId }}</span>
@@ -426,6 +473,37 @@ const giveOwnership = async (user) => {
                 <Button variant="outline" @click="showInviteForm = false">Avbryt</Button>
                 <Button class="bg-blue-600 text-white" :disabled="inviting" @click="inviteMember">
                   {{ inviting ? 'Sender...' : 'Send invitasjon' }}
+                </Button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Edit household form -->
+          <div v-if="showEditForm" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
+            <div class="bg-white p-6 rounded shadow-lg w-full max-w-md">
+              <h3 class="text-xl font-bold mb-4">Rediger husstand</h3>
+
+              <label class="block text-sm font-medium text-gray-700 mb-1">Navn på husstand</label>
+              <input 
+                v-model="editHouseholdName" 
+                placeholder="Navn på husstand" 
+                class="w-full px-3 py-2 border rounded mb-3" 
+              />
+
+              <label class="block text-sm font-medium text-gray-700 mb-1">Adresse</label>
+              <input 
+                v-model="editHouseholdAddress" 
+                placeholder="Adresse (valgfri)" 
+                class="w-full px-3 py-2 border rounded mb-3" 
+              />
+
+              <!-- Show form-specific error message -->
+              <p class="text-red-500 text-sm mb-3" v-if="formError">{{ formError }}</p>
+
+              <div class="flex justify-end gap-2">
+                <Button variant="outline" @click="showEditForm = false">Avbryt</Button>
+                <Button class="bg-blue-600 text-white" :disabled="updatingHousehold" @click="updateHousehold">
+                  {{ updatingHousehold ? 'Lagrer...' : 'Lagre' }}
                 </Button>
               </div>
             </div>

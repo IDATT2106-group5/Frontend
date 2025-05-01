@@ -5,6 +5,7 @@ class RequestService extends BaseService {
     super('/membership-requests');
   }
 
+  //Method for sending an invitation to a user
     async sendInvitation(invitationData) {
       try {
         console.log('[SENDING INVITATION] To email:', invitationData.email, 'For household:', invitationData.householdId);
@@ -15,6 +16,7 @@ class RequestService extends BaseService {
       }
     }
   
+    //Method for getting all sent invitations by householdId
     async getSentInvitationsByHousehold(householdId) {
       try {
         const response = await this.post('invitations/sent/by-household', {
@@ -38,6 +40,7 @@ class RequestService extends BaseService {
     }
   
 
+  //Method for getting all received join request to the household
   async getReceivedJoinRequests(householdId) {
     try {
       console.log('[REQUEST] Sending householdId to backend:', householdId);
@@ -64,6 +67,7 @@ class RequestService extends BaseService {
     }
   }
 
+  //Method for accepting a join request
   async acceptJoinRequest(requestId) {
     try {
       return await this.post('accept', { requestId });
@@ -73,7 +77,7 @@ class RequestService extends BaseService {
     }
   }
   
-  
+  //Method for declining a join request
   async declineJoinRequest(requestId) {
     try {
       return await this.post('decline', { requestId });

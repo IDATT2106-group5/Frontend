@@ -26,6 +26,7 @@ export const useHouseholdStore = defineStore('household', {
     }
   },
 
+  // Actions to manage household data
   actions: {
     async checkCurrentHousehold() {
       try {
@@ -64,6 +65,31 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
+    // Method to fetch household details
+    async updateHousehold(householdData) {
+      this.isLoading = true;
+      try {
+        await HouseholdService.updateHousehold({
+          householdId: householdData.id, 
+          name: householdData.name,
+          address: householdData.address
+        });
+        this.currentHousehold = {
+          ...this.currentHousehold,
+          name: householdData.name,
+          address: householdData.address
+        };
+        return true;
+      } catch (error) {
+        console.error('Failed to update household:', error);
+        this.error = error.response?.data?.message || 'Kunne ikke oppdatere husstand';
+        throw error;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    // Method to add a new unregistered member to the household
     async addMember(newMember) {
       if (!this.currentHousehold?.id) {
         const hasHousehold = await this.checkCurrentHousehold();
@@ -102,6 +128,7 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
+    // Method to update an unregistered members name
     async updateUnregisteredMember(memberId, data, isRegistered) {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husholdning');
@@ -131,6 +158,7 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
     
+    // Method to remove a member from the household
     async removeMember(member, isRegistered) {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husholdning');
@@ -164,6 +192,7 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
+    // Method to send an invitation to a new member
     async inviteMember(email) {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husholdning');
@@ -193,7 +222,7 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
     
-    
+    // Method to cancel an invitation
     async cancelInvitation(email) {
       try {
         this.isLoading = true;
@@ -207,6 +236,7 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
+    // Method to get all sent invitations from the household
     async fetchSentInvitations() {
       if (!this.currentHousehold?.id) {
         console.warn('[FETCH INVITATIONS] No active household');
@@ -239,7 +269,7 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
     
-
+    // Method to fetch all join requests received by the household
     async fetchJoinRequests() {
       if (!this.currentHousehold?.id) return;
     
@@ -259,6 +289,7 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
+    // Method to update the status of a join request
     async updateJoinRequestStatus(requestId, action) {
       try {
         this.isLoading = true;
@@ -282,6 +313,7 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
     
+    // Method to create a new household
     async createHousehold(data) {
       try {
         this.isLoading = true;
@@ -297,6 +329,7 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
+    // Method to leave the current household
     async leaveHousehold() {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husholdning å forlate');

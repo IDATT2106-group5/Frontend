@@ -5,6 +5,7 @@ class HouseholdService extends BaseService {
     super('/household');
   }
 
+  // Get household details by using the userId
   async getHouseholdDetailsByUserId(userId) {
     if (!userId) {
       throw new Error('[ERROR] userId is undefined or null when calling getHouseholdDetailsByUserId');
@@ -51,6 +52,21 @@ class HouseholdService extends BaseService {
     }
   }
 
+  // Update household details
+  async updateHousehold(data) {
+    try {
+      console.log('[POST] /edit household:', data);
+      return this.post('edit', {
+        householdId: data.householdId,
+        name: data.name,
+        address: data.address
+      });
+    } catch (error) {
+      console.error("Error updating household:", error);
+      throw error;
+    }
+  }
+  
   // Update a unregistered member
   async updateUnregisteredMember(householdId, memberId, data) {
     try {
@@ -61,7 +77,7 @@ class HouseholdService extends BaseService {
       const payload = {
         memberId,
         newFullName: data.name,
-        householdId // only include this if your backend needs it
+        householdId 
       };
   
       console.log('[POST] edit-unregistered-member → Sending payload:', payload);
@@ -86,7 +102,7 @@ class HouseholdService extends BaseService {
     }
   }
 
-  // Remove an unregistered user (expects memberId in DELETE path)
+  // Remove an unregistered user 
   async removeUnregisteredMember(memberId) {
     try {
       console.log('[REMOVE UNREGISTERED] ID:', memberId);
@@ -136,20 +152,6 @@ class HouseholdService extends BaseService {
       return this.post(`remove-user`, email);
     } catch (error) {
       console.error("Error leaving household:", error);
-      throw error;
-    }
-  }
-
-  // Support DELETE with body
-  async deleteReq(path = '', data) {
-    try {
-      // FIX: Don't use this.buildUrl() which adds the base path again
-      const url = path;
-      const config = { data };
-      const response = await this.deleteItem(url, config);
-      return response;
-    } catch (error) {
-      console.error("Error in delete request:", error);
       throw error;
     }
   }

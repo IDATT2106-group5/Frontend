@@ -126,7 +126,7 @@ const confirmRemove = async () => {
             <Phone class="w-4 h-4 mr-1" /> {{ member.tlf }}
           </p>
 
-          <p v-if="!member.email && !member.tlf" class="text-xs italic text-gray-400">
+          <p v-if="!member.email && !member.tlf" class="px-2 py-0.5 text-sm text-gray-500 bg-gray-100 border border-gray-300 rounded">
             Ikke registrert
           </p>
         </div>
