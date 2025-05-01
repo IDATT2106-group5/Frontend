@@ -58,7 +58,7 @@ class StorageService extends BaseService {
   // Remove an item from storage
   async removeItemFromStorage(storageItemId) {
     try {
-      const response = await this.delete(`/${storageItemId}`);
+      const response = await this.post(`/${storageItemId}`);
       return response;
     } catch (error) {
       console.error("Error removing item from storage:", error);

@@ -259,14 +259,14 @@ export const useStorageStore = defineStore('storage', () => {
   }
 
   // Delete item
-  async function deleteItem(storageItemId) {
+  async function deleteItem(itemId) {
     isLoading.value = true;
     error.value = null;
 
     try {
-      const response = await StorageService.removeItemFromStorage(storageItemId);
+      const response = await StorageService.removeItemFromStorage(itemId);
       // Remove the item from the local array
-      items.value = items.value.filter(i => i.id !== storageItemId);
+      items.value = items.value.filter(i => i.id !== itemId);
       return response;
     } catch (err) {
       console.error('Error deleting storage item:', err);
