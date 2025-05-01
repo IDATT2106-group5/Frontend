@@ -36,7 +36,8 @@ export const useStorageStore = defineStore('storage', () => {
     const groups = {
       'Væske': [],      // Liquids
       'Mat': [],        // Food
-      'Medisiner': [],  // Medicine
+      'Medisiner': [], // Medicine
+      'Redskap': [], // Medicine
       'Diverse': []     // Miscellaneous/Other
     };
 
@@ -63,17 +64,17 @@ export const useStorageStore = defineStore('storage', () => {
 
         switch(item.item.itemType) {
           case "LIQUIDS":
-          case "WATER":
             groups['Væske'].push(transformedItem);
             break;
           case "FOOD":
             groups['Mat'].push(transformedItem);
             break;
-          case "MEDICINE":
           case "FIRST_AID":
             groups['Medisiner'].push(transformedItem);
             break;
           case "TOOL":
+            groups['redskap'].push(transformedItem);
+            break;
           case "OTHER":
           default:
             groups['Diverse'].push(transformedItem);

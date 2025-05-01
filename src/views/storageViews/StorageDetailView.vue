@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import { Droplet, Apple, Pill, Package } from "lucide-vue-next";
+import { Droplet, Apple, Pill, Hammer, Package } from "lucide-vue-next";
 import {
   Accordion,
   AccordionContent,
@@ -116,7 +116,7 @@ const handleItemDelete = async (id) => {
       </div>
 
       <!-- Main content when data is available -->
-      <Accordion v-else-if="!storageStore.isEmpty" type="single" collapsible
+      <Accordion type="single" collapsible
                  v-model:value="openItem">
         <!-- Væske -->
         <AccordionItem value="vaske">
@@ -172,6 +172,24 @@ const handleItemDelete = async (id) => {
           </AccordionContent>
         </AccordionItem>
 
+        <!-- Redskap -->
+        <AccordionItem value="redskap">
+          <AccordionTrigger @click="toggleAccordion('redskap')">
+            <div class="flex items-center gap-3">
+              <Hammer />
+              Redskap
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <EditableNestedItemList
+              :items="storageStore.groupedItems['Redskap']"
+              :isEditing="isEditing"
+              @update-item="handleItemUpdate"
+              @delete-item="handleItemDelete"
+            />
+          </AccordionContent>
+        </AccordionItem>
+
         <!-- Diverse -->
         <AccordionItem value="diverse">
           <AccordionTrigger @click="toggleAccordion('diverse')">
@@ -190,11 +208,6 @@ const handleItemDelete = async (id) => {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
-
-      <!-- Show when no items are available -->
-      <div v-else class="py-10 text-center text-gray-500">
-        <p>Ingen varer funnet. Legg til varer for å se dem her.</p>
-      </div>
     </div>
   </div>
 </template>

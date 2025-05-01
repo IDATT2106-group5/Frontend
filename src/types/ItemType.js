@@ -5,7 +5,8 @@
 export const ItemType = {
   LIQUIDS: 'LIQUIDS',
   FOOD: 'FOOD',
-  MEDICINE: 'MEDICINE',
+  FIRST_AID: 'FIRST_AID',
+  TOOL: 'TOOL',
   OTHER: 'OTHER'
 };
 
@@ -13,6 +14,7 @@ export const ItemType = {
 export const ItemTypeDisplayName = {
   [ItemType.LIQUIDS]: 'Væske',
   [ItemType.FOOD]: 'Mat',
-  [ItemType.MEDICINE]: 'Medisiner',
+  [ItemType.FIRST_AID]: 'Medisiner',
+  [ItemType.TOOL]: 'Redskap',
   [ItemType.OTHER]: 'Diverse'
 };
