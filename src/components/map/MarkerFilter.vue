@@ -42,7 +42,7 @@
               <div class="marker-icon" :style="{ color: marker.color }">
                 <component :is="marker.lucideIcon" size="20" :color="marker.color" />
               </div>
-              <div class="marker-name">{{ marker.name }}</div>
+              <div class="marker-name">{{ marker.title }}</div>
             </div>
           </label>
         </div>
