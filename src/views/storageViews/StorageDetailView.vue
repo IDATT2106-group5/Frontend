@@ -60,6 +60,8 @@ const toggleAccordion = (value) => {
 
 // Handle updates/deletes
 const handleItemUpdate = async (id, data) => {
+  console.log("Parent received update-item event with ID:", id);
+  console.log("Data to update:", data);
   try {
     await storageStore.updateItem(id, data);
   } catch (e) {

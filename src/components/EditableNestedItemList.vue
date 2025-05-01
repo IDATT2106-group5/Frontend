@@ -37,13 +37,21 @@ const groupedSubItems = computed(() => {
     return grouped;
   }
 
-  props.items.forEach(item => {
-    if (!item || !item.name) return; // Skip invalid items
+  props.items.forEach(rawItem => {
+    const item = {
+      id: rawItem.id,  // Use the correct id property consistently
+      name: rawItem.name || rawItem.item?.name || 'Ukjent navn',
+      expiryDate: rawItem.expiryDate || rawItem.item?.expiryDate || '',
+      quantity: rawItem.quantity ?? rawItem.amount ?? 0,
+      unit: rawItem.unit || 'stk',
+      duration: rawItem.duration || null,
+    };
 
     const baseName = getBaseName(item.name);
     if (!grouped[baseName]) {
       grouped[baseName] = [];
     }
+
     grouped[baseName].push(item);
   });
   return grouped;
@@ -92,9 +100,10 @@ function calculateDuration(quantity, item) {
 }
 
 function startEditing(item) {
-  editingItem.value = item.id;
+  console.log("Starting edit for item:", item);
+  console.log("Item ID being used:", item.id);
+  editingItem.value = item.id; // Use item.id consistently
   editingData.value = {
-    name: item.name || '',
     expiryDate: item.expiryDate || '',
     quantity: item.quantity || 0
   };
@@ -103,10 +112,12 @@ function startEditing(item) {
 function saveItemEdit(itemId) {
   // Create updated item data with the edited fields
   const updatedData = {
-    name: editingData.value.name,
     expiryDate: editingData.value.expiryDate,
     quantity: parseFloat(editingData.value.quantity)
   };
+
+  console.log("Saving item with ID:", itemId);
+  console.log("Updated data:", updatedData);
 
   // Emit an event to parent component to update the item via the store
   emit('update-item', itemId, updatedData);
@@ -189,12 +200,7 @@ function formatDate(dateString) {
           <div v-for="item in group" :key="item.id"
                class="flex items-center p-2 hover:bg-gray-50">
             <div class="flex-1">
-              <input
-                v-if="editingItem === item.id"
-                v-model="editingData.name"
-                class="w-full px-2 py-1 border rounded"
-              />
-              <span v-else>{{ item.name }}</span>
+              <span>{{ item.name }}</span>
             </div>
             <div class="flex-1">
               <input

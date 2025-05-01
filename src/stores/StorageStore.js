@@ -4,6 +4,22 @@ import { ref, computed } from 'vue';
 import StorageService from '@/service/StorageService';
 import { ItemType } from '@/types/ItemType';
 
+// Helper function to format date for backend in ISO string format with time component
+function formatDateForBackend(dateString) {
+  if (!dateString) return null;
+
+  // Create a Date object from the date string (which is YYYY-MM-DD)
+  const date = new Date(dateString);
+
+  // Format as ISO string that LocalDateTime.parse can handle
+  // Format: YYYY-MM-DDT00:00:00
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}T00:00:00`;
+}
+
 export const useStorageStore = defineStore('storage', () => {
   const items = ref([]);
   const isLoading = ref(false);
@@ -34,8 +50,9 @@ export const useStorageStore = defineStore('storage', () => {
         }
 
         // Create a transformed item with structure expected by components
+        // Make sure id is set properly
         const transformedItem = {
-          id: item.id || `temp-${Date.now()}-${Math.random()}`,
+          id: item.id,
           name: item.item.name,
           expiryDate: item.expiration ? new Date(item.expiration).toISOString().split('T')[0] : null,
           quantity: item.amount,
@@ -92,7 +109,17 @@ export const useStorageStore = defineStore('storage', () => {
 
       // Ensure we're setting items.value to an array
       if (response && Array.isArray(response)) {
-        items.value = response;
+        // Make sure each item has an 'id' property
+        items.value = response.map(item => {
+          if (!item.id && item.itemId) {
+            // If there's no id but itemId exists, use that
+            return { ...item, id: item.itemId };
+          } else if (!item.id) {
+            // If there's no id at all, log a warning
+            console.warn('Item missing ID:', item);
+          }
+          return item;
+        });
       } else {
         console.warn('Response is not an array:', response);
         items.value = Array.isArray(response) ? response : [];
@@ -167,15 +194,38 @@ export const useStorageStore = defineStore('storage', () => {
     }
   }
 
-  // Update item
-  async function updateItem(storageItemId, data) {
+  // Update item - fixed to handle id parameter properly
+  // Update item - fixed to handle id parameter properly
+  // Update item - fixed to handle id parameter properly
+  async function updateItem(itemId, data) {
     isLoading.value = true;
     error.value = null;
 
     try {
-      // Find the original item
-      const itemIndex = items.value.findIndex(i => i.id === storageItemId);
+      console.log("Updating item with ID:", itemId);
+      console.log("Current items:", items.value);
+      console.log("Update data:", data);
+
+      let actualItemId;
+
+      if (typeof itemId === 'object' && itemId !== null) {
+        console.warn("Received object instead of ID. Extracting ID from object.");
+        actualItemId = itemId.id;
+
+        if (!actualItemId) {
+          throw new Error('Invalid item ID: ID not found in object');
+        }
+      } else {
+        actualItemId = itemId;
+      }
+
+      // Find item by ID
+      const itemIndex = items.value.findIndex(i => i.id === actualItemId);
+      console.log("Found item at index:", itemIndex);
+
       if (itemIndex === -1) {
+        console.error("Item not found in items array. Available IDs:",
+          items.value.map(item => item.id));
         throw new Error('Item not found');
       }
 
@@ -184,21 +234,19 @@ export const useStorageStore = defineStore('storage', () => {
 
       // Create payload in the format expected by the API
       const payload = {
-        unit: originalItem.unit, // Keep original unit if not provided in update
+        unit: originalItem.unit,
         amount: data.quantity || originalItem.amount,
         expirationDate: data.expiryDate ? new Date(data.expiryDate) : null
       };
 
+      console.log("Sending payload to API:", payload);
+
       if (data.name && data.name !== originalItem.item.name) {
         console.warn('Name updates are not supported by the backend API');
-        // You might need a different endpoint to update the item name if needed
       }
 
-      const response = await StorageService.updateStorageItem(storageItemId, payload);
-
-      // Update local state with the response or optimistically update
-      // This may need to be adjusted based on what your API returns
-      await fetchItems(); // Refetch to ensure data consistency
+      const response = await StorageService.updateStorageItem(actualItemId, payload);
+      await fetchItems();
 
       return response;
     } catch (err) {
