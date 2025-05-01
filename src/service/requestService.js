@@ -4,6 +4,15 @@ class RequestService extends BaseService {
   constructor() {
     super('/membership-requests');
   }
+
+  async sendInvitation(request) {
+    try {
+      return await this.post('/send-invitation', request);
+    } catch (error) {
+      console.error('[ERROR] Sending invitation:', error);
+      throw error;
+    }
+  }
   
   async getSentInvitations(userId) {
     try {

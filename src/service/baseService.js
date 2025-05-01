@@ -5,7 +5,7 @@ const handleErrors = (error) => {
     console.error("Backend returned code", error.response.status, "body was:", error.response.data);
     return Promise.reject({
       status: error.response.status,
-      message: error.response.data || 'Unknown error occurred',
+      message: error.response.data.message || 'Unknown error occurred',
     });
   } else if (error.request) {
     console.error("No response received");
@@ -68,20 +68,6 @@ export default class BaseService {
     }
   }
 
-  async deleteReq(path = '', data, options = {}) {
-    try {
-      const url = this.buildUrl(path);
-      const config = {
-        ...this.mergeOptions(options),
-        data
-      };
-      const response = await apiClient.delete(url, config);
-      return response.data;
-    } catch (error) {
-      return handleErrors(error);
-    }
-  }
-
   async patch(path = '', data, options = {}) {
     try {
       const url = this.buildUrl(path);
@@ -96,10 +82,7 @@ export default class BaseService {
     if (!path) {
       return this.endpoint;
     }
-    if (path.startsWith('/')) {
-      path = path.substring(1);
-    }
-    return path.startsWith('http') ? path : this.endpoint ? `${this.endpoint}/${path}` : path;
+    return this.endpoint ? `${this.endpoint}/${path}` : path;
   }
 
   mergeOptions(options) {

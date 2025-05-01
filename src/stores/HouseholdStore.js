@@ -164,16 +164,23 @@ export const useHouseholdStore = defineStore('household', {
         this.isLoading = false;
       }
     },
-    
 
     async inviteMember(email) {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husholdning');
       }
-
+    
       try {
         this.isLoading = true;
-        await HouseholdService.inviteMember(this.currentHousehold.id, email);
+    
+        const userStore = useUserStore();
+        const request = {
+          userId: userStore.user?.id,
+          householdId: this.currentHousehold.id,
+          email: email
+        };
+    
+        await RequestService.sendInvitation(request);
       } catch (err) {
         this.error = err.response?.data?.error || err.message || 'Kunne ikke sende invitasjon';
         throw err;
@@ -181,7 +188,7 @@ export const useHouseholdStore = defineStore('household', {
         this.isLoading = false;
       }
     },
-
+    
     async cancelInvitation(email) {
       try {
         this.isLoading = true;
