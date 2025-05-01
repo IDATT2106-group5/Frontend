@@ -31,19 +31,28 @@ const focusNext = (index, event) => {
  * Handles the submission event for the form.
  * This function is triggered when the form is submitted.
  *
- * @param {Event} event - The event object associated with the form submission. Includes email and code
+ * @param {Event} event - The event object associated with the form submission.
  * @returns {Promise<void>} A promise that resolves when the submission process is complete.
  */
 async function onSubmit(event) {
   event.preventDefault()
   const fullCode = code.value.join('')
+  userStore.error = null
 
   try {
-    // PSUDO Code
-    // await userStore.verify2FA({ email: props.email, code: fullCode })
-    router.push("/")
+    const resp = await userStore.verify2FA({ email: props.email, otp: fullCode })
+
+    if (resp) {
+      router.push("/")
+    } else if (!userStore.error) {
+      userStore.error = "Ugyldig kode. Prøv igjen."
+    }
   } catch (error) {
     console.error("2FA verification failed:", error)
+
+    if (!userStore.error) {
+      userStore.error = "Kunne ikke verifisere koden. Prøv igjen senere."
+    }
   }
 }
 
@@ -67,6 +76,10 @@ async function resendCode() {
     <p class="text-gray-600 mt-2 mb-4">
       Skriv inn koden sendt til {{ props.email || 'admin@krisefikser.no' }}
     </p>
+
+    <div v-if="userStore.error" class="w-full max-w-sm p-3 rounded bg-red-100 text-red-700 mb-2 text-center">
+      {{ userStore.error }}
+    </div>
 
     <form @submit="onSubmit" class="w-full max-w-sm space-y-6">
       <div class="flex justify-center space-x-2">
