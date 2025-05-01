@@ -1,230 +1,248 @@
+// storageStore.js
 import { defineStore } from 'pinia';
-import StorageService from '@/service/storageService';
+import { ref, computed } from 'vue';
+import StorageService from '@/service/StorageService';
+import { ItemType } from '@/types/ItemType';
 
-export const useStorageStore = defineStore('storage', {
-  state: () => ({
-    householdId: null,
-    items: [],
-    isLoading: false,
-    error: null,
-    filters: {
-      searchQuery: '',
-      selectedType: null
-    }
-  }),
+export const useStorageStore = defineStore('storage', () => {
+  const items = ref([]);
+  const isLoading = ref(false);
+  const error = ref(null);
 
-  getters: {
-    // Check if there are no items
-    isEmpty: (state) => state.items.length === 0,
+  // Store the current household ID
+  const currentHouseholdId = ref(null);
 
-    // Filter items based on search query
-    filteredItems: (state) => {
-      if (!state.filters.searchQuery) {
-        return state.items;
-      }
+  // Computed property to check if items array is empty
+  const isEmpty = computed(() => items.value.length === 0);
 
-      const query = state.filters.searchQuery.toLowerCase();
-      return state.items.filter(item =>
-        item.name.toLowerCase().includes(query) ||
-        item.description?.toLowerCase().includes(query)
-      );
-    },
+  // Group items by category for UI display
+  const groupedItems = computed(() => {
+    const groups = {
+      'Væske': [],      // Liquids
+      'Mat': [],        // Food
+      'Medisiner': [],  // Medicine
+      'Diverse': []     // Miscellaneous/Other
+    };
 
-    // Group items by their type
-    groupedItems: (state) => {
-      const groups = {
-        'Væske': [],
-        'Mat': [],
-        'Medisiner': [],
-        'Diverse': []
-      };
+    // Make sure items.value is an array before calling forEach
+    if (Array.isArray(items.value)) {
+      items.value.forEach(item => {
+        if (!item || !item.item || !item.item.itemType) {
+          // Skip invalid items
+          console.warn('Skipping invalid item:', item);
+          return;
+        }
 
-      // Filter items first if there's a search query
-      const itemsToGroup = state.filters.searchQuery ?
-        state.filteredItems : state.items;
+        // Create a transformed item with structure expected by components
+        const transformedItem = {
+          id: item.id || `temp-${Date.now()}-${Math.random()}`,
+          name: item.item.name,
+          expiryDate: item.expiration ? new Date(item.expiration).toISOString().split('T')[0] : null,
+          quantity: item.amount,
+          unit: item.unit,
+          duration: null, // Calculate if needed
+          itemType: item.item.itemType
+        };
 
-      // Group items by type
-      itemsToGroup.forEach(item => {
-        const type = item.type || 'Diverse';
-        if (groups[type]) {
-          groups[type].push(item);
-        } else {
-          groups['Diverse'].push(item);
+        switch(item.item.itemType) {
+          case "LIQUIDS":
+          case "WATER":
+            groups['Væske'].push(transformedItem);
+            break;
+          case "FOOD":
+            groups['Mat'].push(transformedItem);
+            break;
+          case "MEDICINE":
+          case "FIRST_AID":
+            groups['Medisiner'].push(transformedItem);
+            break;
+          case "TOOL":
+          case "OTHER":
+          default:
+            groups['Diverse'].push(transformedItem);
+            break;
         }
       });
-
-      return groups;
-    },
-
-    // Get items expiring within 30 days
-    expiringItems: (state) => {
-      const today = new Date();
-      const thirtyDaysFromNow = new Date();
-      thirtyDaysFromNow.setDate(today.getDate() + 30);
-
-      return state.items.filter(item => {
-        if (!item.expirationDate) return false;
-
-        const expDate = new Date(item.expirationDate);
-        return expDate <= thirtyDaysFromNow && expDate >= today;
-      });
+    } else {
+      console.warn('items.value is not an array:', items.value);
     }
-  },
 
-  actions: {
-    // Set the current household ID
-    setHouseholdId(id) {
-      this.householdId = id;
-    },
+    return groups;
+  });
 
-    // Set search filters
-    setSearchQuery(query) {
-      this.filters.searchQuery = query;
-    },
+  // Set current household ID
+  function setCurrentHouseholdId(id) {
+    currentHouseholdId.value = id;
+  }
 
-    setSelectedType(type) {
-      this.filters.selectedType = type;
-    },
+  // Fetch all items for the household
+  async function fetchItems() {
+    if (!currentHouseholdId.value) {
+      console.error('No household ID set');
+      return [];
+    }
 
-    // Reset state
-    resetState() {
-      this.items = [];
-      this.isLoading = false;
-      this.error = null;
-      this.filters = {
-        searchQuery: '',
-        selectedType: null
-      };
-    },
+    isLoading.value = true;
+    error.value = null;
 
-    // Fetch all items for the current household
-    async fetchAllItems() {
-      if (!this.householdId) {
-        this.error = 'No household ID provided';
-        return;
+    try {
+      const response = await StorageService.getStorageItemsByHousehold(currentHouseholdId.value);
+
+      console.log("Storage response:", response);
+
+      // Ensure we're setting items.value to an array
+      if (response && Array.isArray(response)) {
+        items.value = response;
+      } else {
+        console.warn('Response is not an array:', response);
+        items.value = Array.isArray(response) ? response : [];
       }
 
-      this.isLoading = true;
-      this.error = null;
-
-      try {
-        const response = await StorageService.getStorageItemsByHousehold(this.householdId);
-        this.items = response.data;
-      } catch (error) {
-        this.error = error.message || 'Failed to fetch storage items';
-        console.error('Error in fetchAllItems:', error);
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    // Fetch items by type
-    async fetchItemsByType(type) {
-      if (!this.householdId) {
-        this.error = 'No household ID provided';
-        return;
-      }
-
-      this.isLoading = true;
-      this.error = null;
-
-      try {
-        const response = await StorageService.getStorageItemsByType(this.householdId, type);
-        // Update only items of this type
-        this.items = this.items.filter(item => item.type !== type).concat(response.data);
-        this.setSelectedType(type);
-      } catch (error) {
-        this.error = error.message || `Failed to fetch ${type} items`;
-        console.error('Error in fetchItemsByType:', error);
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    // Fetch expiring items
-    async fetchExpiringItems(beforeDate = null) {
-      if (!this.householdId) {
-        this.error = 'No household ID provided';
-        return;
-      }
-
-      // Default to 30 days from now if no date provided
-      const date = beforeDate || new Date(Date.now() + (30 * 24 * 60 * 60 * 1000));
-
-      this.isLoading = true;
-      this.error = null;
-
-      try {
-        const response = await StorageService.getExpiringItems(this.householdId, date);
-        return response.data; // Return without updating state to allow for separate display
-      } catch (error) {
-        this.error = error.message || 'Failed to fetch expiring items';
-        console.error('Error in fetchExpiringItems:', error);
-        return [];
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    // Add a new item to storage
-    async addItemToStorage(itemId, data) {
-      if (!this.householdId) {
-        this.error = 'No household ID provided';
-        return;
-      }
-
-      this.isLoading = true;
-      this.error = null;
-
-      try {
-        const response = await StorageService.addItemToStorage(this.householdId, itemId, data);
-        // Add the new item to the local state
-        this.items.push(response.data);
-        return response.data;
-      } catch (error) {
-        this.error = error.message || 'Failed to add item to storage';
-        console.error('Error in addItemToStorage:', error);
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    // Remove an item from storage
-    async removeItemFromStorage(storageItemId) {
-      this.isLoading = true;
-      this.error = null;
-
-      try {
-        await StorageService.removeItemFromStorage(storageItemId);
-        // Remove the item from local state
-        this.items = this.items.filter(item => item.id !== storageItemId);
-      } catch (error) {
-        this.error = error.message || 'Failed to remove item from storage';
-        console.error('Error in removeItemFromStorage:', error);
-      } finally {
-        this.isLoading = false;
-      }
-    },
-
-    // Update a storage item
-    async updateStorageItem(storageItemId, data) {
-      this.isLoading = true;
-      this.error = null;
-
-      try {
-        const response = await StorageService.updateStorageItem(storageItemId, data);
-        // Update the item in local state
-        const index = this.items.findIndex(item => item.id === storageItemId);
-        if (index !== -1) {
-          this.items[index] = { ...this.items[index], ...response.data };
-        }
-        return response.data;
-      } catch (error) {
-        this.error = error.message || 'Failed to update storage item';
-        console.error('Error in updateStorageItem:', error);
-      } finally {
-        this.isLoading = false;
-      }
+      return items.value;
+    } catch (err) {
+      console.error('Error fetching storage items:', err);
+      error.value = err.message || 'Failed to fetch items';
+      items.value = []; // Ensure items is always an array even on error
+      return [];
+    } finally {
+      isLoading.value = false;
     }
   }
+
+  // Filter items by type (client-side filtering)
+  function getItemsByType(itemType) {
+    if (!itemType) return items.value;
+
+    return items.value.filter(item => item.item && item.item.itemType === itemType);
+  }
+
+  // Fetch items by type - a convenience method that matches what your component was using
+  function fetchItemsByType(itemType) {
+    return getItemsByType(itemType);
+  }
+
+  // Get items expiring soon
+  async function fetchExpiringItems(beforeDate) {
+    if (!currentHouseholdId.value) {
+      console.error('No household ID set');
+      return [];
+    }
+
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      const response = await StorageService.getExpiringItems(currentHouseholdId.value, beforeDate);
+      return response;
+    } catch (err) {
+      console.error('Error fetching expiring items:', err);
+      error.value = err.message || 'Failed to fetch expiring items';
+      return [];
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Add item
+  async function addItem(itemId, data) {
+    if (!currentHouseholdId.value) {
+      console.error('No household ID set');
+      return null;
+    }
+
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      const response = await StorageService.addItemToStorage(currentHouseholdId.value, itemId, data);
+      // Refresh the items list after adding
+      await fetchItems();
+      return response;
+    } catch (err) {
+      console.error('Error adding storage item:', err);
+      error.value = err.message || 'Failed to add item';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Update item
+  async function updateItem(storageItemId, data) {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      // Find the original item
+      const itemIndex = items.value.findIndex(i => i.id === storageItemId);
+      if (itemIndex === -1) {
+        throw new Error('Item not found');
+      }
+
+      // Get the original item
+      const originalItem = items.value[itemIndex];
+
+      // Create payload in the format expected by the API
+      const payload = {
+        unit: originalItem.unit, // Keep original unit if not provided in update
+        amount: data.quantity || originalItem.amount,
+        expirationDate: data.expiryDate ? new Date(data.expiryDate) : null
+      };
+
+      if (data.name && data.name !== originalItem.item.name) {
+        console.warn('Name updates are not supported by the backend API');
+        // You might need a different endpoint to update the item name if needed
+      }
+
+      const response = await StorageService.updateStorageItem(storageItemId, payload);
+
+      // Update local state with the response or optimistically update
+      // This may need to be adjusted based on what your API returns
+      await fetchItems(); // Refetch to ensure data consistency
+
+      return response;
+    } catch (err) {
+      console.error('Error updating storage item:', err);
+      error.value = err.message || 'Failed to update item';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // Delete item
+  async function deleteItem(storageItemId) {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      const response = await StorageService.removeItemFromStorage(storageItemId);
+      // Remove the item from the local array
+      items.value = items.value.filter(i => i.id !== storageItemId);
+      return response;
+    } catch (err) {
+      console.error('Error deleting storage item:', err);
+      error.value = err.message || 'Failed to delete item';
+      throw err;
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  return {
+    items,
+    isLoading,
+    error,
+    isEmpty,
+    groupedItems,
+    currentHouseholdId,
+    setCurrentHouseholdId,
+    fetchItems,
+    getItemsByType,
+    fetchItemsByType,
+    fetchExpiringItems,
+    addItem,
+    updateItem,
+    deleteItem
+  };
 });

@@ -2,7 +2,7 @@ import BaseService from '@/service/baseService';
 
 class StorageService extends BaseService {
   constructor() {
-    super('/api/storage');
+    super('/storage');
   }
 
   // Get all storage items for a household

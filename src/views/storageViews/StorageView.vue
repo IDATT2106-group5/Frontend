@@ -79,7 +79,7 @@ const storageItems = ref([
       </div>
 
       <div class="mt-8 flex justify-end">
-        <RouterLink to="/household/${householdId}/storage">
+        <RouterLink to="/storage-detail">
         <Button variant="secondary" class="px-4">
           Se detaljert lagerinnhold
         </Button>

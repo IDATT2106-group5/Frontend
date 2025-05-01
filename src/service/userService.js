@@ -5,9 +5,9 @@ class UserService extends BaseService {
     super('/user');
   }
 
-  async getCurrentHouseholdByUserId() {
+  async getCurrentHouseholdByUserId(userId) {
     try {
-      const response = await this.get(`me/household`);
+      const response = await this.get(`me/household/${userId}`);
       return response;
     } catch (error) {
       console.error("Household not found:", error);

@@ -31,7 +31,15 @@ const editingData = ref({
 const groupedSubItems = computed(() => {
   // Group items by name (e.g., group all "Water" items together)
   const grouped = {};
+
+  // Handle undefined or empty items array
+  if (!props.items || !Array.isArray(props.items) || props.items.length === 0) {
+    return grouped;
+  }
+
   props.items.forEach(item => {
+    if (!item || !item.name) return; // Skip invalid items
+
     const baseName = getBaseName(item.name);
     if (!grouped[baseName]) {
       grouped[baseName] = [];
@@ -44,6 +52,9 @@ const groupedSubItems = computed(() => {
 // Methods
 function getBaseName(fullName) {
   // Extract the base name (e.g., "Water" from "Water (Brand A)")
+  // Or "Vann" from "Vann (Imsdal)"
+  if (!fullName) return 'Unknown';
+
   const match = fullName.match(/^([^(]+)/);
   return match ? match[1].trim() : fullName;
 }
@@ -60,10 +71,13 @@ function toggleSubAccordion(groupName) {
 
 function getEarliestExpiryDate(group) {
   // Find the earliest expiry date in a group
-  return group
+  const dates = group
     .filter(item => item.expiryDate)
-    .map(item => item.expiryDate)
-    .sort((a, b) => new Date(a) - new Date(b))[0] || 'N/A';
+    .map(item => item.expiryDate);
+
+  if (dates.length === 0) return 'N/A';
+
+  return dates.sort((a, b) => new Date(a) - new Date(b))[0];
 }
 
 function getTotalQuantity(group) {
@@ -73,13 +87,14 @@ function getTotalQuantity(group) {
 
 function calculateDuration(quantity, item) {
   // Return the duration value from the item or calculate it if needed
+  if (!item) return 'N/A';
   return item.duration || `${Math.ceil(quantity / 3)} dager`;
 }
 
 function startEditing(item) {
   editingItem.value = item.id;
   editingData.value = {
-    name: item.name,
+    name: item.name || '',
     expiryDate: item.expiryDate || '',
     quantity: item.quantity || 0
   };
@@ -122,6 +137,18 @@ function getSubGroupTotalQuantity(subGroup) {
   // Sum up quantities for items with the same expiry date
   return subGroup.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0);
 }
+
+function formatDate(dateString) {
+  if (!dateString || dateString === 'N/A') return 'N/A';
+
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('no-NO'); // Norwegian date format
+  } catch (e) {
+    console.error('Error formatting date:', e);
+    return dateString;
+  }
+}
 </script>
 
 <template>
@@ -142,8 +169,8 @@ function getSubGroupTotalQuantity(subGroup) {
           class="flex items-center justify-between p-2 cursor-pointer hover:bg-gray-50 border-b border-gray-200"
         >
           <div class="flex-1 font-medium">{{ groupName }}</div>
-          <div class="flex-1">{{ getEarliestExpiryDate(group) }}</div>
-          <div class="flex-1">{{ getTotalQuantity(group) }} {{ group[0].unit }}</div>
+          <div class="flex-1">{{ formatDate(getEarliestExpiryDate(group)) }}</div>
+          <div class="flex-1">{{ getTotalQuantity(group) }} {{ group[0]?.unit || 'stk' }}</div>
           <div class="flex-1">{{ calculateDuration(getTotalQuantity(group), group[0]) }}</div>
           <div class="w-6">
             <svg
@@ -176,7 +203,7 @@ function getSubGroupTotalQuantity(subGroup) {
                 v-model="editingData.expiryDate"
                 class="w-full px-2 py-1 border rounded"
               />
-              <span v-else>{{ item.expiryDate || 'N/A' }}</span>
+              <span v-else>{{ formatDate(item.expiryDate) || 'N/A' }}</span>
             </div>
             <div class="flex-1">
               <div v-if="editingItem === item.id" class="flex items-center">
@@ -185,9 +212,9 @@ function getSubGroupTotalQuantity(subGroup) {
                   type="number"
                   class="w-24 px-2 py-1 border rounded"
                 />
-                <span class="ml-2">{{ item.unit }}</span>
+                <span class="ml-2">{{ item.unit || 'stk' }}</span>
               </div>
-              <span v-else>{{ item.quantity }} {{ item.unit }}</span>
+              <span v-else>{{ item.quantity }} {{ item.unit || 'stk' }}</span>
             </div>
             <div class="flex-1">{{ calculateDuration(item.quantity, item) }}</div>
             <div class="w-20 flex justify-end space-x-2">
@@ -223,8 +250,8 @@ function getSubGroupTotalQuantity(subGroup) {
           <div v-for="(subGroup, expiryDate) in groupItemsByExpiryDate(group)" :key="expiryDate"
                class="flex items-center p-2 hover:bg-gray-50">
             <div class="flex-1">{{ subGroup[0].name }}</div>
-            <div class="flex-1">{{ expiryDate }}</div>
-            <div class="flex-1">{{ getSubGroupTotalQuantity(subGroup) }} {{ subGroup[0].unit }}</div>
+            <div class="flex-1">{{ formatDate(expiryDate) }}</div>
+            <div class="flex-1">{{ getSubGroupTotalQuantity(subGroup) }} {{ subGroup[0].unit || 'stk' }}</div>
             <div class="flex-1">{{ calculateDuration(getSubGroupTotalQuantity(subGroup), subGroup[0]) }}</div>
             <div class="w-6"></div> <!-- to align with the arrow column -->
           </div>
@@ -234,7 +261,7 @@ function getSubGroupTotalQuantity(subGroup) {
 
     <!-- Fallback message if no items are provided -->
     <p v-else class="text-gray-500 italic text-center mt-4">
-      No items to display.
+      Ingen varer funnet.
     </p>
   </div>
 </template>

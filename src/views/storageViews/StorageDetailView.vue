@@ -15,6 +15,7 @@ import SearchBar from '@/components/SearchBar.vue';
 
 // Services and store
 import { useStorageStore } from '@/stores/StorageStore.js';
+import { ItemType } from '@/types/ItemType';
 import { useUserStore } from '@/stores/UserStore.js';
 import UserService from '@/service/userService';
 
@@ -36,15 +37,14 @@ onMounted(async () => {
 
     // Get current household from UserService
     const response = await UserService.getCurrentHouseholdByUserId(userStore.user.id);
-    const householdId = response.data.id;
+    console.log(response)
+    const householdId = response.id;
 
-    console.log('User ID:', response)
-
-    console.log('Household ID:', householdId);
+    console.log(householdId)
 
     // Set household ID in store and fetch items
-    storageStore.setHouseholdId(householdId);
-    await storageStore.fetchAllItems();
+    storageStore.setCurrentHouseholdId(householdId);
+    await storageStore.fetchItems();
   } catch (e) {
     console.error('Failed to initialize storage:', e);
     error.value = e.message || 'Failed to load storage data';
@@ -61,7 +61,7 @@ const toggleAccordion = (value) => {
 // Handle updates/deletes
 const handleItemUpdate = async (id, data) => {
   try {
-    await storageStore.updateStorageItem(id, data);
+    await storageStore.updateItem(id, data);
   } catch (e) {
     console.error('Failed to update item:', e);
     // You could show an error message to the user here
@@ -70,7 +70,7 @@ const handleItemUpdate = async (id, data) => {
 
 const handleItemDelete = async (id) => {
   try {
-    await storageStore.removeItemFromStorage(id);
+    await storageStore.deleteItem(id);
   } catch (e) {
     console.error('Failed to delete item:', e);
     // You could show an error message to the user here
@@ -126,7 +126,7 @@ const handleItemDelete = async (id) => {
           </AccordionTrigger>
           <AccordionContent>
             <EditableNestedItemList
-              :items="storageStore.groupedItems.Væske"
+              :items="storageStore.groupedItems['Væske']"
               :isEditing="isEditing"
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
@@ -144,7 +144,7 @@ const handleItemDelete = async (id) => {
           </AccordionTrigger>
           <AccordionContent>
             <EditableNestedItemList
-              :items="storageStore.groupedItems.Mat"
+              :items="storageStore.groupedItems['Mat']"
               :isEditing="isEditing"
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
@@ -162,7 +162,7 @@ const handleItemDelete = async (id) => {
           </AccordionTrigger>
           <AccordionContent>
             <EditableNestedItemList
-              :items="storageStore.groupedItems.Medisiner"
+              :items="storageStore.groupedItems['Medisiner']"
               :isEditing="isEditing"
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
@@ -180,7 +180,7 @@ const handleItemDelete = async (id) => {
           </AccordionTrigger>
           <AccordionContent>
             <EditableNestedItemList
-              :items="storageStore.groupedItems.Diverse"
+              :items="storageStore.groupedItems['Diverse']"
               :isEditing="isEditing"
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
