@@ -56,11 +56,16 @@ async function onSubmit(event) {
   }
 }
 
-// Function to request a new code
+
+/**
+ * Resends the two-factor authentication (2FA) code to the user.
+ *
+ * @async
+ * @returns {Promise<void>} Resolves when the code is successfully resent.
+ */
 async function resendCode() {
   try {
-    // PSUDO Code
-    // await userStore.resend2FACode(props.email)
+    await userStore.resend2FACode(props.email)
     alert("En ny kode har blitt sendt til din e-post")
   } catch (error) {
     console.error("Failed to resend code:", error)
@@ -96,7 +101,7 @@ async function resendCode() {
       </div>
 
       <div class="flex justify-center">
-        <Button type="submit" class="w-full bg-black text-white">Bekreft</Button>
+        <Button type="submit" :disabled="userStore.isLoading" class="w-full bg-black text-white">Bekreft</Button>
       </div>
 
       <div class="text-center text-sm text-gray-600">
