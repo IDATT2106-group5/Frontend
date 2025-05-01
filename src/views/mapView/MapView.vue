@@ -22,8 +22,8 @@
         variant="default"
         class="layer-toggle-button"
       >
-        <span v-if="isLayerCollapsed">Show Layers</span>
-        <span v-else>Hide Layers</span>
+        <span v-if="isLayerCollapsed">Vis informasjonslag</span>
+        <span v-else>Skjul informasjonslag</span>
       </Button>
       <div :class="['layer-content', { 'hidden': isLayerCollapsed && isMobileView }]">
         <div class="layer-controls">
@@ -48,8 +48,8 @@
         variant="default"
         class="filter-toggle-button"
       >
-        <span v-if="isFilterCollapsed">Show Filters</span>
-        <span v-else>Hide Filters</span>
+        <span v-if="isFilterCollapsed">Vis filter</span>
+        <span v-else>Skjul filter</span>
       </Button>
       <div :class="['filter-content', { 'hidden': isFilterCollapsed && isMobileView }]">
         <MarkerFilter
