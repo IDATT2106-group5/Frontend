@@ -4,14 +4,7 @@ import RegisterView from '@/views/mainViews/RegisterView.vue'
 import {createRouter, createWebHistory} from 'vue-router'
 import {createPinia, setActivePinia} from 'pinia'
 
-// Mock the auth service
-vi.mock('@/service/authService', () => ({
-  default: {
-    register: vi.fn()
-  }
-}))
-
-// Mock the userStore
+// Mock the user store
 vi.mock('@/stores/UserStore', () => ({
   useUserStore: () => ({
     register: vi.fn().mockResolvedValue(true),
@@ -25,134 +18,140 @@ const createTestRouter = () =>
     history: createWebHistory(),
     routes: [
       {path: '/', name: 'home', component: {template: '<div>Home</div>'}},
-      {path: '/verify-email', name: 'VerifyEmail', component: {template: '<div>Verify</div>'}},
       {
-        path: '/register-success',
-        name: 'RegisterSuccess',
-        component: {template: '<div>Success</div>'}
+        path: '/verify-email',
+        name: 'VerifyEmail',
+        component: {template: '<div>Verify Email</div>'}
       },
+      {path: '/login', name: 'login', component: {template: '<div>Login</div>'}},
       {
         path: '/register-failed',
         name: 'RegisterFailed',
-        component: {template: '<div>Failed</div>'}
-      },
-      {path: '/login', name: 'login', component: {template: '<div>Login</div>'}}
+        component: {template: '<div>Register Failed</div>'}
+      }
     ]
   })
 
-// Mock the mask directive and hCaptcha
+// Mock vue-the-mask
 vi.mock('vue-the-mask', () => ({
-  default: {
-    install: vi.fn()
-  }
+  mask: vi.fn()
 }))
 
 describe('RegisterView.vue', () => {
   let router
   let wrapper
   let pinia
+  let userStore
 
   beforeEach(() => {
-    // Set up global window objects for hCaptcha
+    // Mock hCaptcha
     global.window.hcaptcha = {
       render: vi.fn()
     }
     global.window.hcaptchaCallback = vi.fn()
     global.window.hcaptchaReset = vi.fn()
 
-    // Set up DOM element for hCaptcha
     document.body.innerHTML = '<div class="h-captcha"></div>'
 
     // Setup Pinia
     pinia = createPinia()
     setActivePinia(pinia)
 
-    // Reset mocks
     vi.clearAllMocks()
 
     // Setup router
     router = createTestRouter()
+    vi.spyOn(router, 'push')
 
-    // Mount component with router and pinia
+    // Mount component
     wrapper = mount(RegisterView, {
       global: {
         plugins: [router, pinia],
-        directives: {
-          mask: {mounted: vi.fn()}
-        },
         stubs: {
-          RouterLink: true
+          'router-link': true
         },
         mocks: {
-          $router: router
+          $route: {path: '/register'}
+        },
+        directives: {
+          mask: vi.fn()
         }
-      }
+      },
+      attachTo: document.body
     })
+
+    // Get userStore instance from component
+    userStore = wrapper.vm.userStore
   })
 
   it('renders registration form', () => {
     expect(wrapper.find('form').exists()).toBe(true)
+    expect(wrapper.find('#email').exists()).toBe(true)
+    expect(wrapper.find('#fullName').exists()).toBe(true)
+    expect(wrapper.find('#password').exists()).toBe(true)
+    expect(wrapper.find('#confirmPassword').exists()).toBe(true)
+    expect(wrapper.find('#privacy').exists()).toBe(true)
   })
 
   it('submits registration data and redirects on success', async () => {
-    // Set form data
+    // Mock successful registration
+    userStore.register.mockResolvedValueOnce(true)
+
+    // Fill form fields
     await wrapper.find('#email').setValue('test@example.com')
     await wrapper.find('#fullName').setValue('Test User')
     await wrapper.find('#password').setValue('password123')
     await wrapper.find('#confirmPassword').setValue('password123')
+    await wrapper.find('#privacy').setChecked(true)
 
-    // Check privacy checkbox
-    await wrapper.find('#privacy').setValue(true)
-    await wrapper.find('#privacy').trigger('change')
-
-    // Mock hCaptcha token
+    // Set hCaptcha token directly
     wrapper.vm.formData.hCaptchaToken = 'test-token'
 
     // Submit form
-    await wrapper.find('form').trigger('submit.prevent')
+    await wrapper.find('form').trigger('submit')
 
-    // Wait for async operations
+    // Wait for validation and register call
     await vi.waitFor(() => {
-      expect(wrapper.vm.userStore.register).toHaveBeenCalled()
+      expect(userStore.register).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        fullName: 'Test User',
+        password: 'password123',
+        tlf: '',
+        hCaptchaToken: 'test-token'
+      })
     })
 
-    // Verify router navigation
-    const navigateSpy = vi.spyOn(router, 'push')
-    expect(navigateSpy).toHaveBeenCalledTimes(0)
-
-    // Since the component uses router.push internally, check if the method was called
-    expect(wrapper.vm.userStore.register).toHaveBeenCalledWith({
-      email: 'test@example.com',
-      fullName: 'Test User',
-      password: 'password123',
-      tlf: '',
-      hCaptchaToken: 'test-token'
-    })
+    // Verify navigation
+    expect(router.push).toHaveBeenCalledWith('/verify-email')
   })
 
   it('shows error when registration fails', async () => {
-    // Mock failed registration
-    wrapper.vm.userStore.register = vi.fn().mockRejectedValue(new Error('Registration failed'))
+    // Set up the mock to fail with error
+    userStore.register.mockRejectedValueOnce(new Error('Registration failed'))
+    userStore.error = 'Registration failed'
 
-    // Set form data
+    // Fill form fields
     await wrapper.find('#email').setValue('test@example.com')
     await wrapper.find('#fullName').setValue('Test User')
     await wrapper.find('#password').setValue('password123')
     await wrapper.find('#confirmPassword').setValue('password123')
+    await wrapper.find('#privacy').setChecked(true)
 
-    // Check privacy checkbox
-    await wrapper.find('#privacy').setValue(true)
-    await wrapper.find('#privacy').trigger('change')
-
-    // Mock hCaptcha token
+    // Set hCaptcha token directly
     wrapper.vm.formData.hCaptchaToken = 'test-token'
 
     // Submit form
-    await wrapper.find('form').trigger('submit.prevent')
+    await wrapper.find('form').trigger('submit')
 
-    // Wait for async operations
+    // Wait for validation and register call
     await vi.waitFor(() => {
-      expect(wrapper.vm.userStore.register).toHaveBeenCalled()
+      expect(userStore.register).toHaveBeenCalledWith({
+        email: 'test@example.com',
+        fullName: 'Test User',
+        password: 'password123',
+        tlf: '',
+        hCaptchaToken: 'test-token'
+      })
     })
 
     // Check that error status is set
