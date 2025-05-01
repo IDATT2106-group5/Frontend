@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import AuthService from '@/service/authService';
+import TwoFactorAuthService from '@/service/adminService';
 import apiClient from '@/service/apiClient';
+import router from '@/router';
 
 export const useUserStore = defineStore('user', {
   state: () => ({
@@ -13,16 +15,16 @@ export const useUserStore = defineStore('user', {
     async register(userData) {
       this.isLoading = true;
       this.error = null;
-      try {        
+      try {
         const response = await AuthService.register(userData);
         return true;
-      } catch (err) {        
+      } catch (err) {
         if (err.response && err.response.data && err.response.data.error === "Email already in use") {
           this.error = "E-postadressen er allerede registrert.";
         } else {
           this.error = err.message || "Noe gikk galt under registrering.";
         }
-        return false; 
+        return false;
       } finally {
         this.isLoading = false;
       }
@@ -33,11 +35,19 @@ export const useUserStore = defineStore('user', {
       this.error = null;
       try {
         const response = await AuthService.login(credentials);
-        const { token } = response.data; 
-        this.token = token;
-        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        localStorage.setItem('jwt', token);
-        await this.fetchUser();
+
+        const { requires2Fa } = response.data;
+
+        if (requires2Fa) {
+          await TwoFactorAuthService.generate2FA(credentials.email);
+          router.push("/2FA", credentials.email);
+        } else {
+          const { token } = response.data;
+          this.token = token;
+          apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+          localStorage.setItem('jwt', token);
+          await this.fetchUser();
+        }
       } catch (err) {
         this.error = err.message || "Innlogging feilet.";
         throw err;
@@ -52,6 +62,28 @@ export const useUserStore = defineStore('user', {
       } catch (err) {
         console.error("Error fetching user:", err);
       }
+    },
+
+    async verify2FA(credentials) {
+      this.loading = true;
+      this.error = null;
+
+      try {
+        const response = await TwoFactorAuthService.verify2FA(credentials);
+
+        const { token } = response.data;
+        this.token = token;
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        localStorage.setItem('jwt', token);
+        await this.fetchUser();
+        return true;
+      } catch (err) {
+        this.error = err.message || "Verifisering av 2FA feilet.";
+        return false;
+      } finally {
+        this.isLoading = false;
+      }
+
     },
 
     logout() {
