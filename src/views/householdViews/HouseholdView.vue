@@ -39,6 +39,9 @@ onMounted(async () => {
     if (!hasHousehold) {
       error.value = 'Ingen husstand funnet.'
     }
+    if (hasHousehold) {
+      await householdStore.fetchSentInvitations(); 
+    }
   } catch (err) {
     error.value = err.message || 'Kunne ikke laste husholdningsdata'
   }
@@ -114,10 +117,11 @@ const addMember = async () => {
   
   addingMember.value = true
   error.value = ''
-  
+
   try {
     const newMember = {
       name: newMemberName.value,
+      fullName: newMemberName.value, 
       email: newMemberEmail.value || null
     }
     
@@ -459,10 +463,10 @@ const giveOwnership = async (user) => {
             <table class="w-full text-sm text-left">
               <thead>
                 <tr class="text-gray-700 border-b">
-                  <th class="py-2">E-post</th>
-                  <th class="py-2">Dato sendt</th>
-                  <th class="py-2">Status</th>
-                  <th class="py-2">Handling</th>
+                  <th class="py-2 text-black">E-post</th>
+                  <th class="py-2 text-black">Dato sendt</th>
+                  <th class="py-2 text-black">Status</th>
+                  <th class="py-2 text-black">Handling</th>
                 </tr>
               </thead>
               <tbody>
@@ -471,10 +475,10 @@ const giveOwnership = async (user) => {
                   <td class="py-2">{{ invite.date }}</td>
                   <td class="py-2">
                     <span 
-                      :class="{
-                        'bg-yellow-200 text-yellow-800 px-2 py-1 rounded': invite.status === 'Venter',
-                        'bg-green-200 text-green-800 px-2 py-1 rounded': invite.status === 'Godtatt',
-                        'bg-red-200 text-red-800 px-2 py-1 rounded': invite.status === 'Avslått'
+                        :class="{
+                        'text-yellow-600 font-medium': invite.status === 'PENDING',
+                        'text-green-600 font-medium': invite.status === 'Godtatt',
+                        'text-red-600 font-medium': invite.status === 'Avslått'
                       }"
                     >
                       {{ invite.status }}
@@ -486,7 +490,7 @@ const giveOwnership = async (user) => {
                     </Button>
                   </td>
                 </tr>
-                <tr v-if="householdStore.sentInvitations.length === 0">
+                <tr v-if="Array.isArray(householdStore.sentInvitations) && householdStore.sentInvitations.length === 0">
                   <td colspan="4" class="py-2 text-gray-500 italic text-center">Ingen sendte invitasjoner</td>
                 </tr>
               </tbody>

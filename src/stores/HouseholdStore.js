@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia';
 import HouseholdService from '@/service/householdService';
 import { useUserStore } from '@/stores/UserStore'; 
+import RequestService from '@/service/requestService'; 
+
 
 export const useHouseholdStore = defineStore('household', {
   state: () => ({
@@ -70,17 +72,30 @@ export const useHouseholdStore = defineStore('household', {
           throw new Error('Ingen aktiv husholdning');
         }
       }
-
       try {
         this.isLoading = true;
-        const addedMember = await HouseholdService.addMember(this.currentHousehold.id, newMember);
         
+        // Call the service and get the added member
+        const addedMember = await HouseholdService.addMember(
+          this.currentHousehold.id, 
+          {
+            fullName: newMember.name || newMember.fullName,
+            email: newMember.email
+          }
+        );
+        
+        // Now update the state with the returned member data
         if (addedMember.isRegistered) {
-          this.members.registered.push(addedMember);
+          this.members.registered.push({
+            ...addedMember,
+            fullName: addedMember.fullName || newMember.name || newMember.fullName
+          });
         } else {
-          this.members.unregistered.push(addedMember);
+          this.members.unregistered.push({
+            ...addedMember,
+            fullName: addedMember.fullName || newMember.name || newMember.fullName
+          });
         }
-
         return addedMember;
       } catch (err) {
         this.error = err.response?.data?.error || err.message || 'Kunne ikke legge til medlem';
@@ -129,34 +144,20 @@ export const useHouseholdStore = defineStore('household', {
       try {
         this.isLoading = true;
     
-        console.log('[REMOVE] member:', member); // Debug log
-        console.log('[REMOVE] isRegistered:', isRegistered);
-    
-        // Handle if member is passed as just an ID number
         const memberId = typeof member === 'number' ? member : member.id;
-        
+    
         if (isRegistered) {
-          // For registered members, we need the email
-          let memberEmail;
-          if (typeof member === 'object' && member.email) {
-            memberEmail = member.email;
-          } else {
-            // Try to find the member in our registered members list
-            const foundMember = this.members.registered.find(m => m.id === memberId);
-            if (!foundMember || !foundMember.email) {
-              throw new Error('E-post mangler for registrert medlem');
-            }
-            memberEmail = foundMember.email;
+          if (!memberId) {
+            throw new Error('ID mangler for registrert medlem');
           }
-          
-          await HouseholdService.removeRegisteredMember(memberEmail);
+    
+          await HouseholdService.removeRegisteredMember(memberId, this.currentHousehold.id);
           this.members.registered = this.members.registered.filter(m => m.id !== memberId);
         } else {
-          // For unregistered members, we need the ID
           if (!memberId) {
             throw new Error('ID mangler for uregistrert medlem');
           }
-          
+    
           await HouseholdService.removeUnregisteredMember(memberId);
           this.members.unregistered = this.members.unregistered.filter(m => m.id !== memberId);
         }
@@ -189,8 +190,8 @@ export const useHouseholdStore = defineStore('household', {
       try {
         this.isLoading = true;
         await HouseholdService.cancelInvitation(email);
-        this.sentInvitations = this.sentInvitations.filter(i => i.email !== email);
-      } catch (err) {
+        this.sentInvitations = invites || [];  
+          } catch (err) {
         this.error = err.response?.data?.error || err.message;
         throw err;
       } finally {
@@ -198,6 +199,26 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
+    async fetchSentInvitations() {
+      const userStore = useUserStore();
+      if (!userStore.user?.id) return;
+    
+      try {
+        const invites = await RequestService.getSentInvitations(userStore.user.id);
+        this.sentInvitations = Array.isArray(invites)
+          ? invites.map(invite => ({
+              email: invite.sender?.email || 'Ukjent',
+              date: invite.sentAt?.split('T')[0] || 'Ukjent dato',
+              status: invite.status
+            }))
+          : [];
+      } catch (err) {
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke hente invitasjoner';
+        this.sentInvitations = [];
+        throw err;
+      }
+    },
+    
     async createHousehold(data) {
       try {
         this.isLoading = true;

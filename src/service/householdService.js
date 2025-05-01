@@ -5,46 +5,17 @@ class HouseholdService extends BaseService {
     super('/household');
   }
 
-  // Fetch household details using userId 
-  async getHouseholdDetailsByUserId(userId) { 
+  async getHouseholdDetailsByUserId(userId) {
     if (!userId) {
       throw new Error('[ERROR] userId is undefined or null when calling getHouseholdDetailsByUserId');
     }
     try {
-      console.log('[GET] details/', userId);
-      const response = await this.get(`/details/${userId}`);
+      console.log('[POST] details with userId:', userId);
+      const response = await this.post('/details', { userId });  
       console.log('[RESPONSE] getHouseholdDetailsByUserId:', response);
       return response;
     } catch (error) {
       console.error("Error fetching household details by user ID:", error);
-      throw error;
-    }
-  }
-
-  // Get all members of a household
-  async getHouseholdMembers(householdId) {
-    try {
-      const response = await this.get(`/members?householdId=${householdId}`);
-      
-      const registeredMembers = response['registered members'] || [];
-      const unregisteredMembers = response['unregistered members'] || [];
-      
-      const registered = registeredMembers.map(member => ({
-        id: member.id,
-        name: member.fullName,
-        email: member.email,
-        isRegistered: true
-      }));
-
-      const unregistered = unregisteredMembers.map(member => ({
-        id: member.id,
-        name: member.fullName,
-        isRegistered: false
-      }));
-
-      return [...registered, ...unregistered];
-    } catch (error) {
-      console.error("Error fetching household members:", error);
       throw error;
     }
   }
@@ -59,18 +30,18 @@ class HouseholdService extends BaseService {
         });
         return {
           id: Date.now(),
-          name: data.name,
+          fullName: data.fullName,
           email: data.email,
           isRegistered: true
         };
       } else {
         await this.post('/add-unregistered-member', {
-          fullName: data.name,
+          fullName: data.fullName,
           householdId: householdId
         });
         return {
           id: Date.now(),
-          name: data.name,
+          fullName: data.fullName,
           isRegistered: false
         };
       }
@@ -80,33 +51,35 @@ class HouseholdService extends BaseService {
     }
   }
 
-  // Update a unregistered member's information
+  // Update a unregistered member
   async updateUnregisteredMember(householdId, memberId, data) {
     try {
       if (data.isRegistered) {
         throw new Error("Cannot update registered members.");
       }
-
+  
       const payload = {
-        memberId: memberId,
+        memberId,
         newFullName: data.name,
-        householdId: householdId
+        householdId // only include this if your backend needs it
       };
-
+  
       console.log('[POST] edit-unregistered-member → Sending payload:', payload);
-
+  
       return this.post(`/edit-unregistered-member`, payload);
     } catch (error) {
       console.error("Error updating unregistered member:", error);
       throw error;
     }
   }
-
   // Remove a member from the household
-  async removeRegisteredMember(email) {
+  async removeRegisteredMember(userId, householdId) {
     try {
-      console.log('[REMOVE REGISTERED] Email:', email);
-      return this.post(`/remove-user`, email);
+      console.log('[REMOVE REGISTERED] userId:', userId, 'householdId:', householdId);
+      return this.post(`/remove-user`, {
+        userId,
+        householdId
+      });
     } catch (error) {
       console.error("Error removing registered member:", error);
       throw error;
@@ -117,8 +90,7 @@ class HouseholdService extends BaseService {
   async removeUnregisteredMember(memberId) {
     try {
       console.log('[REMOVE UNREGISTERED] ID:', memberId);
-      // FIX: Don't use this.buildUrl() which adds the base path again
-      return this.deleteItem(`/delete-unregistered-member/${memberId}`);
+      return this.post(`/delete-unregistered-member`, { memberId });
     } catch (error) {
       console.error("Error removing unregistered member:", error);
       throw error;
