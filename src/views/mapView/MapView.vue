@@ -11,46 +11,76 @@
     <!-- Error message -->
     <div v-if="markersLoadError" class="map-error-message">
       {{ markersLoadError }}
-      <button @click="retryLoadMarkers" class="retry-button">Retry</button>
+      <Button @click="retryLoadMarkers" variant="primary" class="retry-button">Retry</Button>
     </div>
 
-    <!-- Custom Layer Controls -->
-    <div class="layer-control-container">
-      <div class="layer-controls">
-        <button
-          v-for="layer in layerOptions"
-          :key="layer.id"
-          :class="['layer-button', { active: activeLayerId === layer.id }]"
-          @click="setActiveLayer(layer.id)"
-        >
-          <div class="layer-icon" :class="[`${layer.id}-icon`]"></div>
-          <div class="layer-name">{{ layer.name }}</div>
-        </button>
+    <!-- Custom Layer Controls - Now positioned at left bottom with toggle for mobile -->
+    <div class="layer-control-container" :class="{ 'collapsed': isLayerCollapsed }">
+      <Button
+        v-if="isMobileView"
+        @click="toggleLayerCollapse"
+        variant="default"
+        class="layer-toggle-button"
+      >
+        <span v-if="isLayerCollapsed">Show Layers</span>
+        <span v-else>Hide Layers</span>
+      </Button>
+      <div :class="['layer-content', { 'hidden': isLayerCollapsed && isMobileView }]">
+        <div class="layer-controls">
+          <button
+            v-for="layer in layerOptions"
+            :key="layer.id"
+            :class="['layer-button', { active: activeLayerId === layer.id }]"
+            @click="setActiveLayer(layer.id)"
+          >
+            <div class="layer-icon" :class="[`${layer.id}-icon`]"></div>
+            <div class="layer-name">{{ layer.name }}</div>
+          </button>
+        </div>
       </div>
     </div>
 
     <!-- Marker Filter -->
-    <div class="marker-filter-container">
-      <MarkerFilter v-if="!isLoadingMarkers && !markersLoadError" />
+    <div class="marker-filter-container" :class="{ 'collapsed': isFilterCollapsed }">
+      <Button
+        v-if="isMobileView"
+        @click="toggleFilterCollapse"
+        variant="default"
+        class="filter-toggle-button"
+      >
+        <span v-if="isFilterCollapsed">Show Filters</span>
+        <span v-else>Hide Filters</span>
+      </Button>
+      <div :class="['filter-content', { 'hidden': isFilterCollapsed && isMobileView }]">
+        <MarkerFilter
+          v-if="!isLoadingMarkers && !markersLoadError"
+          :isMobileView="isMobileView"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import { onMounted, ref, onUnmounted } from 'vue';
+import { onMounted, ref, onUnmounted, computed } from 'vue';
 import { useMapStore } from '@/stores/map/mapStore';
 import { storeToRefs } from 'pinia';
 import MarkerFilter from '@/components/map/MarkerFilter.vue';
+import Button from '@/components/ui/button/Button.vue';
 import 'leaflet/dist/leaflet.css';
 
 export default {
   name: 'EmergencyMap',
   components: {
-    MarkerFilter
+    MarkerFilter,
+    Button
   },
   setup() {
     const mapContainer = ref(null);
     const mapStore = useMapStore();
+    const windowWidth = ref(window.innerWidth);
+    const isFilterCollapsed = ref(false);
+    const isLayerCollapsed = ref(false);
 
     // Use storeToRefs for reactive properties
     const {
@@ -60,7 +90,15 @@ export default {
       markersLoadError
     } = storeToRefs(mapStore);
 
+    // Determine if we're in mobile view
+    const isMobileView = computed(() => {
+      return windowWidth.value < 768; // Common breakpoint for mobile
+    });
+
+    // Set initial collapsed states based on screen size
     onMounted(() => {
+      isFilterCollapsed.value = isMobileView.value;
+      isLayerCollapsed.value = isMobileView.value;
       mapStore.initMap(mapContainer.value);
 
       // Add resize event listener
@@ -76,7 +114,18 @@ export default {
     });
 
     const handleResize = () => {
+      windowWidth.value = window.innerWidth;
       mapStore.resizeMap();
+
+      // Auto-collapse filter and layers on small screens when resizing
+      if (isMobileView.value) {
+        if (!isFilterCollapsed.value) {
+          isFilterCollapsed.value = true;
+        }
+        if (!isLayerCollapsed.value) {
+          isLayerCollapsed.value = true;
+        }
+      }
     };
 
     const setActiveLayer = (layerId) => {
@@ -87,6 +136,27 @@ export default {
       mapStore.initMarkers();
     };
 
+    const toggleFilterCollapse = () => {
+      isFilterCollapsed.value = !isFilterCollapsed.value;
+      // When expanding filter, we need to resize map after a small delay
+      // to account for the new layout
+      if (!isFilterCollapsed.value) {
+        setTimeout(() => {
+          mapStore.resizeMap();
+        }, 300);
+      }
+    };
+
+    const toggleLayerCollapse = () => {
+      isLayerCollapsed.value = !isLayerCollapsed.value;
+      // When expanding layers, we need to resize map after a small delay
+      if (!isLayerCollapsed.value) {
+        setTimeout(() => {
+          mapStore.resizeMap();
+        }, 300);
+      }
+    };
+
     return {
       mapContainer,
       layerOptions,
@@ -94,7 +164,12 @@ export default {
       setActiveLayer,
       isLoadingMarkers,
       markersLoadError,
-      retryLoadMarkers
+      retryLoadMarkers,
+      isMobileView,
+      isFilterCollapsed,
+      toggleFilterCollapse,
+      isLayerCollapsed,
+      toggleLayerCollapse,
     };
   }
 };
@@ -113,12 +188,50 @@ export default {
   height: 100%;
 }
 
-/* Layer Control Container*/
+/* Layer Control Container - Now positioned at left bottom */
 .layer-control-container {
   position: absolute;
   bottom: 30px;
-  left: 30px;
+  left: 16px;
   z-index: 1000;
+  transition: all 0.3s ease;
+  max-width: 100%;
+  width: auto;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+}
+
+/* Layer Toggle Button (for mobile) */
+.layer-toggle-button {
+  padding: 10px 16px;
+  background-color: white;
+  border: none;
+  border-radius: 12px;
+  text-align: center;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  flex-shrink: 0;
+}
+
+.layer-content {
+  transition: all 0.3s ease;
+  opacity: 1;
+  margin-left: 12px;
+}
+
+.layer-content.hidden {
+  width: 0;
+  opacity: 0;
+  overflow: hidden;
+  margin-left: 0;
+  visibility: hidden;
+}
+
+.layer-content:not(.hidden) {
+  visibility: visible;
 }
 
 /* Layer Controls */
@@ -183,10 +296,53 @@ export default {
   font-weight: 500;
 }
 
+.marker-filter-container {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 1000;
+  transition: all 0.3s ease;
+  max-width: 100%;
+  width: auto;
+}
+
+.filter-toggle-button {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  background-color: white;
+  border: none;
+  border-radius: 12px;
+  text-align: center;
+  font-weight: 500;
+  color: #333;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+}
+
+.filter-content {
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  max-height: 500px;
+  opacity: 1;
+}
+
+.filter-content.hidden {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  margin-top: 0;
+}
+
+.filter-content:not(.hidden) {
+  margin-top: 12px;
+}
+
 /* Custom Zoom Controls */
 :deep(.leaflet-control-zoom) {
-  margin-bottom: 30px !important;
-  margin-right: 30px !important;
+  position: absolute !important;
+  top: 70px !important; /* Position below geolocation button */
+  right: 16px !important;
+  margin: 0 !important; /* Remove default margins */
   border: none;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
@@ -202,6 +358,11 @@ export default {
   color: #333;
   font-size: 18px;
   font-weight: bold;
+  display: block; /* Make controls stack vertically */
+}
+
+:deep(.leaflet-control-zoom-in) {
+  border-bottom: 1px solid #eee; /* Add divider between zoom buttons */
 }
 
 :deep(.leaflet-control-zoom-in:hover),
@@ -212,13 +373,6 @@ export default {
 /* Hide attribution control */
 :deep(.leaflet-control-attribution) {
   display: none;
-}
-
-.marker-filter-container {
-  position: absolute;
-  top: 30px;
-  left: 30px;
-  z-index: 1000;
 }
 
 :deep(.custom-div-icon) {
@@ -255,11 +409,6 @@ export default {
   margin-bottom: 10px;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 .map-loading-text {
   font-size: 16px;
   color: #333;
@@ -276,6 +425,8 @@ export default {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
   text-align: center;
   z-index: 1000;
+  width: 80%;
+  max-width: 400px;
 }
 
 .retry-button {
@@ -290,5 +441,59 @@ export default {
 
 .retry-button:hover {
   background-color: #2980b9;
+}
+
+/* Mobile-specific styles */
+@media (max-width: 767px) {
+  .layer-controls {
+    padding: 2px;
+    flex-wrap: nowrap;
+  }
+
+  .layer-button {
+    padding: 6px 8px;
+    min-width: 54px;
+  }
+
+  .layer-icon {
+    width: 32px;
+    height: 32px;
+    margin-bottom: 2px;
+  }
+
+  .layer-name {
+    font-size: 10px;
+  }
+
+  .layer-control-container {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .layer-content {
+    height: auto;
+    margin-bottom: 0;
+  }
+
+  :deep(.leaflet-control-zoom) {
+    top: 66px !important;
+  }
+
+  :deep(.leaflet-control-zoom-in),
+  :deep(.leaflet-control-zoom-out) {
+    width: 30px;
+    height: 30px;
+    line-height: 30px;
+    font-size: 16px;
+  }
+
+  .map-loading-spinner {
+    width: 30px;
+    height: 30px;
+  }
+
+  .map-loading-text {
+    font-size: 14px;
+  }
 }
 </style>
