@@ -1,10 +1,10 @@
 <script setup>
 import { RouterView } from 'vue-router'
-import Navbar from '@/components/Navbar.vue'
+import NavBar from '@/components/NavBar.vue'
 import { useRoute } from 'vue-router'
 import Toaster from '@/components/ui/toast/Toaster.vue'
 import { useUserStore } from '@/stores/UserStore'
-import { onBeforeMount } from 'vue'  
+import { onBeforeMount } from 'vue'
 
 const userStore = useUserStore()
 const route = useRoute()
@@ -16,8 +16,8 @@ onBeforeMount(() => {
 
 <template>
   <div>
-    
-    <Navbar v-if="!route.meta.hideNavbar" />
+
+    <NavBar v-if="!route.meta.hideNavbar" />
   </div>
   <RouterView />
   <Toaster />
