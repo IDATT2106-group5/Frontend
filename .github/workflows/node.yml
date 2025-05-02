@@ -38,8 +38,15 @@ jobs:
       - name: Build frontend
         run: npm run build
 
+      - name: Cypress install
+        run: npx cypress install --force
+      
       - name: Run e2e tests
-        run: npm run test:e2e
+        uses: cypress-io/github-action@v6
+        with:
+          start: npm run preview
+          wait-on: 'http://localhost:5173'
+          browser: chrome
       
       - name: Archive frontend build
         if: success()
