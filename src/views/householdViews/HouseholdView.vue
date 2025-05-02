@@ -44,9 +44,6 @@ const householdOwnerId = computed(() => householdStore.currentHousehold?.ownerId
 onMounted(async () => {
   try {
     const hasHousehold = await householdStore.checkCurrentHousehold()
-    if (!hasHousehold) {
-      error.value = 'Ingen husstand funnet.'
-    }
     if (hasHousehold) {
       await householdStore.fetchSentInvitations(); 
       await householdStore.fetchJoinRequests(); 
@@ -322,12 +319,18 @@ const giveOwnership = async (user) => {
         <p>Laster inn...</p>
       </div>
       
-      <!-- Error message -->
-      <div v-else-if="error" class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
+      <!-- Error message - show only if there's an explicit error but the user has a household -->
+      <div v-else-if="error && householdStore.hasHousehold" class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
         {{ error }}
-        
-        <div class="mt-4" v-if="!householdStore.hasHousehold">
-          <Button @click="router.push('/create-household')">Opprett ny husstand</Button>
+      </div>
+      
+      <!-- No household message - shows the nice UI when user has no household -->
+      <div v-else-if="!householdStore.hasHousehold" class="text-center py-12 bg-white rounded-lg shadow">
+        <h2 class="text-xl font-bold mb-4">Ingen husstand funnet</h2>
+        <p class="mb-6">Du er ikke tilknyttet en husstand ennå.</p>
+        <div class="space-x-4">
+          <Button @click="router.push('/create-household')">Opprett husstand</Button>
+          <Button variant="outline" @click="activeTab = 'search'">Søk husstand</Button>
         </div>
       </div>
       
@@ -672,17 +675,6 @@ const giveOwnership = async (user) => {
             class="w-full px-3 py-2 border rounded" 
           />
           <Button @click="joinHousehold" class="w-full">Bli med</Button>
-        </div>
-      </div>
-      
-      <div v-else>
-        <div class="text-center py-12 bg-white rounded-lg shadow">
-          <h2 class="text-xl font-bold mb-4">Ingen husstand funnet</h2>
-          <p class="mb-6">Du er ikke tilknyttet en husstand ennå.</p>
-          <div class="space-x-4">
-            <Button @click="router.push('/create-household')">Opprett husstand</Button>
-            <Button variant="outline" @click="activeTab = 'search'">Søk husstand</Button>
-          </div>
         </div>
       </div>
     </div>

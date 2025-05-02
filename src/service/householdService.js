@@ -12,14 +12,18 @@ class HouseholdService extends BaseService {
     }
     try {
       console.log('[POST] details with userId:', userId);
-      const response = await this.post('details', { userId });  
+      const response = await this.post('details', { userId });
       console.log('[RESPONSE] getHouseholdDetailsByUserId:', response);
       return response;
     } catch (error) {
-      console.error("Error fetching household details by user ID:", error);
+      // Suppress expected 400 error logging
+      if (error.response?.status !== 400) {
+        console.error("Error fetching household details by user ID:", error);
+      }
       throw error;
     }
   }
+  
 
   // Add a member to the household
   async addMember(householdId, data) {

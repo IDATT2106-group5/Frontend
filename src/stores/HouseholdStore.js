@@ -50,7 +50,6 @@ export const useHouseholdStore = defineStore('household', {
           return false;
         }
         const response = await HouseholdService.getHouseholdDetailsByUserId(userStore.user.id);
-        console.log('[RESPONSE] getHouseholdDetailsByUserId:', response);
         this.currentHousehold = {
           ...response.household,
           ownerId: response.household.owner.id 
@@ -71,7 +70,6 @@ export const useHouseholdStore = defineStore('household', {
         this.hasHousehold = true;
         return true;
       } catch (err) {
-        console.error("Household check failed:", err);
         this.error = err.response?.data?.error || err.message || 'Kunne ikke finne husholdning';
         this.hasHousehold = false;
         return false;
