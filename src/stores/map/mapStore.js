@@ -5,6 +5,53 @@ import MarkerService from '@/service/map/markerService';
 import IncidentMapService from '@/service/map/incidentMapService';
 import L from 'leaflet';
 
+// Define incident severity visualization configuration
+const severityConfig = {
+  RED: {
+    id: 'RED',
+    name: 'Kritisk farenivå',
+    color: '#FF3D33', // Red
+    fillOpacity: 0.35,
+    strokeWidth: 2,
+    // Visual configuration for concentric circles
+    visual: {
+      // Each severity can have multiple circles with different radiusMultipliers
+      circles: [
+        { color: '#45D278', radiusMultiplier: 1.2, fillOpacity: 0.25, strokeWidth: 1 },  // Green (outermost)
+        { color: '#FFC700', radiusMultiplier: 1.1, fillOpacity: 0.3, strokeWidth: 1.5 }, // Yellow (middle)
+        { color: '#FF3D33', radiusMultiplier: 1.0, fillOpacity: 0.35, strokeWidth: 2 }   // Red (innermost)
+      ]
+    }
+  },
+  YELLOW: {
+    id: 'YELLOW',
+    name: 'Forhøyet farenivå',
+    color: '#FFC700', // Yellow
+    fillOpacity: 0.3,
+    strokeWidth: 1.5,
+    // Visual configuration for concentric circles
+    visual: {
+      circles: [
+        { color: '#45D278', radiusMultiplier: 1.1, fillOpacity: 0.25, strokeWidth: 1 },  // Green (outermost)
+        { color: '#FFC700', radiusMultiplier: 1.0, fillOpacity: 0.3, strokeWidth: 1.5 }  // Yellow (innermost)
+      ]
+    }
+  },
+  GREEN: {
+    id: 'GREEN',
+    name: 'Lavt farenivå',
+    color: '#45D278', // Green
+    fillOpacity: 0.25,
+    strokeWidth: 1,
+    // Visual configuration for concentric circles
+    visual: {
+      circles: [
+        { color: '#45D278', radiusMultiplier: 1.0, fillOpacity: 0.25, strokeWidth: 1 }  // Green (only circle)
+      ]
+    }
+  }
+};
+
 export const useMapStore = defineStore('map', {
   state: () => ({
     // Core map state
@@ -104,29 +151,7 @@ export const useMapStore = defineStore('map', {
      * Get severity level definitions
      */
     severityLevels() {
-      return {
-        RED: {
-          id: 'RED',
-          name: 'Kritisk farenivå',
-          color: '#FF3D33', // Red
-          fillOpacity: 0.35,
-          strokeWidth: 2
-        },
-        YELLOW: {
-          id: 'YELLOW',
-          name: 'Forhøyet farenivå',
-          color: '#FFC700', // Yellow
-          fillOpacity: 0.3,
-          strokeWidth: 1.5
-        },
-        GREEN: {
-          id: 'GREEN',
-          name: 'Lavt farenivå',
-          color: '#45D278', // Green
-          fillOpacity: 0.25,
-          strokeWidth: 1
-        }
-      };
+      return severityConfig;
     }
   },
 
@@ -449,80 +474,32 @@ export const useMapStore = defineStore('map', {
     createIncidentCircles(incident) {
       if (!this.map) return null;
 
-      const level = this.severityLevels[incident.severity] || this.severityLevels.GREEN;
+      const severity = incident.severity || 'GREEN';
       const baseRadius = incident.impactRadius * 1000; // Convert km to meters
+      const config = this.severityLevels[severity] || this.severityLevels.GREEN;
 
       // Create a layer group to hold our circles
       const layerGroup = L.layerGroup();
 
-      // Create differently colored circles based on severity
-      if (incident.severity === 'RED') {
-        // Green circle (outermost)
-        const greenCircle = L.circle([incident.latitude, incident.longitude], {
-          radius: baseRadius * 1.2, // 20% larger than base radius
-          color: this.severityLevels.GREEN.color,
-          fillColor: this.severityLevels.GREEN.color,
-          fillOpacity: this.severityLevels.GREEN.fillOpacity,
-          weight: this.severityLevels.GREEN.strokeWidth
-        });
+      // If visual configuration exists, create circles according to it
+      if (config.visual && config.visual.circles) {
+        // Sort circles by radius multiplier in descending order
+        // to ensure proper z-index stacking (largest circles at the bottom)
+        const sortedCircles = [...config.visual.circles]
+          .sort((a, b) => b.radiusMultiplier - a.radiusMultiplier);
 
-        // Orange circle (middle)
-        const orangeCircle = L.circle([incident.latitude, incident.longitude], {
-          radius: baseRadius * 1.1, // 10% larger than base radius
-          color: this.severityLevels.YELLOW.color,
-          fillColor: this.severityLevels.YELLOW.color,
-          fillOpacity: this.severityLevels.YELLOW.fillOpacity,
-          weight: this.severityLevels.YELLOW.strokeWidth
-        });
+        // Create each circle according to the configuration
+        sortedCircles.forEach(circleConfig => {
+          const circle = L.circle([incident.latitude, incident.longitude], {
+            radius: baseRadius * circleConfig.radiusMultiplier,
+            color: circleConfig.color,
+            fillColor: circleConfig.color,
+            fillOpacity: circleConfig.fillOpacity || config.fillOpacity,
+            weight: circleConfig.strokeWidth || config.strokeWidth
+          });
 
-        // Red circle (innermost)
-        const redCircle = L.circle([incident.latitude, incident.longitude], {
-          radius: baseRadius,
-          color: this.severityLevels.RED.color,
-          fillColor: this.severityLevels.RED.color,
-          fillOpacity: this.severityLevels.RED.fillOpacity,
-          weight: this.severityLevels.RED.strokeWidth
+          layerGroup.addLayer(circle);
         });
-
-        // Add circles to layer group from largest to smallest for proper z-index
-        layerGroup.addLayer(greenCircle);
-        layerGroup.addLayer(orangeCircle);
-        layerGroup.addLayer(redCircle);
-      }
-      else if (incident.severity === 'YELLOW') {
-        // Green circle (outermost)
-        const greenCircle = L.circle([incident.latitude, incident.longitude], {
-          radius: baseRadius * 1.1, // 10% larger than base radius
-          color: this.severityLevels.GREEN.color,
-          fillColor: this.severityLevels.GREEN.color,
-          fillOpacity: this.severityLevels.GREEN.fillOpacity,
-          weight: this.severityLevels.GREEN.strokeWidth
-        });
-
-        // Orange circle (innermost)
-        const orangeCircle = L.circle([incident.latitude, incident.longitude], {
-          radius: baseRadius,
-          color: this.severityLevels.YELLOW.color,
-          fillColor: this.severityLevels.YELLOW.color,
-          fillOpacity: this.severityLevels.YELLOW.fillOpacity,
-          weight: this.severityLevels.YELLOW.strokeWidth
-        });
-
-        // Add circles to layer group from largest to smallest for proper z-index
-        layerGroup.addLayer(greenCircle);
-        layerGroup.addLayer(orangeCircle);
-      }
-      else {
-        // Just a green circle for GREEN severity
-        const greenCircle = L.circle([incident.latitude, incident.longitude], {
-          radius: baseRadius,
-          color: this.severityLevels.GREEN.color,
-          fillColor: this.severityLevels.GREEN.color,
-          fillOpacity: this.severityLevels.GREEN.fillOpacity,
-          weight: this.severityLevels.GREEN.strokeWidth
-        });
-
-        layerGroup.addLayer(greenCircle);
       }
 
       // Add popup with incident information
@@ -532,7 +509,7 @@ export const useMapStore = defineStore('map', {
             ${incident.name ? `<h3>${incident.name}</h3>` : ''}
             ${incident.description ? `<p>${incident.description}</p>` : ''}
             ${incident.startedAt ? `<p><strong>Startet:</strong> ${new Date(incident.startedAt).toLocaleString()}</p>` : ''}
-            ${incident.severity ? `<p><strong>Farenivå:</strong> ${this.severityLevels[incident.severity].name}</p>` : ''}
+            ${incident.severity ? `<p><strong>Farenivå:</strong> ${config.name}</p>` : ''}
           </div>
         `);
       }
