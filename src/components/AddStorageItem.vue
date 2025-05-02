@@ -1,6 +1,7 @@
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
-import { useItemStore } from '@/stores/ItemStore';
+import {ref, computed, watch, onMounted} from 'vue';
+import {useItemStore} from '@/stores/ItemStore';
+import {ItemType} from '@/types/ItemType';
 
 const props = defineProps({
   category: {
@@ -15,77 +16,96 @@ const addRows = ref([]);
 
 // Access the item store
 const itemStore = useItemStore();
-const { items, isLoading, error, fetchItems } = itemStore;
 
 // Fetch items from the API when the component mounts
-onMounted(() => {
-  fetchItems();
+onMounted(async () => {
+  // Fetch all items first
+  await itemStore.fetchItems();
+  console.log("Items loaded in AddStorageItem:", itemStore.items.value);
+
   // Add initial row
   addNewRow();
 });
 
-// Watch the `category` prop to refetch items if category changes
+// Watch the `category` prop to filter items if category changes
 watch(() => props.category, () => {
-  fetchItems();
+  console.log("Category changed to:", props.category);
 });
 
-// Get type options dynamically based on the category
-const typeOptions = computed(() => {
-  if (isLoading.value || error.value) return [];
+// Create a computed property that provides items based on the selected category
+const itemOptions = computed(() => {
+  if (itemStore.isLoading.value || itemStore.error.value) {
+    console.log("Still loading or error occurred");
+    return [];
+  }
 
+  console.log("All available items:", itemStore.items);
+  console.log("Current category:", props.category);
+
+  // Map frontend categories to backend enum values
   const categoryMapping = {
     'Væske': 'LIQUIDS',
     'Mat': 'FOOD',
     'Medisiner': 'FIRST_AID',
     'Redskap': 'TOOL',
-    'Diverse': 'OTHER',
+    'Diverse': 'OTHER'
   };
 
-  const categoryCode = categoryMapping[props.category];
-  return items.value.filter(item => item.category === categoryCode);
-});
-
-// Get unit options based on category
-const unitOptions = computed(() => {
-  switch(props.category) {
-    case 'Væske':
-      return ['L', 'ml', 'flaske', 'kartong'];
-    case 'Mat':
-      return ['stk', 'kg', 'g', 'boks', 'pakke'];
-    case 'Medisiner':
-      return ['stk', 'pakke', 'dose', 'eske'];
-    case 'Redskap':
-      return ['stk', 'sett', 'pakke'];
-    case 'Diverse':
-      return ['stk', 'pakke', 'sett', 'eske'];
-    default:
-      return ['stk'];
+  const itemType = categoryMapping[props.category];
+  if (!itemType) {
+    console.log("No matching item type for category:", props.category);
+    return [];
   }
+
+  console.log("Looking for items with type:", itemType);
+
+  // Filter items based on their itemType matching the current category
+  const filteredItems = itemStore.items.filter(item => {
+    console.log("Checking item:", item.name, "Type:", item.itemType);
+    return item.itemType === itemType;
+  });
+
+  console.log("Filtered items for display:", filteredItems);
+  return filteredItems;
 });
 
-// Add a new row
-const addNewRow = () => {
-  const defaultUnit = props.category === 'Væske' ? 'L' : 'stk';
-
+// Add a new empty row
+function addNewRow() {
   addRows.value.push({
     selectedItem: null,
-    itemDate: '',
-    itemQuantity: 1, // Default to 1
-    selectedUnit: defaultUnit
+    selectedUnit: "",
+    itemQuantity: 1,
+    itemDate: null
   });
-};
+}
+
+// Remove a row
+function removeRow(index) {
+  addRows.value.splice(index, 1);
+
+  // Add a row if there are none left
+  if (addRows.value.length === 0) {
+    addNewRow();
+  }
+}
 
 // Save an item
-const saveItem = (row) => {
-  if (!row.selectedItem) return;
+function saveItem(row) {
+  if (!row.selectedItem) {
+    console.log("No item selected, cannot save");
+    return;
+  }
 
-  // Create the object in the format expected by StorageService.addItemToStorage
+  console.log("Saving item:", row.selectedItem);
+
+  // Create the object in the format expected by your storage service
   const newItem = {
-    unit: row.selectedUnit,
+    unit: row.selectedUnit || "stk",
     amount: parseInt(row.itemQuantity) || 1,
-    expirationDate: row.itemDate ? new Date(row.itemDate) : null
+    expirationDate: row.itemDate ? formatDateForBackend(row.itemDate) : null
   };
 
+  // Emit the event to add the item to storage
   emit('add-item', {
     itemId: row.selectedItem.id,
     data: newItem
@@ -101,176 +121,110 @@ const saveItem = (row) => {
   if (addRows.value.length === 0) {
     addNewRow();
   }
-};
+}
 
-// Remove a row
-const removeRow = (index) => {
-  addRows.value.splice(index, 1);
+// Helper function to format date for backend
+function formatDateForBackend(dateString) {
+  if (!dateString) return null;
 
-  // Add a new empty row if there are no rows left
-  if (addRows.value.length === 0) {
-    addNewRow();
-  }
-};
+  // Create a Date object from the date string
+  const date = new Date(dateString);
 
-// Show date picker dialog
-const showDatePicker = (event) => {
-  const dateInput = event.target.closest('.date-group').querySelector('input[type="date"]');
-  if (dateInput) {
-    dateInput.showPicker();
-  }
-};
+  // Format as ISO string that LocalDateTime.parse can handle
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
 
-// Watch the selectedItem to auto-populate unit if needed
-watch(() => addRows.value, (newRows) => {
-  newRows.forEach(row => {
-    if (row.selectedItem && row.selectedItem.defaultUnit) {
-      row.selectedUnit = row.selectedItem.defaultUnit;
-    }
-  });
-}, { deep: true });
+  return `${year}-${month}-${day}T00:00:00`;
+}
 </script>
 
 <template>
-  <div class="add-storage-items">
-    <h3>Legg til {{ category }}</h3>
+  <div class="add-item-form">
+    <!-- Row for each item to add -->
+    <div v-for="(row, index) in addRows" :key="index" class="add-item-row">
+      <!-- Item selection dropdown -->
+      <v-select
+        v-model="row.selectedItem"
+        :items="itemOptions"
+        item-title="name"
+        item-value="id"
+        label="Velg vare"
+        return-object
+        class="input-field"
+      ></v-select>
 
-    <!-- Loading and error states -->
-    <div v-if="isLoading" class="loading">Laster elementer...</div>
-    <div v-else-if="error" class="error">{{ error }}</div>
+      <!-- Unit input -->
+      <v-text-field
+        v-model="row.selectedUnit"
+        label="Enhet"
+        placeholder="stk"
+        class="input-field"
+      ></v-text-field>
 
-    <!-- Add rows -->
-    <div v-for="(row, index) in addRows" :key="index" class="add-row">
-      <div class="form-group">
-        <label>Type</label>
-        <select v-model="row.selectedItem" class="form-control">
-          <option :value="null">Velg type</option>
-          <option v-for="item in typeOptions" :key="item.id" :value="item">
-            {{ item.name }}
-          </option>
-        </select>
-      </div>
+      <!-- Quantity input -->
+      <v-text-field
+        v-model="row.itemQuantity"
+        label="Antall"
+        type="number"
+        min="1"
+        class="input-field"
+      ></v-text-field>
 
-      <div class="form-group">
-        <label>Mengde</label>
-        <input type="number" v-model="row.itemQuantity" class="form-control" min="1">
-      </div>
+      <!-- Date picker -->
+      <v-menu>
+        <template v-slot:activator="{ props }">
+          <v-text-field
+            v-model="row.itemDate"
+            label="Utløpsdato"
+            v-bind="props"
+            prepend-icon="mdi-calendar"
+            class="input-field"
+          ></v-text-field>
+        </template>
+        <v-date-picker
+          v-model="row.itemDate"
+          no-title
+          scrollable
+        ></v-date-picker>
+      </v-menu>
 
-      <div class="form-group">
-        <label>Enhet</label>
-        <select v-model="row.selectedUnit" class="form-control">
-          <option v-for="unit in unitOptions" :key="unit" :value="unit">
-            {{ unit }}
-          </option>
-        </select>
-      </div>
-
-      <div class="form-group date-group">
-        <label>Utløpsdato</label>
-        <input type="date" v-model="row.itemDate" class="form-control">
-        <button @click="showDatePicker" type="button" class="date-picker-button">
-          <span>📅</span>
-        </button>
-      </div>
-
-      <div class="actions">
-        <button @click="saveItem(row)" :disabled="!row.selectedItem" class="save-btn">
-          Lagre
-        </button>
-        <button @click="removeRow(index)" class="remove-btn">
-          Fjern
-        </button>
+      <!-- Action buttons -->
+      <div class="action-buttons">
+        <v-btn icon @click="saveItem(row)" color="success">
+          <v-icon>mdi-check</v-icon>
+        </v-btn>
+        <v-btn icon @click="removeRow(index)" color="error">
+          <v-icon>mdi-close</v-icon>
+        </v-btn>
       </div>
     </div>
 
-    <!-- Add new row button -->
-    <button @click="addNewRow" class="add-row-btn">
-      Legg til {{ category }}
-    </button>
+    <!-- Button to add more rows -->
+    <v-btn @click="addNewRow" block color="primary" class="mt-3">
+      Legg til fler
+    </v-btn>
   </div>
 </template>
 
-
 <style scoped>
-.add-storage-items {
-  margin-bottom: 20px;
+.add-item-form {
+  margin-top: 1rem;
 }
 
-.add-row {
+.add-item-row {
   display: flex;
-  gap: 10px;
-  margin-bottom: 10px;
-  align-items: flex-end;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
 
-.form-group {
+.input-field {
+  flex: 1;
+}
+
+.action-buttons {
   display: flex;
-  flex-direction: column;
-  min-width: 120px;
-}
-
-.date-group {
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-.date-picker-button {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  height: 100%;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-
-.actions {
-  display: flex;
-  gap: 5px;
-}
-
-.add-row-btn {
-  margin-top: 10px;
-  padding: 8px 16px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.save-btn {
-  padding: 6px 12px;
-  background-color: #2196F3;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.remove-btn {
-  padding: 6px 12px;
-  background-color: #f44336;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.loading, .error {
-  margin: 10px 0;
-  padding: 10px;
-  border-radius: 4px;
-}
-
-.loading {
-  background-color: #e3f2fd;
-}
-
-.error {
-  background-color: #ffebee;
-  color: #f44336;
+  gap: 0.5rem;
 }
 </style>

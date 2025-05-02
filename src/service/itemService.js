@@ -8,10 +8,12 @@ class ItemService extends BaseService {
   // Fetch all catalog items
   async getAllItems() {
     try {
-      // Remove the /getAll part
-      return await this.get('');
+      console.log("Calling getAllItems API endpoint");
+      const response = await this.get('');
+      console.log("getAllItems response:", response);
+      return response;
     } catch (error) {
-      console.error("Error fetching items:", error);
+      console.error("Error in getAllItems:", error);
       throw error;
     }
   }
@@ -19,9 +21,12 @@ class ItemService extends BaseService {
   // Fetch items by type
   async getItemsByType(type) {
     try {
-      return await this.get(`/type/${type}`);
+      console.log(`Calling getItemsByType API endpoint for type: ${type}`);
+      const response = await this.get(`/type/${type}`);
+      console.log(`getItemsByType response for ${type}:`, response);
+      return response;
     } catch (error) {
-      console.error("Error fetching items by type:", error);
+      console.error(`Error in getItemsByType for ${type}:`, error);
       throw error;
     }
   }
@@ -29,9 +34,12 @@ class ItemService extends BaseService {
   // Fetch a single item by ID
   async getItemById(id) {
     try {
-      return await this.get(`/${id}`);
+      console.log(`Calling getItemById API endpoint for ID: ${id}`);
+      const response = await this.get(`/${id}`);
+      console.log(`getItemById response for ${id}:`, response);
+      return response;
     } catch (error) {
-      console.error("Error fetching item by ID:", error);
+      console.error(`Error in getItemById for ${id}:`, error);
       throw error;
     }
   }
