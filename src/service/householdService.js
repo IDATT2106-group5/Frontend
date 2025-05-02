@@ -150,6 +150,19 @@ class HouseholdService extends BaseService {
     }
   }
 
+  // Method to delete a household
+  async deleteHousehold(householdId, ownerId) {
+    try {
+      return await this.post('delete', {
+        householdId,
+        ownerId
+      });
+    } catch (error) {
+      console.error('Error deleting household:', error);
+      throw error;
+    }
+  }
+
   async transferOwnership(householdId, userId) {
     try {
       console.log('[POST] change-owner → Transferring ownership to userId:', userId, 'for householdId:', householdId);

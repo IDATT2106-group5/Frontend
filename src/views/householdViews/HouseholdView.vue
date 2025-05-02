@@ -203,6 +203,19 @@ const joinHousehold = async () => {
   }
 }
 
+// Delete household
+const deleteHousehold = async () => {
+  if (confirm('Er du sikker på at du vil slette husstanden? Dette kan ikke angres.')) {
+    try {
+      await householdStore.deleteHousehold();
+      alert('Husstanden er slettet');
+      router.push('/household/create');
+    } catch (err) {
+      error.value = err.message || 'Kunne ikke slette husstand';
+    }
+  }
+};
+
 // Leave household
 const leaveHousehold = async () => {
   if (confirm('Er du sikker på at du vil forlate husstanden?')) {
@@ -329,7 +342,7 @@ const giveOwnership = async (user) => {
         <h2 class="text-xl font-bold mb-4">Ingen husstand funnet</h2>
         <p class="mb-6">Du er ikke tilknyttet en husstand ennå.</p>
         <div class="space-x-4">
-          <Button @click="router.push('/create-household')">Opprett husstand</Button>
+          <Button @click="router.push('/household/create')">Opprett husstand</Button>
           <Button variant="outline" @click="activeTab = 'search'">Søk husstand</Button>
         </div>
       </div>
@@ -354,6 +367,14 @@ const giveOwnership = async (user) => {
             </div>  
           </div>
           <div class="space-x-2">
+            <Button
+              v-if="isOwner"
+              class="text-red-600 border-red-500 hover:bg-red-50"
+              variant="outline"
+              @click="deleteHousehold"
+            >
+              Slett husstand
+            </Button>
             <Button
               variant="outline"
               class="text-red-600 border-red-500 hover:bg-red-50"

@@ -370,6 +370,30 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
+    // Method to delete the current household
+    async deleteHousehold() {
+      const userStore = useUserStore();
+    
+      if (!this.currentHousehold?.id || !userStore.user?.id) {
+        throw new Error('Manglende husstand eller brukerinfo');
+      }
+    
+      this._verifyOwnership();
+    
+      try {
+        this.isLoading = true;
+        await HouseholdService.deleteHousehold(this.currentHousehold.id, userStore.user.id);
+        this.currentHousehold = null;
+        this.hasHousehold = false;
+        this.members = { registered: [], unregistered: [] };
+      } catch (err) {
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke slette husstand';
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
     // Method to leave the current household
     async leaveHousehold() {
       if (!this.currentHousehold?.id) {
