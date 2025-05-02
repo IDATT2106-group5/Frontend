@@ -32,11 +32,14 @@
           rammede områdene. Situasjonen kan forverre seg grunnet fortsatt kraftig regn.
         </p>
       </div>
-
+      
       <!-- Map Placeholder -->
-      <div class="w-full md:w-1/3 h-64 bg-gray-300 rounded flex items-center justify-center text-gray-700">
-        Kart
-      </div>
+      <router-link to="/map" class="w-full md:w-1/3">
+        <div class="h-64 bg-gray-300 rounded flex items-center justify-center text-gray-700 hover:bg-gray-400 transition cursor-pointer">
+          Kart
+        </div>
+      </router-link>
+
     </section>
 
     <!-- Latest News -->
