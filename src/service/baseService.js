@@ -5,7 +5,7 @@ const handleErrors = (error) => {
     console.error("Backend returned code", error.response.status, "body was:", error.response.data);
     return Promise.reject({
       status: error.response.status,
-      message: error.response.data.message || 'Unknown error occurred',
+      message: error.response.data || 'Unknown error occurred',
     });
   } else if (error.request) {
     console.error("No response received");
@@ -68,21 +68,14 @@ export default class BaseService {
     }
   }
 
-  async patch(path = '', data, options = {}) {
-    try {
-      const url = this.buildUrl(path);
-      const response = await apiClient.patch(url, data, this.mergeOptions(options));
-      return response.data;
-    } catch (error) {
-      return handleErrors(error);
-    }
-  }
-
   buildUrl(path) {
     if (!path) {
       return this.endpoint;
     }
-    return this.endpoint ? `${this.endpoint}/${path}` : path;
+    if (path.startsWith('/')) {
+      path = path.substring(1);
+    }
+    return path.startsWith('http') ? path : this.endpoint ? `${this.endpoint}/${path}` : path;
   }
 
   mergeOptions(options) {

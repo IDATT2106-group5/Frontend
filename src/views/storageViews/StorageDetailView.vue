@@ -1,135 +1,231 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import { Droplet, Apple, Pill, Package } from "lucide-vue-next";
+import { Droplet, Apple, Pill, Hammer, Package } from "lucide-vue-next";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger
 } from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
 
 import StorageNavbar from "@/components/StorageNavbar.vue";
-import NestedItemList from "@/components/NestedItemList.vue"; // Import our new component
+import EditableNestedItemList from "@/components/EditableNestedItemList.vue";
 import SearchBar from '@/components/SearchBar.vue';
-import { Button } from '@/components/ui/button/index.js';
 
-// Import your mock data
-import { groupedMockItems } from '@/views/storageViews/mockData.vue';
+// Services and store
+import { useStorageStore } from '@/stores/StorageStore.js';
+import { ItemType } from '@/types/ItemType';
+import { useUserStore } from '@/stores/UserStore.js';
+import UserService from '@/service/userService';
+import AddStorageItem from '@/components/AddStorageItem.vue'
 
 // Component state
-const groupedItems = ref(groupedMockItems);
-
-// Track which accordion items are open
 const openItem = ref(null);
+const isEditing = ref(false);
+const isLoading = ref(true);
+const error = ref(null);
 
+// Initialize store
+const storageStore = useStorageStore();
+const userStore = useUserStore();
+
+// Fetch household ID and then storage items on mount
+onMounted(async () => {
+  try {
+    isLoading.value = true;
+    error.value = null;
+
+    // Get current household from UserService
+    const response = await UserService.getCurrentHouseholdByUserId(userStore.user.id);
+    console.log(response)
+    const householdId = response.id;
+
+    console.log(householdId)
+
+    // Set household ID in store and fetch items
+    storageStore.setCurrentHouseholdId(householdId);
+    await storageStore.fetchItems();
+  } catch (e) {
+    console.error('Failed to initialize storage:', e);
+    error.value = e.message || 'Failed to load storage data';
+  } finally {
+    isLoading.value = false;
+  }
+});
+
+// Accordion toggle
 const toggleAccordion = (value) => {
   openItem.value = openItem.value === value ? null : value;
 };
 
-// Methods
-const fetchItems = async () => {
+// Handle updates/deletes
+const handleItemUpdate = async (id, data) => {
+  console.log("Parent received update-item event with ID:", id);
+  console.log("Data to update:", data);
   try {
-    // For development with mock data, comment out the API fetch
-    // and use the imported mock data instead
-
-    // Simulating API fetch using mock data
-    // In a real application, you would uncomment this:
-    /*
-    const response = await fetch("/api/items");
-    const fetchedItems = await response.json();
-
-    // Group items by category
-    groupedItems.value = fetchedItems.reduce((groups, item) => {
-      const { category } = item;
-      if (groups[category]) {
-        groups[category].push(item);
-      }
-      return groups;
-    }, {
-      Væske: [],
-      Mat: [],
-      Medisiner: [],
-      Diverse: [],
-    });
-    */
-
-    // Using mock data directly
-    groupedItems.value = groupedMockItems;
-
-  } catch (error) {
-    console.error("Error fetching data:", error);
-    // Ensure we have empty arrays for each category even on error
-    groupedItems.value = {
-      Væske: [],
-      Mat: [],
-      Medisiner: [],
-      Diverse: [],
-    };
+    await storageStore.updateItem(id, data);
+  } catch (e) {
+    console.error('Failed to update item:', e);
+    // You could show an error message to the user here
   }
 };
 
-// Lifecycle hooks
-onMounted(() => {
-  fetchItems();
-});
+const handleItemDelete = async (id) => {
+  try {
+    await storageStore.deleteItem(id);
+  } catch (e) {
+    console.error('Failed to delete item:', e);
+    // You could show an error message to the user here
+  }
+};
 </script>
 
 <template>
   <div>
     <StorageNavbar />
-    <SearchBar/>
+    <SearchBar />
     <div class="pl-20 pr-20">
 
-      <Accordion type="single" collapsible v-model:value="openItem">
-        <!-- Væske category -->
-        <AccordionItem value="væske">
-          <AccordionTrigger @click="toggleAccordion('væske')">
+      <div class="mb-4 mt-4 flex justify-between items-center">
+        <h2 class="text-xl font-bold">Lager innhold</h2>
+        <div class="flex gap-2">
+          <Button
+            @click="isEditing = !isEditing"
+            class="px-4 py-2 rounded text-sm font-medium"
+            :class="isEditing ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'"
+          >
+            {{ isEditing ? 'Lukk' : 'Rediger' }}
+          </Button>
+        </div>
+      </div>
+
+      <!-- Show loading state during initial household and items fetch -->
+      <div v-if="isLoading || storageStore.isLoading" class="flex justify-center py-10">
+        <div
+          class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+
+      <!-- Show primary errors from component level -->
+      <div v-else-if="error" class="p-4 bg-red-100 text-red-700 rounded">
+        {{ error }}
+      </div>
+
+      <!-- Show errors from store -->
+      <div v-else-if="storageStore.error" class="p-4 bg-red-100 text-red-700 rounded">
+        {{ storageStore.error }}
+      </div>
+
+      <!-- Main content when data is available -->
+      <Accordion type="single" collapsible
+                 v-model:value="openItem">
+        <!-- Væske -->
+        <AccordionItem value="vaske">
+          <AccordionTrigger @click="toggleAccordion('vaske')">
             <div class="flex items-center gap-3">
-              <Droplet class="ml-2 h-6 w-6 shrink-0 text-black" />
-              <span class="text-lg text-black">Væske</span>
+              <Droplet />
+              Væske
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            <NestedItemList :items="groupedItems.Væske" />
+            <EditableNestedItemList
+              :items="storageStore.groupedItems['Væske']"
+              :isEditing="isEditing"
+              @update-item="handleItemUpdate"
+              @delete-item="handleItemDelete"
+            />
+            <AddStorageItem
+              category="Væske"
+              @add-item="handleItemAdd"
+            />
           </AccordionContent>
         </AccordionItem>
 
-        <!-- Mat category -->
+        <!-- Mat -->
         <AccordionItem value="mat">
           <AccordionTrigger @click="toggleAccordion('mat')">
             <div class="flex items-center gap-3">
-              <Apple class="ml-2 h-6 w-6 shrink-0 text-black" />
-              <span class="text-lg text-black">Mat</span>
+              <Apple />
+              Mat
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            <NestedItemList :items="groupedItems.Mat" />
+            <EditableNestedItemList
+              :items="storageStore.groupedItems['Mat']"
+              :isEditing="isEditing"
+              @update-item="handleItemUpdate"
+              @delete-item="handleItemDelete"
+            />
+            <AddStorageItem
+              category="Mat"
+              @add-item="handleItemAdd"
+            />
           </AccordionContent>
         </AccordionItem>
 
-        <!-- Medisiner category -->
+        <!-- Medisiner -->
         <AccordionItem value="medisiner">
           <AccordionTrigger @click="toggleAccordion('medisiner')">
             <div class="flex items-center gap-3">
-              <Pill class="ml-2 h-6 w-6 shrink-0 text-black" />
-              <span class="text-lg text-black">Medisiner</span>
+              <Pill />
+              Medisiner
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            <NestedItemList :items="groupedItems.Medisiner" />
+            <EditableNestedItemList
+              :items="storageStore.groupedItems['Medisiner']"
+              :isEditing="isEditing"
+              @update-item="handleItemUpdate"
+              @delete-item="handleItemDelete"
+            />
+            <AddStorageItem
+              category="Medisiner"
+              @add-item="handleItemAdd"
+            />
           </AccordionContent>
         </AccordionItem>
 
-        <!-- Diverse category -->
-        <AccordionItem value="diverse">
-          <AccordionTrigger @click="toggleAccordion('diverse')">
+        <!-- Redskap -->
+        <AccordionItem value="redskap">
+          <AccordionTrigger @click="toggleAccordion('redskap')">
             <div class="flex items-center gap-3">
-              <Package class="ml-2 h-6 w-6 shrink-0 text-black" />
-              <span class="text-lg text-black">Diverse</span>
+              <Hammer />
+              Redskap
             </div>
           </AccordionTrigger>
           <AccordionContent>
-            <NestedItemList :items="groupedItems.Diverse" />
+            <EditableNestedItemList
+              :items="storageStore.groupedItems['Redskap']"
+              :isEditing="isEditing"
+              @update-item="handleItemUpdate"
+              @delete-item="handleItemDelete"
+            />
+            <AddStorageItem
+              category="Redskap"
+              @add-item="handleItemAdd"
+            />
+          </AccordionContent>
+        </AccordionItem>
+
+        <!-- Diverse -->
+        <AccordionItem value="diverse">
+          <AccordionTrigger @click="toggleAccordion('diverse')">
+            <div class="flex items-center gap-3">
+              <Package />
+              Diverse
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <EditableNestedItemList
+              :items="storageStore.groupedItems['Diverse']"
+              :isEditing="isEditing"
+              @update-item="handleItemUpdate"
+              @delete-item="handleItemDelete"
+            />
+            <AddStorageItem
+              category="Diverse"
+              @add-item="handleItemAdd"
+            />
           </AccordionContent>
         </AccordionItem>
       </Accordion>
