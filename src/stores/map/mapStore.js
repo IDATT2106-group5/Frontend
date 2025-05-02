@@ -125,6 +125,60 @@ const severityConfig = {
   }
 };
 
+/**
+ * Helper function to fetch and process marker types
+ * This extracts the marker types processing logic to reduce duplication
+ * @param {Function} formatTypeTitle - Function to format type titles
+ * @param {Function} processMarkerTypes - Function to process marker types with icons
+ * @param {Array|null} cachedTypes - Cached marker types if available
+ * @param {Function} fetchMarkers - Function to fetch markers
+ * @returns {Promise<Array>} Processed marker types
+ */
+async function fetchAndProcessMarkerTypes(formatTypeTitle, processMarkerTypes, cachedTypes, fetchMarkers) {
+  // Use cached marker types if available
+  if (cachedTypes) {
+    return cachedTypes;
+  }
+
+  // Otherwise fetch and process marker types
+  try {
+    // Fetch all markers with null bounds to get available types
+    const allMarkers = await fetchMarkers(null);
+
+    // Extract unique types from markers
+    const typeSet = new Set();
+    Object.keys(allMarkers).forEach(typeId => {
+      typeSet.add(typeId);
+    });
+
+    // Convert to array of marker type objects
+    const types = Array.from(typeSet).map(typeId => ({
+      id: typeId,
+      title: formatTypeTitle(typeId),
+      visible: true
+    }));
+
+    // Add icon information to marker types
+    return processMarkerTypes(types);
+  } catch (error) {
+    console.error('Error fetching marker types:', error);
+    return [];
+  }
+}
+
+/**
+ * Create layer groups for marker types
+ * @param {Array} markerTypes - Array of marker types
+ * @returns {Object} Object mapping type IDs to layer groups
+ */
+function createMarkerLayerGroups(markerTypes) {
+  const markerLayers = {};
+  markerTypes.forEach(markerType => {
+    markerLayers[markerType.id] = L.layerGroup();
+  });
+  return markerLayers;
+}
+
 export const useMapStore = defineStore('map', {
   state: () => ({
     // Core map state
@@ -463,43 +517,22 @@ export const useMapStore = defineStore('map', {
         this.markerLayers = {};
         this.markerData = {};
 
-        // First, fetch marker types data
-        let types = [];
+        // Use the helper function to fetch and process marker types
+        const types = await fetchAndProcessMarkerTypes(
+          this.formatTypeTitle,
+          this.processMarkerTypes,
+          this.cachedMarkerTypes,
+          MarkerService.fetchAllMarkers
+        );
 
-        // Use cached marker types if available
-        if (this.cachedMarkerTypes) {
-          types = this.cachedMarkerTypes;
-        } else {
-          // Fetch all markers with null bounds to get available types
-          const allMarkers = await MarkerService.fetchAllMarkers(null);
-
-          // Extract unique types from markers
-          const typeSet = new Set();
-          Object.keys(allMarkers).forEach(typeId => {
-            typeSet.add(typeId);
-          });
-
-          // Convert to array of marker type objects
-          types = Array.from(typeSet).map(typeId => ({
-            id: typeId,
-            title: this.formatTypeTitle(typeId),
-            visible: true
-          }));
-
-          // Add icon information to marker types
-          types = this.processMarkerTypes(types);
-
-          // Cache the processed marker types
-          this.cachedMarkerTypes = types;
-        }
+        // Cache the processed marker types for future use
+        this.cachedMarkerTypes = types;
 
         // Set marker types in state
         this.markerTypes = types;
 
-        // Create empty layer groups for each marker type
-        this.markerTypes.forEach(markerType => {
-          this.markerLayers[markerType.id] = L.layerGroup();
-        });
+        // Create layer groups for each marker type
+        this.markerLayers = createMarkerLayerGroups(this.markerTypes);
 
         // Fetch marker data based on current map view
         const bounds = MapService.getMapBounds(this.map);
@@ -642,13 +675,13 @@ export const useMapStore = defineStore('map', {
 
       // Create a marker at the center for the popup
       const popupContent = `
-    <div class="incident-popup">
-      ${incident.name ? `<h3>${incident.name}</h3>` : ''}
-      ${incident.description ? `<p>${incident.description}</p>` : ''}
-      ${incident.startedAt ? `<p><strong>Startet:</strong> ${new Date(incident.startedAt).toLocaleString()}</p>` : ''}
-      ${incident.severity ? `<p><strong>Farenivå:</strong> ${config.name}</p>` : ''}
-    </div>
-  `;
+        <div class="incident-popup">
+          ${incident.name ? `<h3>${incident.name}</h3>` : ''}
+          ${incident.description ? `<p>${incident.description}</p>` : ''}
+          ${incident.startedAt ? `<p><strong>Startet:</strong> ${new Date(incident.startedAt).toLocaleString()}</p>` : ''}
+          ${incident.severity ? `<p><strong>Farenivå:</strong> ${config.name}</p>` : ''}
+        </div>
+      `;
 
       // Create a central marker that will hold the popup
       const centerMarker = L.marker([incident.latitude, incident.longitude], {
