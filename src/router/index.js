@@ -9,6 +9,7 @@ import RegisterSuccessView from '@/views/mainViews/RegisterSucessView.vue'
 import RegisterFailedView from '@/views/mainViews/RegisterFailedView.vue'
 import HouseholdInviteView from '@/views/householdViews/HouseholdInviteView.vue'
 import StorageView from '@/views/storageViews/StorageView.vue'
+import MapView from '@/views/mapView/MapView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -67,8 +68,12 @@ const router = createRouter({
       name: 'RegisterFailed',
       component: RegisterFailedView,
       meta:{hideNavbar: true },
-
     },
+    {
+      path: '/map',
+      name: 'map',
+      component: MapView,
+    }
   ],
 })
 
