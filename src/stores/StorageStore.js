@@ -37,7 +37,7 @@ export const useStorageStore = defineStore('storage', () => {
       'Væske': [],      // Liquids
       'Mat': [],        // Food
       'Medisiner': [], // Medicine
-      'Redskap': [], // Medicine
+      'Redskap': [],   // Tools
       'Diverse': []     // Miscellaneous/Other
     };
 
@@ -73,7 +73,7 @@ export const useStorageStore = defineStore('storage', () => {
             groups['Medisiner'].push(transformedItem);
             break;
           case "TOOL":
-            groups['redskap'].push(transformedItem);
+            groups['Redskap'].push(transformedItem);
             break;
           case "OTHER":
           default:
@@ -185,6 +185,7 @@ export const useStorageStore = defineStore('storage', () => {
       const response = await StorageService.addItemToStorage(currentHouseholdId.value, itemId, data);
       // Refresh the items list after adding
       await fetchItems();
+
       return response;
     } catch (err) {
       console.error('Error adding storage item:', err);
@@ -195,8 +196,6 @@ export const useStorageStore = defineStore('storage', () => {
     }
   }
 
-  // Update item - fixed to handle id parameter properly
-  // Update item - fixed to handle id parameter properly
   // Update item - fixed to handle id parameter properly
   async function updateItem(itemId, data) {
     isLoading.value = true;
