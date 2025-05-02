@@ -1,3 +1,4 @@
+```vue
 <script setup>
 import { ref } from 'vue'
 import { Crown, UserIcon, Mail, Edit, Save, X, Phone } from 'lucide-vue-next'
@@ -88,8 +89,8 @@ const confirmRemove = async () => {
 
 <template>
   <div class="bg-white rounded-md shadow mb-2 overflow-hidden">
-    <!-- Edit mode -->
-    <div v-if="isEditing" class="p-4">
+    <!-- Edit mode - Only visible to household owner -->
+    <div v-if="isEditing && householdStore.isCurrentUserOwner" class="p-4">
       <div class="space-y-3">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Navn</label>
@@ -142,8 +143,8 @@ const confirmRemove = async () => {
         </div>
       </div>
 
-      <!-- Action buttons -->
-      <div class="flex items-center gap-2">
+      <!-- Action buttons - Only visible to household owner -->
+      <div v-if="householdStore.isCurrentUserOwner" class="flex items-center gap-2">
         <Button
           v-if="!member.isRegistered && !isOwner"
           variant="ghost"

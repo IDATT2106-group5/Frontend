@@ -23,11 +23,23 @@ export const useHouseholdStore = defineStore('household', {
     },
     totalMemberCount() {
       return this.allMembers.length;
+    },
+    isCurrentUserOwner() {
+      const userStore = useUserStore();
+      return userStore.user?.id === this.currentHousehold?.ownerId;
     }
   },
 
   // Actions to manage household data
   actions: {
+    _verifyOwnership() {
+      if (!this.isCurrentUserOwner) {
+        throw new Error('Kun eier av husstanden kan utføre denne handlingen');
+      }
+      return true;
+    },
+
+    // Method to check if the user has a household and get the information for that household
     async checkCurrentHousehold() {
       try {
         this.isLoading = true;
@@ -72,6 +84,8 @@ export const useHouseholdStore = defineStore('household', {
     async updateHousehold(householdData) {
       this.isLoading = true;
       try {
+        this._verifyOwnership();
+        
         await HouseholdService.updateHousehold({
           householdId: householdData.id, 
           name: householdData.name,
@@ -102,6 +116,7 @@ export const useHouseholdStore = defineStore('household', {
       }
       try {
         this.isLoading = true;
+        this._verifyOwnership();
         
         const addedMember = await HouseholdService.addMember(
           this.currentHousehold.id, 
@@ -138,6 +153,7 @@ export const useHouseholdStore = defineStore('household', {
       }
       try {
         this.isLoading = true;
+        this._verifyOwnership();
     
         await HouseholdService.updateUnregisteredMember(
           this.currentHousehold.id,
@@ -169,6 +185,7 @@ export const useHouseholdStore = defineStore('household', {
     
       try {
         this.isLoading = true;
+        this._verifyOwnership();
     
         const memberId = typeof member === 'number' ? member : member.id;
     
@@ -203,6 +220,7 @@ export const useHouseholdStore = defineStore('household', {
     
       try {
         this.isLoading = true;
+        this._verifyOwnership();
     
         const request = {
           email: email,
@@ -229,9 +247,11 @@ export const useHouseholdStore = defineStore('household', {
     async cancelInvitation(email) {
       try {
         this.isLoading = true;
+        this._verifyOwnership();
+        
         await HouseholdService.cancelInvitation(email);
-        this.sentInvitations = invites || [];  
-          } catch (err) {
+        await this.fetchSentInvitations(); 
+      } catch (err) {
         this.error = err.response?.data?.error || err.message;
         throw err;
       } finally {
@@ -247,23 +267,19 @@ export const useHouseholdStore = defineStore('household', {
       }
     
       try {
-    
         const invites = await RequestService.getSentInvitationsByHousehold(this.currentHousehold.id);
     
         this.sentInvitations = Array.isArray(invites)
-        ? invites.map(invite => {
-      
-            const mapped = {
-              email: invite.recipient?.email || 'Ukjent',
-              date: invite.sentAt?.split('T')[0] || 'Ukjent dato',
-              status: invite.status
-            };
-      
-            return mapped;
-          })
-        : [];      
-    
-    
+          ? invites.map(invite => {
+              const mapped = {
+                email: invite.recipient?.email || 'Ukjent',
+                date: invite.sentAt?.split('T')[0] || 'Ukjent dato',
+                status: invite.status
+              };
+        
+              return mapped;
+            })
+          : [];      
       } catch (err) {
         this.error = err.response?.data?.error || err.message || 'Kunne ikke hente invitasjoner';
         this.sentInvitations = [];
@@ -296,6 +312,7 @@ export const useHouseholdStore = defineStore('household', {
     async updateJoinRequestStatus(requestId, action) {
       try {
         this.isLoading = true;
+        this._verifyOwnership();
     
         if (action === 'ACCEPTED') {
           await RequestService.acceptJoinRequest(requestId);
@@ -324,10 +341,11 @@ export const useHouseholdStore = defineStore('household', {
       
       try {
         this.isLoading = true;
+        this._verifyOwnership();
         
         await HouseholdService.transferOwnership(this.currentHousehold.id, userId);
         
-        await this.checkCurrentHousehold(); // Refresh household data
+        await this.checkCurrentHousehold(); 
         return true;
       } catch (error) {
         console.error("Error transferring ownership:", error);

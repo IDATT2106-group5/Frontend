@@ -69,6 +69,7 @@ const householdId = computed(() => householdStore.currentHousehold?.id || '')
 const householdName = computed(() => householdStore.currentHousehold?.name || 'Ingen husstand')
 const householdAddress = computed(() => householdStore.currentHousehold?.address || '')
 const isLoading = computed(() => householdStore.isLoading)
+const isOwner = computed(() => householdStore.isCurrentUserOwner)
 
 const filteredMembers = computed(() => {
   if (!searchQuery.value) return members.value
@@ -336,7 +337,8 @@ const giveOwnership = async (user) => {
           <div>
             <div class="flex items-center gap-2">
               <h1 class="text-2xl font-bold">🏠 {{ householdName }}</h1>
-              <button @click="openEditHouseholdForm" class="ml-2 p-1 rounded hover:bg-gray-200">
+              <!-- Only show edit button to owner -->
+              <button v-if="isOwner" @click="openEditHouseholdForm" class="ml-2 p-1 rounded hover:bg-gray-200">
                 <Edit class="w-4 h-4 text-gray-500" />
               </button>
             </div>
@@ -386,7 +388,8 @@ const giveOwnership = async (user) => {
           <!-- Header -->
           <div class="flex justify-between items-center">
             <h2 class="font-bold text-lg">Medlemmer i husstanden: {{ members.length }}</h2>
-            <div class="space-x-2">
+            <!-- Only owners can add members or send invitations -->
+            <div v-if="isOwner" class="space-x-2">
               <Button @click="openInviteForm">+ Send invitasjon</Button>
               <Button class="bg-green-600 text-white hover:bg-green-700" @click="openAddMemberForm">+ Legg til medlem</Button>
             </div>
@@ -440,7 +443,7 @@ const giveOwnership = async (user) => {
             <Button :disabled="page === totalPages" @click="page++">&rarr;</Button>
           </div>
 
-          <!-- Add member form -->
+          <!-- Add member form - only show/triggered for owners -->
           <div v-if="showAddForm" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
             <div class="bg-white p-6 rounded shadow-lg w-full max-w-md">
               <h3 class="text-xl font-bold mb-4">Legg til medlem</h3>
@@ -465,7 +468,7 @@ const giveOwnership = async (user) => {
             </div>
           </div>
           
-          <!-- Invite member form -->
+          <!-- Invite member form - only show/triggered for owners -->
           <div v-if="showInviteForm" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
             <div class="bg-white p-6 rounded shadow-lg w-full max-w-md">
               <h3 class="text-xl font-bold mb-4">Inviter medlem</h3>
@@ -494,7 +497,7 @@ const giveOwnership = async (user) => {
             </div>
           </div>
           
-          <!-- Edit household form -->
+          <!-- Edit household form - only show/triggered for owners -->
           <div v-if="showEditForm" class="fixed inset-0 z-50 bg-black bg-opacity-50 flex items-center justify-center">
             <div class="bg-white p-6 rounded shadow-lg w-full max-w-md">
               <h3 class="text-xl font-bold mb-4">Rediger husstand</h3>
@@ -525,8 +528,8 @@ const giveOwnership = async (user) => {
             </div>
           </div>
 
-          <!-- Ownership input -->
-          <div class="mb-4">
+          <!-- Ownership input - only show for owners -->
+          <div v-if="isOwner" class="mb-4">
             <label class="block text-sm font-semibold mb-1">Gi eierskap til et medlem</label>
             <div class="relative">
               <input
@@ -567,85 +570,90 @@ const giveOwnership = async (user) => {
             </div>
           </div>
 
-          <!-- Forespørsler -->
-          <h3 class="text-lg font-semibold mb-2">Forespørsler</h3>
-          <div class="bg-white rounded p-4 shadow">
-            <div v-if="householdStore.ownershipRequests.length">
-              <div v-for="request in householdStore.ownershipRequests" :key="request.id" class="flex justify-between items-center mb-2">
-                <span>{{ request.email }}</span>
-                <div v-if="request.status === 'PENDING'" class="flex gap-2">
-                  <Button 
-                    class="bg-green-600 text-white hover:bg-green-700" 
-                    size="sm" 
-                    @click="householdStore.updateJoinRequestStatus(request.id, 'ACCEPTED')"
-                  >
-                    Godta
-                  </Button>
-                  <Button
-                    variant="outline"
-                    class="text-red-600 border-red-500 hover:bg-red-50"
-                    size="sm"
-                    @click="householdStore.updateJoinRequestStatus(request.id, 'REJECTED')"
-                  >
-                    Avslå
-                  </Button>                
+          <!-- Forespørsler - show for all users, but action buttons only for owners -->
+          <div>
+            <h3 class="text-lg font-semibold mb-2">Forespørsler</h3>
+            <div class="bg-white rounded p-4 shadow">
+              <div v-if="householdStore.ownershipRequests.length">
+                <div v-for="request in householdStore.ownershipRequests" :key="request.id" class="flex justify-between items-center mb-2">
+                  <span>{{ request.email }}</span>
+                  <div v-if="request.status === 'PENDING' && isOwner" class="flex gap-2">
+                    <Button 
+                      class="bg-green-600 text-white hover:bg-green-700" 
+                      size="sm" 
+                      @click="householdStore.updateJoinRequestStatus(request.id, 'ACCEPTED')"
+                    >
+                      Godta
+                    </Button>
+                    <Button
+                      variant="outline"
+                      class="text-red-600 border-red-500 hover:bg-red-50"
+                      size="sm"
+                      @click="householdStore.updateJoinRequestStatus(request.id, 'REJECTED')"
+                    >
+                      Avslå
+                    </Button>                
+                  </div>
+                  <span v-else-if="request.status === 'PENDING'" class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">Venter på godkjenning</span>
+                  <span v-else-if="request.status === 'ACCEPTED'" class="text-green-600 font-medium">Godtatt</span>
+                  <span v-else-if="request.status === 'REJECTED'" class="text-red-600 font-medium">Avslått</span>
                 </div>
-                <span v-else-if="request.status === 'ACCEPTED'" class="text-green-600 font-medium">Godtatt</span>
-                <span v-else-if="request.status === 'REJECTED'" class="text-red-600 font-medium">Avslått</span>
               </div>
+              <p v-else class="text-sm text-gray-500 italic">Ingen forespørsler</p>
             </div>
-            <p v-else class="text-sm text-gray-500 italic">Ingen forespørsler</p>
           </div>
 
-          <!-- Sendte invitasjoner -->
-          <h3 class="text-lg font-semibold mb-2">Sendte invitasjoner</h3>
-          <div class="bg-white rounded p-4 shadow">
-            <table class="w-full text-sm text-left">
-              <thead>
-                <tr class="text-gray-700 border-b">
-                  <th class="py-2 text-black">E-post</th>
-                  <th class="py-2 text-black">Dato sendt</th>
-                  <th class="py-2 text-black">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="invite in displayedInvitations" :key="invite.email" class="border-b">
-                  <td class="py-2">{{ invite.email }}</td>
-                  <td class="py-2">{{ invite.date }}</td>
-                  <td class="py-2">
-                    <span 
-                        :class="{
-                        'text-yellow-600 font-medium': invite.status === 'PENDING',
-                        'text-green-600 font-medium': invite.status === 'ACCEPTED',
-                        'text-red-600 font-medium': invite.status === 'DECLINED'
-                      }"
-                    >
-                      {{ invite.status }}
-                    </span>
-                  </td>
-                </tr>
-                <tr v-if="Array.isArray(householdStore.sentInvitations) && householdStore.sentInvitations.length === 0">
-                  <td colspan="4" class="py-2 text-gray-500 italic text-center">Ingen sendte invitasjoner</td>
-                </tr>
-              </tbody>
-            </table>
+          <!-- Sendte invitasjoner - show for all users -->
+          <div>
+            <h3 class="text-lg font-semibold mb-2">Sendte invitasjoner</h3>
+            <div class="bg-white rounded p-4 shadow">
+              <table class="w-full text-sm text-left">
+                <thead>
+                  <tr class="text-gray-700 border-b">
+                    <th class="py-2 text-black">E-post</th>
+                    <th class="py-2 text-black">Dato sendt</th>
+                    <th class="py-2 text-black">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="invite in displayedInvitations" :key="invite.email" class="border-b">
+                    <td class="py-2">{{ invite.email }}</td>
+                    <td class="py-2">{{ invite.date }}</td>
+                    <td class="py-2">
+                      <span 
+                          :class="{
+                          'text-yellow-600 font-medium': invite.status === 'PENDING',
+                          'text-green-600 font-medium': invite.status === 'ACCEPTED',
+                          'text-red-600 font-medium': invite.status === 'DECLINED'
+                        }"
+                      >
+                        {{ invite.status }}
+                      </span>
+                    </td>
+                  </tr>
+                  <tr v-if="Array.isArray(householdStore.sentInvitations) && householdStore.sentInvitations.length === 0">
+                    <td colspan="4" class="py-2 text-gray-500 italic text-center">Ingen sendte invitasjoner</td>
+                  </tr>
+                </tbody>
+              </table>
 
-            <!-- Pagination for invitations -->
-            <div class="flex justify-center items-center space-x-2 mt-4">
-              <Button :disabled="invitePage === 1" @click="invitePage--">&larr;</Button>
-              <template v-for="i in totalInvitePages" :key="i">
-                <button
-                  class="w-8 h-8 flex items-center justify-center border rounded font-medium"
-                  :class="{
-                    'bg-primary text-white': i === invitePage,
-                    'border-gray-400 text-gray-700 hover:bg-gray-100': i !== invitePage
-                  }"
-                  @click="invitePage = i"
-                >
-                  {{ i }}
-                </button>
-              </template>
-              <Button :disabled="invitePage === totalInvitePages" @click="invitePage++">&rarr;</Button>
+              <!-- Pagination for invitations -->
+              <div class="flex justify-center items-center space-x-2 mt-4">
+                <Button :disabled="invitePage === 1" @click="invitePage--">&larr;</Button>
+                <template v-for="i in totalInvitePages" :key="i">
+                  <button
+                    class="w-8 h-8 flex items-center justify-center border rounded font-medium"
+                    :class="{
+                      'bg-primary text-white': i === invitePage,
+                      'border-gray-400 text-gray-700 hover:bg-gray-100': i !== invitePage
+                    }"
+                    @click="invitePage = i"
+                  >
+                    {{ i }}
+                  </button>
+                </template>
+                <Button :disabled="invitePage === totalInvitePages" @click="invitePage++">&rarr;</Button>
+              </div>
             </div>
           </div>
         </div>
