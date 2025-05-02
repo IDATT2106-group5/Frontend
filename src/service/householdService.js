@@ -159,15 +159,16 @@ class HouseholdService extends BaseService {
     }
   }
 
-  // Leave the current household
-  async leaveHousehold(email) {
+  // Leave the household
+  async leaveHousehold() {
     try {
-      return this.post(`remove-user`, email);
+      return this.post('leave');
     } catch (error) {
       console.error("Error leaving household:", error);
       throw error;
     }
   }
+  
 }
 
 export default new HouseholdService();

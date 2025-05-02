@@ -377,11 +377,11 @@ export const useHouseholdStore = defineStore('household', {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husholdning å forlate');
       }
-
+    
       try {
         this.isLoading = true;
-        const userStore = useUserStore();
-        await HouseholdService.leaveHousehold(userStore.user.email);
+    
+        await HouseholdService.leaveHousehold(); 
 
         this.currentHousehold = null;
         this.hasHousehold = false;
@@ -393,5 +393,6 @@ export const useHouseholdStore = defineStore('household', {
         this.isLoading = false;
       }
     }
+    
   }
 });

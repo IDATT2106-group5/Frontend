@@ -351,7 +351,13 @@ const giveOwnership = async (user) => {
             </div>  
           </div>
           <div class="space-x-2">
-            <Button variant="outline" @click="leaveHousehold">Forlat husstand</Button>
+            <Button
+              variant="outline"
+              class="text-red-600 border-red-500 hover:bg-red-50"
+              @click="leaveHousehold"
+            >
+              Forlat husstand
+            </Button>
           </div>
         </div>
 
