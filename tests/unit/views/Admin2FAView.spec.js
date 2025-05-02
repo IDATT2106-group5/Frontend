@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import Admin2FaView from '@/views/adminViews/Admin2FaView.vue'
+import Admin2FAView from '@/views/adminViews/Admin2FAView.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 import { createPinia, setActivePinia } from 'pinia'
 
@@ -23,7 +23,7 @@ const createTestRouter = () =>
     ]
   })
 
-describe('Admin2FaView.vue', () => {
+describe('Admin2FAView.vue', () => {
   let router
   let wrapper
   let pinia
@@ -42,7 +42,7 @@ describe('Admin2FaView.vue', () => {
     vi.spyOn(router, 'push')
 
     // Mount component with required props
-    wrapper = mount(Admin2FaView, {
+    wrapper = mount(Admin2FAView, {
       props: {
         email: 'test@example.com'
       },
