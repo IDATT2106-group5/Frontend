@@ -18,7 +18,7 @@ const showNotifications = ref(false)
 function toggleNotifications() {
   showNotifications.value = !showNotifications.value
   if (showNotifications.value) {
-    resetNotificationCount() // Reset counter when viewing
+    resetNotificationCount()
   }
 }
 
@@ -29,8 +29,6 @@ function handleMarkAsRead(notificationId) {
 function formatTimestamp(timestamp) {
   const date = new Date(timestamp)
   return date.toLocaleString('no-NO', {
-    day: '2-digit',
-    month: '2-digit',
     hour: '2-digit',
     minute: '2-digit',
   })
@@ -53,7 +51,6 @@ function handleLogout() {
 
     <!-- Routing push -->
 
-
     <!-- Navigation links -->
     <nav class="flex gap-8 items-center text-sm font-medium">
       <a href="#" class="flex items-center gap-2 hover:underline">
@@ -65,10 +62,10 @@ function handleLogout() {
         Kart
       </a>
       <RouterLink to="/storage">
-      <a href="#" class="flex items-center gap-2 hover:underline">
-        <ShoppingCart class="w-5 h-5 text-white" />
-        Min beholdning
-      </a>
+        <a href="#" class="flex items-center gap-2 hover:underline">
+          <ShoppingCart class="w-5 h-5 text-white" />
+          Min beholdning
+        </a>
       </RouterLink>
       <RouterLink to="/household">
         <a href="#" class="flex items-center gap-2 hover:underline">
@@ -137,12 +134,27 @@ function handleLogout() {
       <div
         v-for="notification in notifications"
         :key="notification.id"
-        class="p-3 border-b border-gray-100 hover:bg-gray-50"
+        class="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
         :class="{ 'bg-blue-50': !notification.read }"
+        @click="handleMarkAsRead(notification.id)"
       >
         <div class="flex">
           <div class="mr-3 text-xl">
-            {{ notification.type === 'INVITATION' ? '👋' : '📩' }}
+            {{
+              notification.type === 'INVITATION'
+                ? '📩'
+                : notification.type === 'MEMBERSHIP_REQUEST'
+                  ? '👤'
+                  : notification.type === 'INCIDENT'
+                    ? '🚨'
+                    : notification.type === 'STOCK_CONTROL'
+                      ? '📦'
+                      : notification.type === 'HOUSEHOLD'
+                        ? '🏠'
+                        : notification.type === 'INFO'
+                          ? 'ℹ️'
+                          : '🔔'
+            }}
           </div>
           <div class="flex-1">
             <div class="flex justify-between items-start">
@@ -150,22 +162,22 @@ function handleLogout() {
                 {{
                   notification.type === 'INVITATION'
                     ? 'Du har mottatt en invitasjon'
-                    : notification.message || 'Ny varsling'
+                    : notification.type === 'INCIDENT'
+                      ? 'Det har skjedd en hendelse i nærheten av deg!'
+                      : notification.type === 'STOCK_CONTROL'
+                        ? 'Noe i ditt lager nermer seg utløpsdato'
+                        : notification.type === 'HOUSEHOLD'
+                          ? 'Du har fått en ny husstand'
+                          : notification.type === 'MEMBERSHIP_REQUEST'
+                            ? 'Du har fått en ny forespørsel om medlemskap'
+                            : notification.type === 'INFO'
+                              ? 'Informasjon fra Krisefikser'
+                              : 'Du har fått en ny varsling'
                 }}
               </span>
               <span class="text-xs text-gray-500">{{
                 formatTimestamp(notification.timestamp)
               }}</span>
-            </div>
-            <div v-if="!notification.read" class="mt-2 text-right">
-              <Button
-                @click="handleMarkAsRead(notification.id)"
-                size="sm"
-                variant="ghost"
-                class="text-xs"
-              >
-                Marker som lest
-              </Button>
             </div>
           </div>
         </div>

@@ -20,7 +20,6 @@ export default function useStompWebSocket() {
   })
 
   function connect() {
-    // Fix for 'global is not defined' error with SockJS
     if (typeof window !== 'undefined') {
       window.global = window;
     }
@@ -46,20 +45,16 @@ export default function useStompWebSocket() {
     connected.value = true
     console.log('Connected to WebSocket')
 
-    // Subscribe to broadcast notifications
     stompClient.value.subscribe('/topic/notifications', onBroadcastNotification)
 
-    // Subscribe to user-specific notifications if logged in
     if (userStore.token && userStore.user?.id) {
       stompClient.value.subscribe(`/user/${userStore.user.id}/queue/notifications`, onPrivateNotification)
 
-      // Subscribe to household notifications if user belongs to one
       if (userStore.user?.householdId) {
         stompClient.value.subscribe(`/topic/household/${userStore.user.householdId}`, onHouseholdNotification)
       }
     }
 
-    // Load existing notifications
     fetchNotifications()
   }
 
@@ -109,7 +104,7 @@ export default function useStompWebSocket() {
 
   async function markAsRead(notificationId) {
     try {
-      const response = await fetch(`/api/notifications/${notificationId}/read`, {
+      const response = await fetch(`http://localhost:8080/api/notifications/${notificationId}/read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${userStore.token}`,
@@ -121,7 +116,6 @@ export default function useStompWebSocket() {
         throw new Error('Failed to mark notification as read')
       }
 
-      // Update local state
       const index = notifications.value.findIndex(n => n.id === notificationId)
       if (index !== -1 && !notifications.value[index].read) {
         notifications.value[index].read = true
@@ -136,38 +130,37 @@ export default function useStompWebSocket() {
     notificationCount.value = 0
   }
 
-  async function fetchNotifications() {
-    if (!userStore.token) return
+async function fetchNotifications() {
+  if (!userStore.token || !userStore.user) return
 
-    try {
-      const requestData = { userId: userStore.user.id }
-      const response = await fetch('/api/notifications/get', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${userStore.token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestData)
-      })
-      console.log(response)
+  try {
+    const requestData = { userId: userStore.user.id }
+    const response = await fetch('http://localhost:8080/api/notifications/get', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${userStore.token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestData)
+    })
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch notifications')
-      }
-
-      const data = await response.json()
-      notifications.value = data
-      notificationCount.value = data.filter(n => !n.read).length
-    } catch (error) {
-      console.error('Error fetching notifications:', error)
+    if (!response.ok) {
+      throw new Error('Failed to fetch notifications')
     }
+
+    const data = await response.json()
+    console.log(data)
+    notifications.value = data
+    notificationCount.value = data.filter(n => !n.read).length
+  } catch (error) {
+    console.error('Error fetching notifications:', error)
   }
+}
 
   return {
     notifications,
     notificationCount,
     connected,
-    sendNotification,
     markAsRead,
     resetNotificationCount
   }
