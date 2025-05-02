@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import AuthService from '@/service/authService';
-import TwoFactorAuthService from '@/service/twoFactorAuthService';
+import TwoFactorAuthService from '@/service/admin/twoFactorAuthService';
+import RegisterAdminService from '@/service/admin/registerAdminService';
 import apiClient from '@/service/apiClient';
 import router from '@/router';
 
@@ -149,6 +150,33 @@ export const useUserStore = defineStore('user', {
         this.error = err.message || "Sending av ny 2FA-kode feilet.";
       } finally {
         this.isLoading = false;
+      }
+    },
+
+    /**
+     * Register a new admin user with provided credentials.
+     *
+     * @async
+     * @param {Object} adminData          - The data of the admin to be registered
+     * @param {string} adminData.token    - The token that verifies that an user is allowed
+     *                                      to create an admin user.
+     * @param {string} adminData.password - The password of the admin user.
+     * @returns {Promise<boolean>} A promise that resolves to `true` if registration is successful,
+     *                             or `false` if it fails.
+     */
+    async registerAdmin(adminData) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const resp = await RegisterAdminService.registerAdmin(adminData);
+        console.log(resp);
+
+        return true;
+      } catch(err) {
+        this.error = err.message || "Opprettelse av ny admin bruker feilet.";
+        return false;
+      } finally {
+        this.loading = false;
       }
     },
 
