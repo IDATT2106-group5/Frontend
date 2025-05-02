@@ -12,6 +12,7 @@ import BeforeView from '@/views/informationViews/BeforeView.vue'
 import UnderView from '@/views/informationViews/UnderView.vue'
 import AfterView from '@/views/informationViews/AfterView.vue'
 import MapView from '@/views/mapView/MapView.vue'
+import AdminRegisterView from '@/views/adminViews/AdminRegisterView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -85,13 +86,26 @@ const router = createRouter({
         }
         return { email: route.query.email };
       },
-      meta:{hideNavbar: true },
+      meta:{hideNavbar: true, hideFooter: true },
     },
     {
       path: '/map',
       name: 'map',
       component: MapView,
-    }
+    },
+    {
+      path: '/admin-registration',
+      name: 'admin-registration',
+      component: AdminRegisterView,
+      props: (route) => {
+        // if (!route.query.email) {
+        //   return { emailMissing: true };
+        // }
+        // return { email: route.query.email };
+        return { email: 'test@admin.no', token: 'test-token'};
+      },
+      meta:{hideNavbar: true, hideFooter: true },
+    },
   ],
 })
 
