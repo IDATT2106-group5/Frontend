@@ -9,6 +9,11 @@ import useStompWebSocket from '@/stores/websocketComposable'
 const userStore = useUserStore()
 const router = useRouter()
 
+// Define a multi-word component name
+defineOptions({
+  name: 'NavBar'
+})
+
 // Use the new composable for WebSocket notifications
 const { notifications, notificationCount, markAsRead, resetNotificationCount } = useStompWebSocket()
 
