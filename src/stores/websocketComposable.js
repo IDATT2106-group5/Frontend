@@ -162,6 +162,7 @@ async function fetchNotifications() {
     notificationCount,
     connected,
     markAsRead,
-    resetNotificationCount
+    resetNotificationCount,
+    sendNotification
   }
 }
