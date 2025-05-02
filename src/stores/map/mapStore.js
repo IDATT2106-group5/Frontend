@@ -640,6 +640,24 @@ export const useMapStore = defineStore('map', {
       // Create a layer group to hold our circles
       const layerGroup = L.layerGroup();
 
+      // Create a marker at the center for the popup
+      const popupContent = `
+    <div class="incident-popup">
+      ${incident.name ? `<h3>${incident.name}</h3>` : ''}
+      ${incident.description ? `<p>${incident.description}</p>` : ''}
+      ${incident.startedAt ? `<p><strong>Startet:</strong> ${new Date(incident.startedAt).toLocaleString()}</p>` : ''}
+      ${incident.severity ? `<p><strong>Farenivå:</strong> ${config.name}</p>` : ''}
+    </div>
+  `;
+
+      // Create a central marker that will hold the popup
+      const centerMarker = L.marker([incident.latitude, incident.longitude], {
+        opacity: 0,  // Make the marker invisible
+        interactive: true // But keep it interactive
+      }).bindPopup(popupContent);
+
+      layerGroup.addLayer(centerMarker);
+
       // If visual configuration exists, create circles according to it
       if (config.visual && config.visual.circles) {
         // Sort circles by radius multiplier in descending order
@@ -654,23 +672,17 @@ export const useMapStore = defineStore('map', {
             color: circleConfig.color,
             fillColor: circleConfig.color,
             fillOpacity: circleConfig.fillOpacity || config.fillOpacity,
-            weight: circleConfig.strokeWidth || config.strokeWidth
+            weight: circleConfig.strokeWidth || config.strokeWidth,
+            interactive: true  // Make sure circles are clickable
+          });
+
+          // Add click handler to each circle to open the popup on the center marker
+          circle.on('click', () => {
+            centerMarker.openPopup();
           });
 
           layerGroup.addLayer(circle);
         });
-      }
-
-      // Add popup with incident information
-      if (incident.name || incident.description) {
-        layerGroup.bindPopup(`
-          <div class="incident-popup">
-            ${incident.name ? `<h3>${incident.name}</h3>` : ''}
-            ${incident.description ? `<p>${incident.description}</p>` : ''}
-            ${incident.startedAt ? `<p><strong>Startet:</strong> ${new Date(incident.startedAt).toLocaleString()}</p>` : ''}
-            ${incident.severity ? `<p><strong>Farenivå:</strong> ${config.name}</p>` : ''}
-          </div>
-        `);
       }
 
       return layerGroup;
