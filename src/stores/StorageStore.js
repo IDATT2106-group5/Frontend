@@ -106,14 +106,9 @@ export const useStorageStore = defineStore('storage', () => {
     try {
       const response = await StorageService.getStorageItemsByHousehold(currentHouseholdId.value);
 
-      console.log("Storage response:", response);
-
-      // Ensure we're setting items.value to an array
       if (response && Array.isArray(response)) {
-        // Make sure each item has an 'id' property
         items.value = response.map(item => {
           if (!item.id && item.itemId) {
-            // If there's no id but itemId exists, use that
             return { ...item, id: item.itemId };
           } else if (!item.id) {
             // If there's no id at all, log a warning
@@ -122,13 +117,11 @@ export const useStorageStore = defineStore('storage', () => {
           return item;
         });
       } else {
-        console.warn('Response is not an array:', response);
         items.value = Array.isArray(response) ? response : [];
       }
 
       return items.value;
     } catch (err) {
-      console.error('Error fetching storage items:', err);
       error.value = err.message || 'Failed to fetch items';
       items.value = []; // Ensure items is always an array even on error
       return [];
@@ -152,7 +145,6 @@ export const useStorageStore = defineStore('storage', () => {
   // Get items expiring soon
   async function fetchExpiringItems(beforeDate) {
     if (!currentHouseholdId.value) {
-      console.error('No household ID set');
       return [];
     }
 
@@ -202,10 +194,6 @@ export const useStorageStore = defineStore('storage', () => {
     error.value = null;
 
     try {
-      console.log("Updating item with ID:", itemId);
-      console.log("Current items:", items.value);
-      console.log("Update data:", data);
-
       let actualItemId;
 
       if (typeof itemId === 'object' && itemId !== null) {
@@ -221,7 +209,6 @@ export const useStorageStore = defineStore('storage', () => {
 
       // Find item by ID
       const itemIndex = items.value.findIndex(i => i.id === actualItemId);
-      console.log("Found item at index:", itemIndex);
 
       if (itemIndex === -1) {
         console.error("Item not found in items array. Available IDs:",

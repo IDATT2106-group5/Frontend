@@ -1,7 +1,6 @@
 <script setup>
 import {ref, computed, watch, onMounted} from 'vue';
 import {useItemStore} from '@/stores/ItemStore';
-import {ItemType} from '@/types/ItemType';
 
 const props = defineProps({
   category: {
@@ -21,7 +20,7 @@ const itemStore = useItemStore();
 onMounted(async () => {
   // Fetch all items first
   await itemStore.fetchItems();
-  console.log("Items loaded in AddStorageItem:", itemStore.items.value);
+  console.log("Items loaded in AddStorageItem:", itemStore.items);
 
   // Add initial row
   addNewRow();
@@ -34,13 +33,10 @@ watch(() => props.category, () => {
 
 // Create a computed property that provides items based on the selected category
 const itemOptions = computed(() => {
-  if (itemStore.isLoading.value || itemStore.error.value) {
+  if (itemStore.isLoading || itemStore.error) {
     console.log("Still loading or error occurred");
     return [];
   }
-
-  console.log("All available items:", itemStore.items);
-  console.log("Current category:", props.category);
 
   // Map frontend categories to backend enum values
   const categoryMapping = {
@@ -57,15 +53,11 @@ const itemOptions = computed(() => {
     return [];
   }
 
-  console.log("Looking for items with type:", itemType);
-
   // Filter items based on their itemType matching the current category
   const filteredItems = itemStore.items.filter(item => {
-    console.log("Checking item:", item.name, "Type:", item.itemType);
     return item.itemType === itemType;
   });
 
-  console.log("Filtered items for display:", filteredItems);
   return filteredItems;
 });
 
@@ -73,7 +65,7 @@ const itemOptions = computed(() => {
 function addNewRow() {
   addRows.value.push({
     selectedItem: null,
-    selectedUnit: "",
+    selectedUnit: "stk",
     itemQuantity: 1,
     itemDate: null
   });
@@ -102,7 +94,8 @@ function saveItem(row) {
   const newItem = {
     unit: row.selectedUnit || "stk",
     amount: parseInt(row.itemQuantity) || 1,
-    expirationDate: row.itemDate ? formatDateForBackend(row.itemDate) : null
+    expirationDate: row.itemDate ? new Date(row.itemDate) : null
+    // Changed: Instead of a formatted string, we're now passing a Date object
   };
 
   // Emit the event to add the item to storage
@@ -122,21 +115,6 @@ function saveItem(row) {
     addNewRow();
   }
 }
-
-// Helper function to format date for backend
-function formatDateForBackend(dateString) {
-  if (!dateString) return null;
-
-  // Create a Date object from the date string
-  const date = new Date(dateString);
-
-  // Format as ISO string that LocalDateTime.parse can handle
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}T00:00:00`;
-}
 </script>
 
 <template>
@@ -144,66 +122,71 @@ function formatDateForBackend(dateString) {
     <!-- Row for each item to add -->
     <div v-for="(row, index) in addRows" :key="index" class="add-item-row">
       <!-- Item selection dropdown -->
-      <v-select
-        v-model="row.selectedItem"
-        :items="itemOptions"
-        item-title="name"
-        item-value="id"
-        label="Velg vare"
-        return-object
-        class="input-field"
-      ></v-select>
+      <div class="input-field">
+        <label :for="`item-select-${index}`">Velg vare</label>
+        <select
+          :id="`item-select-${index}`"
+          v-model="row.selectedItem"
+          class="form-select">
+          <option value="">Velg vare</option>
+          <option
+            v-for="item in itemOptions"
+            :key="item.id"
+            :value="item">
+            {{ item.name }}
+          </option>
+        </select>
+      </div>
 
       <!-- Unit input -->
-      <v-text-field
-        v-model="row.selectedUnit"
-        label="Enhet"
-        placeholder="stk"
-        class="input-field"
-      ></v-text-field>
+      <div class="input-field">
+        <label :for="`unit-${index}`">Enhet</label>
+        <input
+          :id="`unit-${index}`"
+          v-model="row.selectedUnit"
+          placeholder="stk"
+          class="form-input"
+        />
+      </div>
 
       <!-- Quantity input -->
-      <v-text-field
-        v-model="row.itemQuantity"
-        label="Antall"
-        type="number"
-        min="1"
-        class="input-field"
-      ></v-text-field>
+      <div class="input-field">
+        <label :for="`quantity-${index}`">Antall</label>
+        <input
+          :id="`quantity-${index}`"
+          v-model="row.itemQuantity"
+          type="number"
+          min="1"
+          class="form-input"
+        />
+      </div>
 
-      <!-- Date picker -->
-      <v-menu>
-        <template v-slot:activator="{ props }">
-          <v-text-field
-            v-model="row.itemDate"
-            label="Utløpsdato"
-            v-bind="props"
-            prepend-icon="mdi-calendar"
-            class="input-field"
-          ></v-text-field>
-        </template>
-        <v-date-picker
+      <!-- Date input -->
+      <div class="input-field">
+        <label :for="`date-${index}`">Utløpsdato</label>
+        <input
+          :id="`date-${index}`"
           v-model="row.itemDate"
-          no-title
-          scrollable
-        ></v-date-picker>
-      </v-menu>
+          type="date"
+          class="form-input"
+        />
+      </div>
 
       <!-- Action buttons -->
       <div class="action-buttons">
-        <v-btn icon @click="saveItem(row)" color="success">
-          <v-icon>mdi-check</v-icon>
-        </v-btn>
-        <v-btn icon @click="removeRow(index)" color="error">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
+        <button @click="saveItem(row)" class="btn btn-success">
+          <span class="icon">✓</span>
+        </button>
+        <button @click="removeRow(index)" class="btn btn-error">
+          <span class="icon">✕</span>
+        </button>
       </div>
     </div>
 
     <!-- Button to add more rows -->
-    <v-btn @click="addNewRow" block color="primary" class="mt-3">
+    <button @click="addNewRow" class="btn btn-primary btn-block mt-3">
       Legg til fler
-    </v-btn>
+    </button>
   </div>
 </template>
 
@@ -221,10 +204,53 @@ function formatDateForBackend(dateString) {
 
 .input-field {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-select, .form-input {
+  padding: 0.5rem;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
 }
 
 .action-buttons {
   display: flex;
   gap: 0.5rem;
+}
+
+.btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-success {
+  background-color: #4caf50;
+  color: white;
+}
+
+.btn-error {
+  background-color: #f44336;
+  color: white;
+}
+
+.btn-primary {
+  background-color: #2196f3;
+  color: white;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.mt-3 {
+  margin-top: 1rem;
+}
+
+.icon {
+  font-size: 1rem;
 }
 </style>
