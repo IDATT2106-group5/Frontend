@@ -1,6 +1,8 @@
 <script setup>
 import {ref, computed, watch, onMounted} from 'vue';
 import {useItemStore} from '@/stores/ItemStore';
+import { PlusCircle, Undo, Save } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button/index.js'
 
 const props = defineProps({
   category: {
@@ -118,16 +120,16 @@ function saveItem(row) {
 </script>
 
 <template>
-  <div class="add-item-form">
+  <div class="mt-4">
     <!-- Row for each item to add -->
-    <div v-for="(row, index) in addRows" :key="index" class="add-item-row">
+    <div v-for="(row, index) in addRows" :key="index" class="flex flex-wrap md:flex-nowrap items-end gap-4 mb-4">
       <!-- Item selection dropdown -->
-      <div class="input-field">
-        <label :for="`item-select-${index}`">Velg vare</label>
+      <div class="flex-1 flex flex-col">
+        <label :for="`item-select-${index}`" class="mb-1 text-sm font-medium">Velg vare</label>
         <select
           :id="`item-select-${index}`"
           v-model="row.selectedItem"
-          class="form-select">
+          class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
           <option value="">Velg vare</option>
           <option
             v-for="item in itemOptions"
@@ -138,119 +140,55 @@ function saveItem(row) {
         </select>
       </div>
 
-      <!-- Unit input -->
-      <div class="input-field">
-        <label :for="`unit-${index}`">Enhet</label>
+      <!-- Date input -->
+      <div class="flex-1 flex flex-col">
+        <label :for="`date-${index}`" class="mb-1 text-sm font-medium">Utløpsdato</label>
         <input
-          :id="`unit-${index}`"
-          v-model="row.selectedUnit"
-          placeholder="stk"
-          class="form-input"
+          :id="`date-${index}`"
+          v-model="row.itemDate"
+          type="date"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
 
       <!-- Quantity input -->
-      <div class="input-field">
-        <label :for="`quantity-${index}`">Antall</label>
+      <div class="flex-1 flex flex-col">
+        <label :for="`quantity-${index}`" class="mb-1 text-sm font-medium">Antall</label>
         <input
           :id="`quantity-${index}`"
           v-model="row.itemQuantity"
           type="number"
           min="1"
-          class="form-input"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
 
-      <!-- Date input -->
-      <div class="input-field">
-        <label :for="`date-${index}`">Utløpsdato</label>
+      <!-- Unit input -->
+      <div class="flex-1 flex flex-col">
+        <label :for="`unit-${index}`" class="mb-1 text-sm font-medium">Enhet</label>
         <input
-          :id="`date-${index}`"
-          v-model="row.itemDate"
-          type="date"
-          class="form-input"
+          :id="`unit-${index}`"
+          v-model="row.selectedUnit"
+          placeholder="stk"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
         />
       </div>
 
       <!-- Action buttons -->
-      <div class="action-buttons">
-        <button @click="saveItem(row)" class="btn btn-success">
-          <span class="icon">✓</span>
-        </button>
-        <button @click="removeRow(index)" class="btn btn-error">
-          <span class="icon">✕</span>
-        </button>
+      <div class="flex items-center space-x-4 ml-2 h-10">
+        <Button @click="saveItem(row)" class="hover:bg-blue-600 cursor-pointer">
+          <PlusCircle
+            class="h-6 w-6 text-white"
+          />
+        </Button>
+
+        <Button @click="removeRow(index)" class="hover:bg-red-600 cursor-pointer">
+          <Undo
+            class="h-6 w-6 text-white"
+          />
+        </Button>
+
       </div>
     </div>
-
-    <!-- Button to add more rows -->
-    <button @click="addNewRow" class="btn btn-primary btn-block mt-3">
-      Legg til fler
-    </button>
   </div>
 </template>
-
-<style scoped>
-.add-item-form {
-  margin-top: 1rem;
-}
-
-.add-item-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.input-field {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
-
-.form-select, .form-input {
-  padding: 0.5rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  width: 100%;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.btn {
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.btn-success {
-  background-color: #4caf50;
-  color: white;
-}
-
-.btn-error {
-  background-color: #f44336;
-  color: white;
-}
-
-.btn-primary {
-  background-color: #2196f3;
-  color: white;
-}
-
-.btn-block {
-  width: 100%;
-}
-
-.mt-3 {
-  margin-top: 1rem;
-}
-
-.icon {
-  font-size: 1rem;
-}
-</style>

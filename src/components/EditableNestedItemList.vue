@@ -93,10 +93,30 @@ function getTotalQuantity(group) {
   return group.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0);
 }
 
-function calculateDuration(quantity, item) {
-  // Return the duration value from the item or calculate it if needed
-  if (!item) return 'N/A';
-  return item.duration || `${Math.ceil(quantity / 3)} dager`;
+function getEarliestItemExpirationStatus(group) {
+  // If no items, return a default status
+  if (!group || group.length === 0) {
+    return { text: 'N/A', isExpired: false };
+  }
+
+  // Find the item with the earliest expiry date
+  const itemsWithDates = group.filter(item => item.expiryDate);
+  if (itemsWithDates.length === 0) {
+    return { text: 'N/A', isExpired: false };
+  }
+
+  // Sort by expiry date
+  const sortedItems = [...itemsWithDates].sort((a, b) => {
+    const dateA = new Date(parseNorwegianDate(a.expiryDate));
+    const dateB = new Date(parseNorwegianDate(b.expiryDate));
+    return dateA - dateB;
+  });
+
+  // Get the earliest item
+  const earliestItem = sortedItems[0];
+
+  // Return its expiration status
+  return getExpirationStatus(earliestItem.expiryDate, earliestItem);
 }
 
 function getExpirationStatus(expirationDate, item) {
@@ -138,16 +158,9 @@ function getExpirationStatus(expirationDate, item) {
     return { text: 'Invalid date', isExpired: false };
   }
 
-  // Debug information
-  console.log('Today:', today.toISOString());
-  console.log('Expiry date:', expiry.toISOString());
-  console.log('Original expiry string:', item.expiryDate);
-
   // Calculate the difference in days
   const diffTime = expiry.getTime() - today.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-  console.log('Difference in days:', diffDays);
 
   // Return appropriate status message with isExpired flag
   if (diffDays < 0) {
@@ -160,9 +173,7 @@ function getExpirationStatus(expirationDate, item) {
 }
 
 function startEditing(item) {
-  console.log("Starting edit for item:", item);
-  console.log("Item ID being used:", item.id);
-  editingItem.value = item.id; // Use item.id consistently
+  editingItem.value = item.id;
   editingData.value = {
     expiryDate: item.expiryDate || '',
     quantity: item.quantity || 0
@@ -175,9 +186,6 @@ function saveItemEdit(itemId) {
     expiryDate: editingData.value.expiryDate,
     quantity: parseFloat(editingData.value.quantity)
   };
-
-  console.log("Saving item with ID:", itemId);
-  console.log("Updated data:", updatedData);
 
   // Emit an event to parent component to update the item via the store
   emit('update-item', itemId, updatedData);
@@ -249,30 +257,49 @@ function formatDate(dateString) {
     return dateString;
   }
 }
+
+function parseNorwegianDate(dateString) {
+  if (!dateString) return new Date();
+
+  const parts = dateString.split('.');
+  if (parts.length === 3) {
+    // Norwegian format: day.month.year
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed in JS Date
+    const year = parseInt(parts[2], 10);
+    return new Date(year, month, day);
+  }
+
+  return new Date(dateString);
+}
 </script>
 
 <template>
   <div class="p-4 bg-white rounded">
-    <div class="flex items-center p-3 font-semibold text-gray-700 px-2 border-b border-gray-300">
-      <div class="flex-1 font-medium pb-3">Navn:</div>
-      <div class="flex-1 font-medium pb-3">Utløps dato:</div>
-      <div class="flex-1 font-medium pb-3">Kvantitet:</div>
-      <div class="flex-1 font-medium pb-3">Går ut på dato om:</div>
-      <div class="w-6"></div>
+    <!-- Header Row - Always consistent width regardless of edit mode -->
+    <div class="grid grid-cols-5 items-center p-3 font-semibold text-gray-700 border-b border-gray-300">
+      <div class="font-medium pb-3">Navn:</div>
+      <div class="font-medium pb-3">Utløps dato:</div>
+      <div class="font-medium pb-3">Kvantitet:</div>
+      <div class="font-medium pb-3">Går ut på dato om:</div>
     </div>
 
     <div v-if="groupedSubItems && Object.keys(groupedSubItems).length > 0">
       <div v-for="(group, groupName) in groupedSubItems" :key="groupName" class="mb-4">
-        <!-- Sub-accordion header -->
+        <!-- Group header - using same grid layout -->
         <div
           @click="toggleSubAccordion(groupName)"
-          class="flex items-center justify-between p-2 cursor-pointer hover:bg-gray-50 border-b border-gray-200"
+          class="grid grid-cols-5 items-center p-2 cursor-pointer hover:bg-gray-50 border-b border-gray-200"
         >
-          <div class="flex-1 font-medium">{{ groupName }}</div>
-          <div class="flex-1">{{ formatDate(getEarliestExpiryDate(group)) }}</div>
-          <div class="flex-1">{{ getTotalQuantity(group) }} {{ group[0]?.unit || 'stk' }}</div>
-          <div class="flex-1">{{ calculateDuration(getTotalQuantity(group), group[0]) }}</div>
-          <div class="w-6">
+          <div class="font-medium">{{ groupName }}</div>
+          <div>{{ formatDate(getEarliestExpiryDate(group)) }}</div>
+          <div>{{ getTotalQuantity(group) }} {{ group[0]?.unit || 'stk' }}</div>
+          <div>
+            <span v-if="getEarliestItemExpirationStatus(group).isExpired"
+                  class="text-red-600 font-medium">{{ getEarliestItemExpirationStatus(group).text }}</span>
+            <span v-else>{{ getEarliestItemExpirationStatus(group).text }}</span>
+          </div>
+          <div class="flex justify-end">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               :class="['h-5 w-5 transform transition-transform', openSubItems.includes(groupName) ? 'rotate-180' : '']"
@@ -284,14 +311,14 @@ function formatDate(dateString) {
           </div>
         </div>
 
-        <!-- Sub-accordion content - show individual items if in edit mode -->
+        <!-- Edit Mode - Individual Items -->
         <div v-if="openSubItems.includes(groupName) && isEditing" class="mt-1 border-l-2 border-gray-200">
           <div v-for="item in group" :key="item.id"
-               class="flex items-center p-2 hover:bg-gray-50">
-            <div class="flex-1">
+               class="grid grid-cols-5 items-center p-2 hover:bg-gray-50">
+            <div>
               <span>{{ item.name }}</span>
             </div>
-            <div class="flex-1">
+            <div>
               <input
                 v-if="editingItem === item.id"
                 type="date"
@@ -300,7 +327,7 @@ function formatDate(dateString) {
               />
               <span v-else>{{ formatDate(item.expiryDate) || 'N/A' }}</span>
             </div>
-            <div class="flex-1">
+            <div>
               <div v-if="editingItem === item.id" class="flex items-center">
                 <input
                   v-model="editingData.quantity"
@@ -311,52 +338,46 @@ function formatDate(dateString) {
               </div>
               <span v-else>{{ item.quantity }} {{ item.unit || 'stk' }}</span>
             </div>
-            <div class="flex-1">
+            <div>
               <span v-if="getExpirationStatus(item.expiryDate, item).isExpired"
-                style="color: red;">{{ getExpirationStatus(item.expiryDate, item).text }}</span>
+                    class="text-red-600 font-medium">{{ getExpirationStatus(item.expiryDate, item).text }}</span>
               <span v-else>{{ getExpirationStatus(item.expiryDate, item).text }}</span>
             </div>
-            <div class="w-20 flex justify-end space-x-2">
-              <!-- Edit button -->
-              <Button
-                v-if="editingItem !== item.id"
-                @click.stop="startEditing(item)"
-                class="text-gray-600 hover:text-blue-600"
-              >
-                <Pencil class="h-5 w-5" />
-              </Button>
-              <!-- Save button -->
-              <Button
-                v-if="editingItem === item.id"
-                @click.stop="saveItemEdit(item.id)"
-                class="text-gray-600 hover:text-green-600"
-              >
-                <Save class="h-5 w-5" />
-              </Button>
-              <!-- Delete button -->
-              <Button
-                @click.stop="deleteItem(item.id)"
-                class="text-gray-600 hover:text-red-600"
-              >
-                <Trash class="h-5 w-5" />
-              </Button>
+            <div class="flex justify-end space-x-2">
+              <!-- Action buttons - only visible in edit mode -->
+              <div class="flex space-x-2">
+                <Pencil
+                  v-if="editingItem !== item.id"
+                  @click.stop="startEditing(item)"
+                  class="h-5 w-5 text-gray-600 hover:text-blue-600 cursor-pointer"
+                />
+                <Save
+                  v-if="editingItem === item.id"
+                  @click.stop="saveItemEdit(item.id)"
+                  class="h-5 w-5 text-gray-600 hover:text-green-600 cursor-pointer"
+                />
+                <Trash
+                  @click.stop="deleteItem(item.id)"
+                  class="h-5 w-5 text-gray-600 hover:text-red-600 cursor-pointer"
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- Sub-accordion content - show not in edit mode -->
+        <!-- View Mode - Grouped by Expiry Date -->
         <div v-else-if="openSubItems.includes(groupName)" class="mt-1 border-l-2 border-gray-200">
           <div v-for="(subGroup, expiryDate) in groupItemsByExpiryDate(group)" :key="expiryDate"
-               class="flex items-center p-2 hover:bg-gray-50">
-            <div class="flex-1">{{ subGroup[0].name }}</div>
-            <div class="flex-1">{{ formatDate(expiryDate) }}</div>
-            <div class="flex-1">{{ getSubGroupTotalQuantity(subGroup) }} {{ subGroup[0].unit || 'stk' }}</div>
-            <div class="flex-1">
-      <span v-if="subGroup[0].expirationStatus && subGroup[0].expirationStatus.isExpired"
-            style="color: red;">{{ subGroup[0].expirationStatus.text }}</span>
-              <span v-else>{{ subGroup[0].expirationStatus ? subGroup[0].expirationStatus.text : calculateDuration(getSubGroupTotalQuantity(subGroup), subGroup[0]) }}</span>
+               class="grid grid-cols-5 items-center p-2 hover:bg-gray-50">
+            <div>{{ subGroup[0].name }}</div>
+            <div>{{ formatDate(expiryDate) }}</div>
+            <div>{{ getSubGroupTotalQuantity(subGroup) }} {{ subGroup[0].unit || 'stk' }}</div>
+            <div>
+              <span v-if="subGroup[0].expirationStatus && subGroup[0].expirationStatus.isExpired"
+                    class="text-red-600 font-medium">{{ subGroup[0].expirationStatus.text }}</span>
+              <span v-else>{{ subGroup[0].expirationStatus ? subGroup[0].expirationStatus.text : '' }}</span>
             </div>
-            <div class="w-6"></div> <!-- to align with the arrow column -->
+            <div></div> <!-- Empty cell to maintain grid alignment -->
           </div>
         </div>
       </div>

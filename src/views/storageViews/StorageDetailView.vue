@@ -144,7 +144,9 @@ const handleItemAdd = async (item) => {
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
             />
+            <!-- Only show AddStorageItem when in edit mode -->
             <AddStorageItem
+              v-if="isEditing"
               category="Væske"
               @add-item="handleItemAdd"
             />
@@ -166,7 +168,9 @@ const handleItemAdd = async (item) => {
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
             />
+            <!-- Only show AddStorageItem when in edit mode -->
             <AddStorageItem
+              v-if="isEditing"
               category="Mat"
               @add-item="handleItemAdd"
             />
@@ -188,7 +192,9 @@ const handleItemAdd = async (item) => {
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
             />
+            <!-- Only show AddStorageItem when in edit mode -->
             <AddStorageItem
+              v-if="isEditing"
               category="Medisiner"
               @add-item="handleItemAdd"
             />
@@ -210,7 +216,9 @@ const handleItemAdd = async (item) => {
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
             />
+            <!-- Only show AddStorageItem when in edit mode -->
             <AddStorageItem
+              v-if="isEditing"
               category="Redskap"
               @add-item="handleItemAdd"
             />
@@ -232,7 +240,9 @@ const handleItemAdd = async (item) => {
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
             />
+            <!-- Only show AddStorageItem when in edit mode -->
             <AddStorageItem
+              v-if="isEditing"
               category="Diverse"
               @add-item="handleItemAdd"
             />
