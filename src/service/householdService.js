@@ -146,6 +146,19 @@ class HouseholdService extends BaseService {
     }
   }
 
+  async transferOwnership(householdId, userId) {
+    try {
+      console.log('[POST] change-owner → Transferring ownership to userId:', userId, 'for householdId:', householdId);
+      return this.post('change-owner', {
+        householdId: householdId,
+        userId: userId
+      });
+    } catch (error) {
+      console.error("Error transferring ownership:", error);
+      throw error;
+    }
+  }
+
   // Leave the current household
   async leaveHousehold(email) {
     try {

@@ -21,7 +21,7 @@ const showAddForm = ref(false)
 const newMemberName = ref('')
 const newMemberEmail = ref('')
 const error = ref('')
-const formError = ref('') // New error state specifically for forms
+const formError = ref('') 
 const addingMember = ref(false)
 const searchQuery = ref('')
 
@@ -38,6 +38,7 @@ const hoveredIndex = ref(-1)
 const invitationEmail = ref('')
 const showInviteForm = ref(false)
 const inviting = ref(false)
+const householdOwnerId = computed(() => householdStore.currentHousehold?.ownerId || '')
 
 // Load household data
 onMounted(async () => {
@@ -88,7 +89,7 @@ const filteredOwnershipSuggestions = computed(() => {
   if (!ownershipName.value) return []
   const query = ownershipName.value.toLowerCase()
   return registeredMembers.value.filter(m =>
-    m.name.toLowerCase().includes(query)
+    m.fullName.toLowerCase().includes(query)
   ).slice(0, 5)
 })
 
@@ -141,7 +142,7 @@ const addMember = async () => {
     // Reset form
     newMemberName.value = ''
     newMemberEmail.value = ''
-    showAddForm.value = false
+    showAddForm.value = false 
   } catch (err) {
     formError.value = err.message || 'Kunne ikke legge til medlem'
   } finally {
@@ -150,7 +151,7 @@ const addMember = async () => {
 }
 
 watch(invitationEmail, () => {
-  formError.value = '' // Clear form error when email changes
+  formError.value = '' 
 })
 
 // Invite member
@@ -262,17 +263,16 @@ const updateHousehold = async () => {
 }
 
 // Ownership management
-const selectOwnershipName = (name) => {
-  const selected = registeredMembers.value.find(m => m.name === name)
-  if (selected) {
-    ownershipName.value = selected.name
-    selectedOwnershipUser.value = selected
+const selectOwnershipName = (member) => {
+  if (member) {
+    ownershipName.value = member.fullName
+    selectedOwnershipUser.value = member
     hoveredIndex.value = -1
   }
 }
 
 watch(ownershipName, (val) => {
-  const matched = registeredMembers.value.find(m => m.name === val)
+  const matched = registeredMembers.value.find(m => m.fullName === val)
   selectedOwnershipUser.value = matched || null
 })
 
@@ -289,22 +289,26 @@ const handleOwnershipKeyDown = (e) => {
     e.preventDefault()
     if (hoveredIndex.value >= 0) {
       const selected = filteredOwnershipSuggestions.value[hoveredIndex.value]
-      selectOwnershipName(selected.name)
+      selectOwnershipName(selected)
     }
   }
 }
 
 const giveOwnership = async (user) => {
-  if (!user) return
+  if (!user) return;
   
-  if (confirm(`Er du sikker på at du vil gi eierskap til ${user.name}?`)) {
+  if (confirm(`Er du sikker på at du vil gi eierskap til ${user.fullName}?`)) {
     try {
-      alert(`Eierskap overført til ${user.name}`)
+      await householdStore.transferOwnership(user.id);
+      alert(`Eierskap overført til ${user.fullName}`);
+      ownershipName.value = '';
+      selectedOwnershipUser.value = null;
     } catch (err) {
-      error.value = err.message || 'Kunne ikke overføre eierskap'
+      error.value = err.message || 'Kunne ikke overføre eierskap';
     }
   }
-}
+};
+
 
 </script>
 
@@ -408,6 +412,7 @@ const giveOwnership = async (user) => {
               v-for="member in displayedMembers" 
               :key="member.id" 
               :member="member" 
+              :is-owner="member.id === householdOwnerId"
               @remove-member="removeMember"
             />
           </div>
@@ -417,11 +422,22 @@ const giveOwnership = async (user) => {
             <p>Ingen medlemmer funnet</p>
           </div>
 
-          <!-- Pagination -->
-          <div class="flex justify-center items-center space-x-2">
-            <Button :disabled="page === 1" @click="page--">&larr;</Button>
-            <span>Side {{ page }} av {{ totalPages }}</span>
-            <Button :disabled="page * perPage >= filteredMembers.length" @click="page++">&rarr;</Button>
+          <!-- Pagination for members -->
+          <div class="flex justify-center items-center space-x-2 mt-4">
+            <Button :disabled="page === 1" @click="page--">&larr;</Button> 
+            <template v-for="i in totalPages" :key="i">
+              <button
+                class="w-8 h-8 flex items-center justify-center border rounded font-medium"
+                :class="{
+                  'bg-primary text-white': i === page,
+                  'border-gray-400 text-gray-700 hover:bg-gray-100': i !== page
+                }"
+                @click="page = i"
+              >
+                {{ i }}
+              </button>
+            </template>
+            <Button :disabled="page === totalPages" @click="page++">&rarr;</Button>
           </div>
 
           <!-- Add member form -->
@@ -541,9 +557,9 @@ const giveOwnership = async (user) => {
                     'bg-gray-100': hoveredIndex === index,
                     'hover:bg-gray-100': hoveredIndex !== index
                   }"
-                  @click="selectOwnershipName(suggestion.name)"
+                  @click="selectOwnershipName(suggestion)"
                 >
-                  <p class="font-medium">{{ suggestion.name }}</p>
+                  <p class="font-medium">{{ suggestion.fullName }}</p>
                   <p class="text-sm text-gray-500" v-if="suggestion.email">{{ suggestion.email }}</p>
                   <p class="text-sm text-gray-400 italic" v-else>Ikke registrert</p>
                 </div>
@@ -613,11 +629,23 @@ const giveOwnership = async (user) => {
                 </tr>
               </tbody>
             </table>
+
             <!-- Pagination for invitations -->
             <div class="flex justify-center items-center space-x-2 mt-4">
               <Button :disabled="invitePage === 1" @click="invitePage--">&larr;</Button>
-              <span>Side {{ invitePage }} av {{ totalInvitePages }}</span>
-              <Button :disabled="invitePage * perPageInvites >= householdStore.sentInvitations.length" @click="invitePage++">&rarr;</Button>
+              <template v-for="i in totalInvitePages" :key="i">
+                <button
+                  class="w-8 h-8 flex items-center justify-center border rounded font-medium"
+                  :class="{
+                    'bg-primary text-white': i === invitePage,
+                    'border-gray-400 text-gray-700 hover:bg-gray-100': i !== invitePage
+                  }"
+                  @click="invitePage = i"
+                >
+                  {{ i }}
+                </button>
+              </template>
+              <Button :disabled="invitePage === totalInvitePages" @click="invitePage++">&rarr;</Button>
             </div>
           </div>
         </div>

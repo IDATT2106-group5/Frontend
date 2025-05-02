@@ -39,7 +39,10 @@ export const useHouseholdStore = defineStore('household', {
         }
         const response = await HouseholdService.getHouseholdDetailsByUserId(userStore.user.id);
         console.log('[RESPONSE] getHouseholdDetailsByUserId:', response);
-        this.currentHousehold = response.household;
+        this.currentHousehold = {
+          ...response.household,
+          ownerId: response.household.owner.id 
+        };
         this.members.registered = (response.users || []).map(user => ({
           id: user.id,
           fullName: user.fullName,
@@ -47,7 +50,7 @@ export const useHouseholdStore = defineStore('household', {
           email: user.email,
           isRegistered: true
         }))       
-
+    
         this.members.unregistered = (response.unregisteredMembers || []).map(member => ({
           id: member.id,
           fullName: member.fullName,      
@@ -308,6 +311,28 @@ export const useHouseholdStore = defineStore('household', {
         const actionText = action === 'ACCEPTED' ? 'godta' : 'avslå';
         this.error = err.response?.data?.error || err.message || `Kunne ikke ${actionText} forespørsel`;
         throw err;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    // Method to transfer ownership of the household
+    async transferOwnership(userId) {
+      if (!this.currentHousehold?.id) {
+        throw new Error('Ingen aktiv husstand funnet');
+      }
+      
+      try {
+        this.isLoading = true;
+        
+        await HouseholdService.transferOwnership(this.currentHousehold.id, userId);
+        
+        await this.checkCurrentHousehold(); // Refresh household data
+        return true;
+      } catch (error) {
+        console.error("Error transferring ownership:", error);
+        this.error = error.response?.data?.message || 'Kunne ikke overføre eierskap';
+        throw error;
       } finally {
         this.isLoading = false;
       }
