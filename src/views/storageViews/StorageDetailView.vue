@@ -18,6 +18,7 @@ import { useStorageStore } from '@/stores/StorageStore.js';
 import { ItemType } from '@/types/ItemType';
 import { useUserStore } from '@/stores/UserStore.js';
 import UserService from '@/service/userService';
+import AddStorageItem from '@/components/AddStorageItem.vue'
 
 // Component state
 const openItem = ref(null);
@@ -133,6 +134,10 @@ const handleItemDelete = async (id) => {
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
             />
+            <AddStorageItem
+              category="Væske"
+              @add-item="handleItemAdd"
+            />
           </AccordionContent>
         </AccordionItem>
 
@@ -150,6 +155,10 @@ const handleItemDelete = async (id) => {
               :isEditing="isEditing"
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
+            />
+            <AddStorageItem
+              category="Mat"
+              @add-item="handleItemAdd"
             />
           </AccordionContent>
         </AccordionItem>
@@ -169,6 +178,10 @@ const handleItemDelete = async (id) => {
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
             />
+            <AddStorageItem
+              category="Medisiner"
+              @add-item="handleItemAdd"
+            />
           </AccordionContent>
         </AccordionItem>
 
@@ -187,6 +200,10 @@ const handleItemDelete = async (id) => {
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
             />
+            <AddStorageItem
+              category="Redskap"
+              @add-item="handleItemAdd"
+            />
           </AccordionContent>
         </AccordionItem>
 
@@ -204,6 +221,10 @@ const handleItemDelete = async (id) => {
               :isEditing="isEditing"
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
+            />
+            <AddStorageItem
+              category="Diverse"
+              @add-item="handleItemAdd"
             />
           </AccordionContent>
         </AccordionItem>
