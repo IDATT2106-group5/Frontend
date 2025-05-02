@@ -5,13 +5,14 @@
     <!-- Loading indicator -->
     <div v-if="isLoadingMarkers" class="map-loading-overlay">
       <div class="map-loading-spinner"></div>
-      <div class="map-loading-text">Loading map data...</div>
+      <div class="map-loading-text">Laster kart data...</div>
     </div>
 
     <!-- Error message -->
     <div v-if="markersLoadError" class="map-error-message">
       {{ markersLoadError }}
-      <Button @click="retryLoadMarkers" variant="primary" class="retry-button">Retry</Button>
+      <Button @click="retryLoadMarkers" variant="primary" class="retry-button">
+        Prøv på nytt</Button>
     </div>
 
     <!-- Custom Layer Controls -->
