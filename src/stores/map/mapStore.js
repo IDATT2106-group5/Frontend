@@ -2,6 +2,7 @@
 import { defineStore } from 'pinia';
 import MapService from '@/service/map/mapService';
 import MarkerService from '@/service/map/markerService';
+import IncidentMapService from '@/service/map/incidentMapService';
 import L from 'leaflet';
 
 export const useMapStore = defineStore('map', {
@@ -14,6 +15,12 @@ export const useMapStore = defineStore('map', {
     markerTypes: [],
     markerLayers: {},
     markerData: {},
+
+    // Incident state
+    incidents: [],
+    incidentLayer: null,
+    isLoadingIncidents: false,
+    incidentsLoadError: null,
 
     // UI state
     isLoadingMarkers: false,
@@ -63,6 +70,63 @@ export const useMapStore = defineStore('map', {
      */
     hasVisibleMarkers() {
       return this.markerTypes.some(type => type.visible);
+    },
+
+    /**
+     * Check if there are any incidents
+     */
+    hasIncidents() {
+      return this.incidents.length > 0;
+    },
+
+    /**
+     * Group incidents by severity
+     */
+    incidentsBySeverity() {
+      const result = {
+        RED: [],
+        YELLOW: [],
+        GREEN: []
+      };
+
+      this.incidents.forEach(incident => {
+        if (result[incident.severity]) {
+          result[incident.severity].push(incident);
+        } else {
+          result.GREEN.push(incident);
+        }
+      });
+
+      return result;
+    },
+
+    /**
+     * Get severity level definitions
+     */
+    severityLevels() {
+      return {
+        RED: {
+          id: 'RED',
+          name: 'Kritisk farenivå',
+          color: '#FF3D33', // Red
+          fillOpacity: 0.35,
+          strokeWidth: 2
+        },
+        YELLOW: {
+          id: 'YELLOW',
+          name: 'Forhøyet farenivå',
+          color: '#FFC700', // Yellow
+          fillOpacity: 0.3,
+          strokeWidth: 1.5
+        },
+        GREEN: {
+          id: 'GREEN',
+          name: 'Lavt farenivå',
+          color: '#45D278', // Green
+          fillOpacity: 0.25,
+          strokeWidth: 1
+        }
+      };
     }
   },
 
@@ -81,6 +145,9 @@ export const useMapStore = defineStore('map', {
 
       // Initialize markers
       this.initMarkers();
+
+      // Initialize incidents
+      this.initIncidents();
 
       // Force a resize after initialization to handle container sizing issues
       setTimeout(() => {
@@ -338,6 +405,175 @@ export const useMapStore = defineStore('map', {
     },
 
     /**
+     * Initialize incidents and incident layer
+     */
+    initIncidents() {
+      if (!this.map) return;
+
+      // Create incident layer and add to map
+      this.incidentLayer = L.layerGroup().addTo(this.map);
+
+      // Load incidents
+      this.loadIncidents();
+    },
+
+    /**
+     * Load incidents from API and add to map
+     */
+    async loadIncidents() {
+      if (!this.map || !this.incidentLayer) return;
+
+      this.isLoadingIncidents = true;
+      this.incidentsLoadError = null;
+
+      try {
+        // Fetch incidents
+        this.incidents = await IncidentMapService.fetchIncidents();
+
+        // Add incidents to map
+        this.updateIncidentsOnMap();
+      } catch (error) {
+        console.error('Error loading incidents:', error);
+        this.incidentsLoadError = `Failed to load incidents: ${error.message}. Please check that the API is running and accessible.`;
+        this.incidents = [];
+      } finally {
+        this.isLoadingIncidents = false;
+      }
+    },
+
+    /**
+     * Create concentric circles for an incident based on severity
+     * @param {Object} incident - Incident data
+     * @returns {L.LayerGroup} - Layer group containing the circles
+     */
+    createIncidentCircles(incident) {
+      if (!this.map) return null;
+
+      const level = this.severityLevels[incident.severity] || this.severityLevels.GREEN;
+      const baseRadius = incident.impactRadius * 1000; // Convert km to meters
+
+      // Create a layer group to hold our circles
+      const layerGroup = L.layerGroup();
+
+      // Create differently colored circles based on severity
+      if (incident.severity === 'RED') {
+        // Green circle (outermost)
+        const greenCircle = L.circle([incident.latitude, incident.longitude], {
+          radius: baseRadius * 1.2, // 20% larger than base radius
+          color: this.severityLevels.GREEN.color,
+          fillColor: this.severityLevels.GREEN.color,
+          fillOpacity: this.severityLevels.GREEN.fillOpacity,
+          weight: this.severityLevels.GREEN.strokeWidth
+        });
+
+        // Orange circle (middle)
+        const orangeCircle = L.circle([incident.latitude, incident.longitude], {
+          radius: baseRadius * 1.1, // 10% larger than base radius
+          color: this.severityLevels.YELLOW.color,
+          fillColor: this.severityLevels.YELLOW.color,
+          fillOpacity: this.severityLevels.YELLOW.fillOpacity,
+          weight: this.severityLevels.YELLOW.strokeWidth
+        });
+
+        // Red circle (innermost)
+        const redCircle = L.circle([incident.latitude, incident.longitude], {
+          radius: baseRadius,
+          color: this.severityLevels.RED.color,
+          fillColor: this.severityLevels.RED.color,
+          fillOpacity: this.severityLevels.RED.fillOpacity,
+          weight: this.severityLevels.RED.strokeWidth
+        });
+
+        // Add circles to layer group from largest to smallest for proper z-index
+        layerGroup.addLayer(greenCircle);
+        layerGroup.addLayer(orangeCircle);
+        layerGroup.addLayer(redCircle);
+      }
+      else if (incident.severity === 'YELLOW') {
+        // Green circle (outermost)
+        const greenCircle = L.circle([incident.latitude, incident.longitude], {
+          radius: baseRadius * 1.1, // 10% larger than base radius
+          color: this.severityLevels.GREEN.color,
+          fillColor: this.severityLevels.GREEN.color,
+          fillOpacity: this.severityLevels.GREEN.fillOpacity,
+          weight: this.severityLevels.GREEN.strokeWidth
+        });
+
+        // Orange circle (innermost)
+        const orangeCircle = L.circle([incident.latitude, incident.longitude], {
+          radius: baseRadius,
+          color: this.severityLevels.YELLOW.color,
+          fillColor: this.severityLevels.YELLOW.color,
+          fillOpacity: this.severityLevels.YELLOW.fillOpacity,
+          weight: this.severityLevels.YELLOW.strokeWidth
+        });
+
+        // Add circles to layer group from largest to smallest for proper z-index
+        layerGroup.addLayer(greenCircle);
+        layerGroup.addLayer(orangeCircle);
+      }
+      else {
+        // Just a green circle for GREEN severity
+        const greenCircle = L.circle([incident.latitude, incident.longitude], {
+          radius: baseRadius,
+          color: this.severityLevels.GREEN.color,
+          fillColor: this.severityLevels.GREEN.color,
+          fillOpacity: this.severityLevels.GREEN.fillOpacity,
+          weight: this.severityLevels.GREEN.strokeWidth
+        });
+
+        layerGroup.addLayer(greenCircle);
+      }
+
+      // Add popup with incident information
+      if (incident.name || incident.description) {
+        layerGroup.bindPopup(`
+          <div class="incident-popup">
+            ${incident.name ? `<h3>${incident.name}</h3>` : ''}
+            ${incident.description ? `<p>${incident.description}</p>` : ''}
+            ${incident.startedAt ? `<p><strong>Startet:</strong> ${new Date(incident.startedAt).toLocaleString()}</p>` : ''}
+            ${incident.severity ? `<p><strong>Farenivå:</strong> ${this.severityLevels[incident.severity].name}</p>` : ''}
+          </div>
+        `);
+      }
+
+      return layerGroup;
+    },
+
+    /**
+     * Update incidents on the map
+     */
+    updateIncidentsOnMap() {
+      if (!this.map || !this.incidentLayer) return;
+
+      // Clear existing incidents
+      this.incidentLayer.clearLayers();
+
+      // Add each incident to the map
+      this.incidents.forEach(incident => {
+        // Use the store's method to create circles
+        const circleGroup = this.createIncidentCircles(incident);
+        if (circleGroup) {
+          this.incidentLayer.addLayer(circleGroup);
+        }
+      });
+    },
+
+    /**
+     * Toggle visibility of the incident layer
+     * @param {boolean} isVisible - Whether incidents should be visible
+     */
+    setIncidentsVisibility(isVisible) {
+      if (!this.map || !this.incidentLayer) return;
+
+      if (isVisible) {
+        this.incidentLayer.addTo(this.map);
+      } else {
+        this.incidentLayer.removeFrom(this.map);
+      }
+    },
+
+    /**
      * Resize the map when container dimensions change
      */
     resizeMap() {
@@ -357,6 +593,13 @@ export const useMapStore = defineStore('map', {
       // Clean up marker layers
       this.removeAllMarkerLayers();
 
+      // Clean up incident layer
+      if (this.incidentLayer && this.map) {
+        this.incidentLayer.clearLayers();
+        this.incidentLayer.removeFrom(this.map);
+        this.incidentLayer = null;
+      }
+
       // Clean up the map
       if (this.map) {
         MapService.cleanupMap(this.map);
@@ -367,6 +610,7 @@ export const useMapStore = defineStore('map', {
       this.markerLayers = {};
       this.markerData = {};
       this.markerTypes = [];
+      this.incidents = [];
       this.initialMarkersLoaded = false;
     }
   }
