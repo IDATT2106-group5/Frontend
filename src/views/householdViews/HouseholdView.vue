@@ -343,7 +343,9 @@ const giveOwnership = async (user) => {
         <p class="mb-6">Du er ikke tilknyttet en husstand ennå.</p>
         <div class="space-x-4">
           <Button @click="router.push('/household/create')">Opprett husstand</Button>
-          <Button variant="outline" @click="activeTab = 'search'">Søk husstand</Button>
+          <Button @click="router.push('/household/join')" class="bg-gray-700 text-white hover:bg-gray-800">
+          Søk husstand
+        </Button>        
         </div>
       </div>
       

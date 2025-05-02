@@ -185,6 +185,23 @@ class HouseholdService extends BaseService {
       throw error;
     }
   }
+
+  // Search for a household by ID
+  async searchHouseholdById(data) {
+    try {
+      const householdId = Number(data.householdId);
+      
+      if (isNaN(householdId) || householdId <= 0) {
+        throw new Error('Ugyldig husstands-ID');
+      }
+      
+      console.log('[SEARCH] Searching for household with ID:', householdId);
+      return await this.post('search', { householdId });
+    } catch (error) {
+      console.error("Error searching for household:", error);
+      throw error;
+    }
+  }
   
 }
 

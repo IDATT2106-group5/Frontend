@@ -399,7 +399,7 @@ export const useHouseholdStore = defineStore('household', {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husholdning å forlate');
       }
-    
+  
       try {
         this.isLoading = true;
     
@@ -410,6 +410,25 @@ export const useHouseholdStore = defineStore('household', {
         this.members = { registered: [], unregistered: [] };
       } catch (err) {
         this.error = err.response?.data?.error || err.message || 'Kunne ikke forlate husholdning';
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async searchHouseholdById(householdId) {
+      try {
+        this.isLoading = true;
+        if (!householdId || isNaN(Number(householdId))) {
+          throw new Error('Ugyldig husstands-ID format');
+        }
+        
+        const response = await HouseholdService.searchHouseholdById({ 
+          householdId: Number(householdId) 
+        });
+        return response;
+      } catch (err) {
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke søke etter husstand';
         throw err;
       } finally {
         this.isLoading = false;
