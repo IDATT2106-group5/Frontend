@@ -14,7 +14,7 @@
       <Button @click="retryLoadMarkers" variant="primary" class="retry-button">Retry</Button>
     </div>
 
-    <!-- Custom Layer Controls - Now positioned at left bottom with toggle for mobile -->
+    <!-- Custom Layer Controls -->
     <div class="layer-control-container" :class="{ 'collapsed': isLayerCollapsed }">
       <Button
         v-if="isMobileView"
@@ -188,7 +188,7 @@ export default {
   height: 100%;
 }
 
-/* Layer Control Container - Now positioned at left bottom */
+/* Layer Control Container */
 .layer-control-container {
   position: absolute;
   bottom: 30px;
@@ -340,9 +340,9 @@ export default {
 /* Custom Zoom Controls */
 :deep(.leaflet-control-zoom) {
   position: absolute !important;
-  top: 70px !important; /* Position below geolocation button */
+  top: 70px !important;
   right: 16px !important;
-  margin: 0 !important; /* Remove default margins */
+  margin: 0 !important;
   border: none;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
@@ -358,11 +358,11 @@ export default {
   color: #333;
   font-size: 18px;
   font-weight: bold;
-  display: block; /* Make controls stack vertically */
+  display: block;
 }
 
 :deep(.leaflet-control-zoom-in) {
-  border-bottom: 1px solid #eee; /* Add divider between zoom buttons */
+  border-bottom: 1px solid #eee;
 }
 
 :deep(.leaflet-control-zoom-in:hover),
@@ -370,7 +370,6 @@ export default {
   background-color: #f0f0f0;
 }
 
-/* Hide attribution control */
 :deep(.leaflet-control-attribution) {
   display: none;
 }

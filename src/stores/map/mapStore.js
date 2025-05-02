@@ -193,9 +193,12 @@ export const useMapStore = defineStore('map', {
           const marker = L.marker([markerData.lat, markerData.lng], {
             icon: markerType.icon
           }).bindPopup(`
-            <div>
-              <h3>${markerData.name}</h3>
-              <p>${markerData.description || ''}</p>
+            <div class="marker-popup">
+              <h3><strong>${markerData.name || ''}<strong></h3>
+              ${markerData.address ? `<p><strong>Adresse:</strong> ${markerData.address}</p>` : ''}
+              ${markerData.opening_hours ? `<p><strong>Åpningstider:</strong> ${markerData.opening_hours}</p>` : ''}
+              ${markerData.contact_info ? `<p><strong>Kontakt:</strong> ${markerData.contact_info}</p>` : ''}
+              ${markerData.description ? `<p><strong>Beskrivelse:</strong> ${markerData.description}</p>` : ''}
             </div>
           `);
 

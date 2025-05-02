@@ -256,10 +256,13 @@ class MarkerService extends BaseService {
 
         markersByType[marker.type].push({
           id: marker.id,
-          name: marker.name || 'Unnamed',
+          name: iconConfig[marker.type]?.norwegianName || '',
+          address: marker.address || '',
           lat: marker.latitude,
           lng: marker.longitude,
-          description: marker.description || ''
+          description: marker.description || '',
+          opening_hours: marker.openingHours || '',
+          contact_info: marker.contactInfo || ''
         });
       });
 
