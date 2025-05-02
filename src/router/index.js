@@ -8,6 +8,9 @@ import VerifyEmailView from '@/views/mainViews/VerifyEmailView.vue'
 import RegisterSuccessView from '@/views/mainViews/RegisterSucessView.vue'
 import RegisterFailedView from '@/views/mainViews/RegisterFailedView.vue'
 import Admin2FAView from '@/views/adminViews/Admin2FAView.vue'
+import BeforeView from '@/views/informationViews/BeforeView.vue'
+import UnderView from '@/views/informationViews/UnderView.vue'
+import AfterView from '@/views/informationViews/AfterView.vue'
 import MapView from '@/views/mapView/MapView.vue'
 
 const router = createRouter({
@@ -22,13 +25,13 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
-      meta:{hideNavbar: true },
+      meta:{hideNavbar: true, hideFooter: true },
     },
     {
       path: '/register',
       name: 'register',
       component: RegisterView,
-      meta:{hideNavbar: true },
+      meta:{hideNavbar: true, hideFooter: true },
     },
     {
       path: '/storage-detail',
@@ -49,13 +52,28 @@ const router = createRouter({
       path: '/register-success',
       name: 'RegisterSuccess',
       component: RegisterSuccessView,
-      meta:{hideNavbar: true },
+      meta:{hideNavbar: true, hideFooter: true },
     },
     {
       path: '/register-failed',
       name: 'RegisterFailed',
       component: RegisterFailedView,
-      meta:{hideNavbar: true },
+      meta:{hideNavbar: true, hideFooter: true },
+    },
+    {
+      path: '/before',
+      name: 'before',
+      component: BeforeView,
+    },
+    {
+      path: '/under',
+      name: 'under',
+      component: UnderView,
+    },
+    {
+      path: '/after',
+      name: 'after',
+      component: AfterView,
     },
     {
       path: '/2FA',
