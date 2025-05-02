@@ -10,6 +10,7 @@ import RegisterFailedView from '@/views/mainViews/RegisterFailedView.vue'
 import BeforeView from '@/views/informationViews/BeforeView.vue'
 import UnderView from '@/views/informationViews/UnderView.vue'
 import AfterView from '@/views/informationViews/AfterView.vue'
+import MapView from '@/views/mapView/MapView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -57,7 +58,6 @@ const router = createRouter({
       name: 'RegisterFailed',
       component: RegisterFailedView,
       meta:{hideNavbar: true, hideFooter: true },
-
     },
     {
       path: '/before',
@@ -74,6 +74,11 @@ const router = createRouter({
       name: 'after',
       component: AfterView,
     },
+    {
+      path: '/map',
+      name: 'map',
+      component: MapView,
+    }
   ],
 })
 
