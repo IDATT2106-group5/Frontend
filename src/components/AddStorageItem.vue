@@ -36,9 +36,9 @@ const typeOptions = computed(() => {
   const categoryMapping = {
     'Væske': 'LIQUIDS',
     'Mat': 'FOOD',
-    'Medisiner': 'MEDICATIONS',
-    'Redskap': 'TOOLS',
-    'Diverse': 'MISC',
+    'Medisiner': 'FIRST_AID',
+    'Redskap': 'TOOL',
+    'Diverse': 'OTHER',
   };
 
   const categoryCode = categoryMapping[props.category];
@@ -79,18 +79,17 @@ const addNewRow = () => {
 const saveItem = (row) => {
   if (!row.selectedItem) return;
 
+  // Create the object in the format expected by StorageService.addItemToStorage
   const newItem = {
-    name: row.selectedItem.name,
-    itemId: row.selectedItem.id, // Reference to backend ID
-    category: props.category,
-    type: row.selectedItem.type,
-    amount: parseInt(row.itemQuantity) || 1,
     unit: row.selectedUnit,
-    expiryDate: row.itemDate,
+    amount: parseInt(row.itemQuantity) || 1,
     expirationDate: row.itemDate ? new Date(row.itemDate) : null
   };
 
-  emit('add-item', newItem);
+  emit('add-item', {
+    itemId: row.selectedItem.id,
+    data: newItem
+  });
 
   // Remove this row from the list
   const index = addRows.value.indexOf(row);

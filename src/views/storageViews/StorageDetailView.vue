@@ -79,6 +79,16 @@ const handleItemDelete = async (id) => {
     // You could show an error message to the user here
   }
 };
+
+const handleItemAdd = async (item) => {
+  try {
+    // The item object now contains itemId and data properties
+    await storageStore.addItem(item.itemId, item.data);
+  } catch (e) {
+    console.error('Failed to add item:', e);
+    // Show an error message to the user
+  }
+};
 </script>
 
 <template>

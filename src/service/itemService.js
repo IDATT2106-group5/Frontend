@@ -8,9 +8,20 @@ class ItemService extends BaseService {
   // Fetch all catalog items
   async getAllItems() {
     try {
-      return await this.get('/');
+      // Remove the /getAll part
+      return await this.get('');
     } catch (error) {
       console.error("Error fetching items:", error);
+      throw error;
+    }
+  }
+
+  // Fetch items by type
+  async getItemsByType(type) {
+    try {
+      return await this.get(`/type/${type}`);
+    } catch (error) {
+      console.error("Error fetching items by type:", error);
       throw error;
     }
   }
