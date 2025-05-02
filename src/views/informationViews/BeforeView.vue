@@ -42,7 +42,8 @@ const goToUnder = () => {
         <!-- Cards -->
         <div class="space-y-8 text-left">
           <!-- Card 1 -->
-          <div class="flex items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-15 min-h-[160px] max-w-xl mx-auto hover:shadow-md transition cursor-pointer">
+          <div class="flex items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-15 min-h-[160px]
+           max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition">
             <div class="flex items-start gap-4">
               <!-- Icon -->
               <div class="text-[#2c3e50]">
@@ -69,7 +70,8 @@ const goToUnder = () => {
           </div>
 
           <!-- Card 2 -->
-          <div class="flex items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-15 min-h-[160px] max-w-xl mx-auto hover:shadow-md transition cursor-pointer">
+          <div class="flex items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-15 min-h-[160px]
+           max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition">
             <div class="flex items-start gap-4">
               <!-- Icon -->
               <div class="text-[#2c3e50]">
@@ -95,7 +97,8 @@ const goToUnder = () => {
           </div>
 
           <!-- Card 3 -->
-          <div class="flex items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-15 min-h-[160px] max-w-xl mx-auto hover:shadow-md transition cursor-pointer">
+          <div class="flex items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-15 min-h-[160px]
+           max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition">
             <div class="flex items-start gap-4">
               <!-- Icon -->
               <div class="text-[#2c3e50]">
@@ -131,14 +134,21 @@ const goToUnder = () => {
         <div class="w-5 h-5 rounded-full bg-[#2c3e50]"></div>
         <span class="font-semibold">Før</span>
       </div>
-      <div class="flex flex-col items-center space-y-1 opacity-50">
+
+      <!-- Under (clickable) -->
+      <router-link to="/under" class="flex flex-col items-center space-y-1 cursor-pointer opacity-50
+      hover:opacity-100 transition transform hover:scale-110">
         <div class="w-5 h-5 rounded-full border-2 border-gray-400"></div>
         <span>Under</span>
-      </div>
-      <div class="flex flex-col items-center space-y-1 opacity-50">
+      </router-link>
+
+      <!-- Etter (clickable) -->
+      <router-link to="/after" class="flex flex-col items-center space-y-1 cursor-pointer opacity-50
+      hover:opacity-100 transition transform hover:scale-110">
         <div class="w-5 h-5 rounded-full border-2 border-gray-400"></div>
         <span>Etter</span>
-      </div>
+      </router-link>
+
     </div>
 
   </section>
