@@ -127,7 +127,6 @@ const severityConfig = {
 
 /**
  * Helper function to fetch and process marker types
- * This extracts the marker types processing logic to reduce duplication
  * @param {Function} formatTypeTitle - Function to format type titles
  * @param {Function} processMarkerTypes - Function to process marker types with icons
  * @param {Array|null} cachedTypes - Cached marker types if available
@@ -391,41 +390,62 @@ export const useMapStore = defineStore('map', {
     },
 
     /**
+     * Set loading state for marker updates
+     * @param {boolean} silent - Whether to use silent loading
+     */
+    setMarkerLoadingState(silent = false) {
+      if (silent) {
+        this.silentLoading = true;
+      } else {
+        this.isLoadingMarkers = true;
+      }
+      this.markersLoadError = null;
+    },
+
+    /**
+     * Reset loading state for marker updates
+     */
+    resetMarkerLoadingState() {
+      this.isLoadingMarkers = false;
+      this.silentLoading = false;
+    },
+
+    /**
+     * Fetch marker data based on current map bounds
+     * @returns {Promise<Object>} Marker data by type
+     */
+    async fetchMarkerDataForCurrentView() {
+      if (!this.map) return {};
+
+      const bounds = MapService.getMapBounds(this.map);
+      return await MarkerService.fetchAllMarkers(bounds);
+    },
+
+    /**
      * Update markers based on current map view
      * @param {boolean} silent - Whether to show loading indicator
      */
     async updateMarkersForCurrentView(silent = false) {
       if (!this.map) return;
 
-      // Set appropriate loading flag
-      if (silent) {
-        this.silentLoading = true;
-      } else {
-        this.isLoadingMarkers = true;
-      }
-
-      this.markersLoadError = null;
+      // Set loading state
+      this.setMarkerLoadingState(silent);
 
       try {
-        // Get current map bounds
-        const bounds = MapService.getMapBounds(this.map);
-
-        // Fetch markers based on current view
-        const newMarkerData = await MarkerService.fetchAllMarkers(bounds);
+        // Fetch marker data
+        const newMarkerData = await this.fetchMarkerDataForCurrentView();
 
         // Update marker data
         this.markerData = newMarkerData;
 
         // Refresh marker layers
         this.refreshMarkerLayers();
-
       } catch (error) {
         console.error('Error updating markers for current view:', error);
         this.markersLoadError = 'Failed to update markers. Please try again later.';
       } finally {
-        // Reset loading flags
-        this.isLoadingMarkers = false;
-        this.silentLoading = false;
+        // Reset loading state
+        this.resetMarkerLoadingState();
       }
     },
 
@@ -449,6 +469,26 @@ export const useMapStore = defineStore('map', {
     },
 
     /**
+     * Create marker with popup for display on map
+     * @param {Object} markerData - Data for the marker
+     * @param {Object} markerType - Type configuration for the marker
+     * @returns {L.Marker} Leaflet marker with popup
+     */
+    createMarkerWithPopup(markerData, markerType) {
+      return L.marker([markerData.lat, markerData.lng], {
+        icon: markerType.icon
+      }).bindPopup(`
+        <div class="marker-popup">
+          <h3><strong>${markerData.name || ''}</strong></h3>
+          ${markerData.address ? `<p><strong>Adresse:</strong> ${markerData.address}</p>` : ''}
+          ${markerData.opening_hours ? `<p><strong>Åpningstider:</strong> ${markerData.opening_hours}</p>` : ''}
+          ${markerData.contact_info ? `<p><strong>Kontakt:</strong> ${markerData.contact_info}</p>` : ''}
+          ${markerData.description ? `<p><strong>Beskrivelse:</strong> ${markerData.description}</p>` : ''}
+        </div>
+      `);
+    },
+
+    /**
      * Add markers to their respective layer groups
      */
     addMarkersToLayers() {
@@ -459,30 +499,18 @@ export const useMapStore = defineStore('map', {
           this.markerLayers[typeId] = L.layerGroup();
         }
 
+        // Find marker type configuration
+        const markerType = this.markerTypes.find(type => type.id === typeId);
+        if (!markerType) return;
+
         // Add markers to the layer group
         markers.forEach(markerData => {
-          const markerType = this.markerTypes.find(type => type.id === typeId);
-          if (!markerType) return;
-
-          // Create marker with popup
-          const marker = L.marker([markerData.lat, markerData.lng], {
-            icon: markerType.icon
-          }).bindPopup(`
-            <div class="marker-popup">
-              <h3><strong>${markerData.name || ''}</strong></h3>
-              ${markerData.address ? `<p><strong>Adresse:</strong> ${markerData.address}</p>` : ''}
-              ${markerData.opening_hours ? `<p><strong>Åpningstider:</strong> ${markerData.opening_hours}</p>` : ''}
-              ${markerData.contact_info ? `<p><strong>Kontakt:</strong> ${markerData.contact_info}</p>` : ''}
-              ${markerData.description ? `<p><strong>Beskrivelse:</strong> ${markerData.description}</p>` : ''}
-            </div>
-          `);
-
+          const marker = this.createMarkerWithPopup(markerData, markerType);
           this.markerLayers[typeId].addLayer(marker);
         });
 
         // Add layer to map if it should be visible
-        const markerType = this.markerTypes.find(type => type.id === typeId);
-        if (markerType && markerType.visible && this.map) {
+        if (markerType.visible && this.map) {
           this.markerLayers[typeId].addTo(this.map);
         }
       });
@@ -510,54 +538,80 @@ export const useMapStore = defineStore('map', {
       this.markersLoadError = null;
 
       try {
-        // Clean up existing markers
-        this.removeAllMarkerLayers();
-
-        // Reset marker state
-        this.markerLayers = {};
-        this.markerData = {};
-
-        // Use the helper function to fetch and process marker types
-        const types = await fetchAndProcessMarkerTypes(
-          this.formatTypeTitle,
-          this.processMarkerTypes,
-          this.cachedMarkerTypes,
-          MarkerService.fetchAllMarkers
-        );
-
-        // Cache the processed marker types for future use
-        this.cachedMarkerTypes = types;
-
-        // Set marker types in state
-        this.markerTypes = types;
-
-        // Create layer groups for each marker type
-        this.markerLayers = createMarkerLayerGroups(this.markerTypes);
-
-        // Fetch marker data based on current map view
-        const bounds = MapService.getMapBounds(this.map);
-        this.markerData = await MarkerService.fetchAllMarkers(bounds);
-
-        // Add markers to their layer groups
-        this.addMarkersToLayers();
+        await this.resetMarkerState();
+        await this.fetchAndInitializeMarkerTypes();
+        await this.fetchAndDisplayMarkers();
 
         // Mark that initial markers have been loaded
         this.initialMarkersLoaded = true;
 
         // Set up map event listeners for future updates
         this.setupMapEventListeners();
-
       } catch (error) {
-        console.error('Error initializing markers:', error);
-        this.markersLoadError = 'Failed to load markers. Please try again later.';
-
-        // Initialize empty objects to prevent UI errors
-        this.markerTypes = [];
-        this.markerLayers = {};
-        this.markerData = {};
+        this.handleMarkerInitError(error);
       } finally {
         this.isLoadingMarkers = false;
       }
+    },
+
+    /**
+     * Reset marker state to prepare for initialization
+     */
+    async resetMarkerState() {
+      // Clean up existing markers
+      this.removeAllMarkerLayers();
+
+      // Reset marker state
+      this.markerLayers = {};
+      this.markerData = {};
+    },
+
+    /**
+     * Fetch and initialize marker types
+     */
+    async fetchAndInitializeMarkerTypes() {
+      // Use the helper function to fetch and process marker types
+      const types = await fetchAndProcessMarkerTypes(
+        this.formatTypeTitle,
+        this.processMarkerTypes,
+        this.cachedMarkerTypes,
+        MarkerService.fetchAllMarkers
+      );
+
+      // Cache the processed marker types for future use
+      this.cachedMarkerTypes = types;
+
+      // Set marker types in state
+      this.markerTypes = types;
+
+      // Create layer groups for each marker type
+      this.markerLayers = createMarkerLayerGroups(this.markerTypes);
+    },
+
+    /**
+     * Fetch marker data and display on map
+     */
+    async fetchAndDisplayMarkers() {
+      // Fetch marker data based on current map view
+      const bounds = MapService.getMapBounds(this.map);
+      this.markerData = await MarkerService.fetchAllMarkers(bounds);
+
+      // Add markers to their layer groups
+      this.addMarkersToLayers();
+    },
+
+    /**
+     * Handle errors during marker initialization
+     * @param {Error} error - The error that occurred
+     */
+    handleMarkerInitError(error) {
+      console.error('Error initializing markers:', error);
+      this.markersLoadError = 'Failed to load markers. Please try again later.';
+
+      // Initialize empty objects to prevent UI errors
+      this.markerTypes = [];
+      this.markerLayers = {};
+      this.markerData = {};
     },
 
     /**
@@ -650,12 +704,63 @@ export const useMapStore = defineStore('map', {
         // Add incidents to map
         this.updateIncidentsOnMap();
       } catch (error) {
-        console.error('Error loading incidents:', error);
-        this.incidentsLoadError = `Failed to load incidents: ${error.message}. Please check that the API is running and accessible.`;
-        this.incidents = [];
+        this.handleIncidentLoadError(error);
       } finally {
         this.isLoadingIncidents = false;
       }
+    },
+
+    /**
+     * Handle errors during incident loading
+     * @param {Error} error - The error that occurred
+     */
+    handleIncidentLoadError(error) {
+      console.error('Error loading incidents:', error);
+      this.incidentsLoadError = `Failed to load incidents: ${error.message}. Please check that the API is running and accessible.`;
+      this.incidents = [];
+    },
+
+    /**
+     * Create a popup for an incident
+     * @param {Object} incident - Incident data
+     * @param {Object} config - Severity configuration
+     * @returns {string} HTML content for the popup
+     */
+    createIncidentPopupContent(incident, config) {
+      return `
+        <div class="incident-popup">
+          ${incident.name ? `<h3>${incident.name}</h3>` : ''}
+          ${incident.description ? `<p>${incident.description}</p>` : ''}
+          ${incident.startedAt ? `<p><strong>Startet:</strong> ${new Date(incident.startedAt).toLocaleString()}</p>` : ''}
+          ${incident.severity ? `<p><strong>Farenivå:</strong> ${config.name}</p>` : ''}
+        </div>
+      `;
+    },
+
+    /**
+     * Create a circle for an incident visualization
+     * @param {Object} incident - Incident data
+     * @param {Object} circleConfig - Circle configuration
+     * @param {number} baseRadius - Base radius in meters
+     * @param {L.Marker} centerMarker - Center marker for the popup
+     * @returns {L.Circle} Configured circle
+     */
+    createIncidentCircle(incident, circleConfig, baseRadius, centerMarker) {
+      const circle = L.circle([incident.latitude, incident.longitude], {
+        radius: baseRadius * circleConfig.radiusMultiplier,
+        color: circleConfig.color,
+        fillColor: circleConfig.color,
+        fillOpacity: circleConfig.fillOpacity,
+        weight: circleConfig.strokeWidth,
+        interactive: true
+      });
+
+      // Add click handler to open the popup on the center marker
+      circle.on('click', () => {
+        centerMarker.openPopup();
+      });
+
+      return circle;
     },
 
     /**
@@ -674,14 +779,7 @@ export const useMapStore = defineStore('map', {
       const layerGroup = L.layerGroup();
 
       // Create a marker at the center for the popup
-      const popupContent = `
-        <div class="incident-popup">
-          ${incident.name ? `<h3>${incident.name}</h3>` : ''}
-          ${incident.description ? `<p>${incident.description}</p>` : ''}
-          ${incident.startedAt ? `<p><strong>Startet:</strong> ${new Date(incident.startedAt).toLocaleString()}</p>` : ''}
-          ${incident.severity ? `<p><strong>Farenivå:</strong> ${config.name}</p>` : ''}
-        </div>
-      `;
+      const popupContent = this.createIncidentPopupContent(incident, config);
 
       // Create a central marker that will hold the popup
       const centerMarker = L.marker([incident.latitude, incident.longitude], {
@@ -700,19 +798,12 @@ export const useMapStore = defineStore('map', {
 
         // Create each circle according to the configuration
         sortedCircles.forEach(circleConfig => {
-          const circle = L.circle([incident.latitude, incident.longitude], {
-            radius: baseRadius * circleConfig.radiusMultiplier,
-            color: circleConfig.color,
-            fillColor: circleConfig.color,
-            fillOpacity: circleConfig.fillOpacity || config.fillOpacity,
-            weight: circleConfig.strokeWidth || config.strokeWidth,
-            interactive: true  // Make sure circles are clickable
-          });
-
-          // Add click handler to each circle to open the popup on the center marker
-          circle.on('click', () => {
-            centerMarker.openPopup();
-          });
+          const circle = this.createIncidentCircle(
+            incident,
+            circleConfig,
+            baseRadius,
+            centerMarker
+          );
 
           layerGroup.addLayer(circle);
         });
@@ -765,12 +856,25 @@ export const useMapStore = defineStore('map', {
      * Clean up resources when component is unmounted
      */
     cleanupMap() {
-      // Clean up event listeners
+      this.cleanupEventListeners();
+      this.cleanupMapLayers();
+      this.resetState();
+    },
+
+    /**
+     * Clean up event listeners
+     */
+    cleanupEventListeners() {
       if (this.mapMoveCleanup) {
         this.mapMoveCleanup();
         this.mapMoveCleanup = null;
       }
+    },
 
+    /**
+     * Clean up map layers
+     */
+    cleanupMapLayers() {
       // Clean up marker layers
       this.removeAllMarkerLayers();
 
@@ -786,7 +890,12 @@ export const useMapStore = defineStore('map', {
         MapService.cleanupMap(this.map);
         this.map = null;
       }
+    },
 
+    /**
+     * Reset state values
+     */
+    resetState() {
       // Reset state
       this.markerLayers = {};
       this.markerData = {};
