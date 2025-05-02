@@ -1,9 +1,8 @@
 <script setup>
 import { Newspaper, Globe, ShoppingCart, User } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/UserStore'
-import { useRouter } from 'vue-router'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -22,19 +21,16 @@ function handleLogout() {
       </RouterLink>
     </div>
 
-    <!-- Routing push -->
-
-
     <!-- Navigation links -->
     <nav class="flex gap-8 items-center text-sm font-medium">
       <a href="#" class="flex items-center gap-2 hover:underline">
         <Newspaper class="w-5 h-5 text-white" />
         Nyheter
       </a>
-      <a href="#" class="flex items-center gap-2 hover:underline">
+      <RouterLink to="/map" class="flex items-center gap-2 hover:underline">
         <Globe class="w-5 h-5 text-white" />
         Kart
-      </a>
+      </RouterLink>
       <RouterLink to="/storage">
       <a href="#" class="flex items-center gap-2 hover:underline">
         <ShoppingCart class="w-5 h-5 text-white" />
