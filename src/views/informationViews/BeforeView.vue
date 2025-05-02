@@ -1,10 +1,12 @@
 <script setup>
 import { useRouter } from 'vue-router'
-const router = useRouter()
+import StepIndicator from '@/components/StepIndicator.vue'
 
+const router = useRouter()
 const goToUnder = () => {
   router.push('/under')
 }
+
 </script>
 
 <template>
@@ -129,27 +131,7 @@ const goToUnder = () => {
 
 
     <!-- STEP INDICATOR OUTSIDE CARD -->
-    <div class="mt-10 flex items-center justify-center space-x-10 text-sm">
-      <div class="flex flex-col items-center space-y-1">
-        <div class="w-5 h-5 rounded-full bg-[#2c3e50]"></div>
-        <span class="font-semibold">Før</span>
-      </div>
-
-      <!-- Under (clickable) -->
-      <router-link to="/under" class="flex flex-col items-center space-y-1 cursor-pointer opacity-50
-      hover:opacity-100 transition transform hover:scale-110">
-        <div class="w-5 h-5 rounded-full border-2 border-gray-400"></div>
-        <span>Under</span>
-      </router-link>
-
-      <!-- Etter (clickable) -->
-      <router-link to="/after" class="flex flex-col items-center space-y-1 cursor-pointer opacity-50
-      hover:opacity-100 transition transform hover:scale-110">
-        <div class="w-5 h-5 rounded-full border-2 border-gray-400"></div>
-        <span>Etter</span>
-      </router-link>
-
-    </div>
+    <StepIndicator />
 
   </section>
 </template>
