@@ -1,18 +1,47 @@
 <script setup>
-import { Newspaper, Globe, ShoppingCart, User } from 'lucide-vue-next'
+import { Bell, Globe, Newspaper, ShoppingCart, User } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/UserStore'
-import { useRouter } from 'vue-router'
+import { ref } from 'vue'
+import useStompWebSocket from '@/stores/websocketComposable'
 
 const userStore = useUserStore()
 const router = useRouter()
+
+// Use the new composable for WebSocket notifications
+const { notifications, notificationCount, markAsRead, resetNotificationCount } = useStompWebSocket()
+
+// Notification panel state
+const showNotifications = ref(false)
+
+function toggleNotifications() {
+  showNotifications.value = !showNotifications.value
+  if (showNotifications.value) {
+    resetNotificationCount() // Reset counter when viewing
+  }
+}
+
+function handleMarkAsRead(notificationId) {
+  markAsRead(notificationId)
+}
+
+function formatTimestamp(timestamp) {
+  const date = new Date(timestamp)
+  return date.toLocaleString('no-NO', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
 
 function handleLogout() {
   userStore.logout()
   router.push('/login')
 }
 </script>
+
 <template>
   <header class="bg-[#2c3e50] text-white px-8 py-4 shadow flex items-center justify-between">
     <!-- Left section: logo -->
@@ -44,10 +73,31 @@ function handleLogout() {
       </RouterLink>
     </nav>
 
-    <!-- Auth button -->
-    <div>
+    <!-- Auth and notifications -->
+    <div class="flex gap-4 items-center">
+      <!-- Notification button -->
+      <Button
+        @click="toggleNotifications"
+        variant="outline"
+        class="text-white border-white bg-[#2c3e50] hover:bg-blue-600 relative"
+      >
+        <Bell class="w-4 h-4 mr-2" />
+        Varsler
+        <span
+          v-if="notificationCount > 0"
+          class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
+        >
+          {{ notificationCount }}
+        </span>
+      </Button>
+
+      <!-- Auth button -->
       <template v-if="userStore.token">
-        <Button @click="handleLogout" variant="outline" class="text-white border-white bg-[#2c3e50] hover:bg-red-600">
+        <Button
+          @click="handleLogout"
+          variant="outline"
+          class="text-white border-white bg-[#2c3e50] hover:bg-red-600"
+        >
           Logg ut
         </Button>
       </template>
@@ -60,4 +110,61 @@ function handleLogout() {
       </template>
     </div>
   </header>
+
+  <!-- Notification panel -->
+  <div
+    v-if="showNotifications"
+    class="fixed right-4 top-16 w-72 bg-white shadow-lg rounded-md border border-gray-200 z-50"
+  >
+    <div class="p-3 border-b border-gray-200 flex justify-between items-center">
+      <div class="flex items-center">
+        <Bell class="w-4 h-4 mr-2" />
+        <h3 class="font-medium">Varsler</h3>
+      </div>
+      <Button @click="toggleNotifications" variant="ghost" size="sm" class="h-7 w-7 p-0">×</Button>
+    </div>
+
+    <div class="max-h-80 overflow-y-auto">
+      <div v-if="notifications.length === 0" class="p-4 text-center text-gray-500">
+        Ingen varsler
+      </div>
+
+      <div
+        v-for="notification in notifications"
+        :key="notification.id"
+        class="p-3 border-b border-gray-100 hover:bg-gray-50"
+        :class="{ 'bg-blue-50': !notification.read }"
+      >
+        <div class="flex">
+          <div class="mr-3 text-xl">
+            {{ notification.type === 'INVITATION' ? '👋' : '📩' }}
+          </div>
+          <div class="flex-1">
+            <div class="flex justify-between items-start">
+              <span class="font-medium">
+                {{
+                  notification.type === 'INVITATION'
+                    ? 'Du har mottatt en invitasjon'
+                    : notification.message || 'Ny varsling'
+                }}
+              </span>
+              <span class="text-xs text-gray-500">{{
+                formatTimestamp(notification.timestamp)
+              }}</span>
+            </div>
+            <div v-if="!notification.read" class="mt-2 text-right">
+              <Button
+                @click="handleMarkAsRead(notification.id)"
+                size="sm"
+                variant="ghost"
+                class="text-xs"
+              >
+                Marker som lest
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
