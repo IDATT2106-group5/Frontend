@@ -1,6 +1,7 @@
+```vue
 <script setup>
 import { ref } from 'vue'
-import { UserIcon, Mail, Trash2, Edit, Save, X, Phone } from 'lucide-vue-next'
+import { Crown, UserIcon, Mail, Edit, Save, X, Phone } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { useHouseholdStore } from '@/stores/HouseholdStore'
 
@@ -10,6 +11,10 @@ const props = defineProps({
   member: {
     type: Object,
     required: true
+  },
+  isOwner: {
+    type: Boolean,
+    default: false
   }
 });
 
@@ -52,7 +57,7 @@ const saveEdit = async () => {
       error.value = 'Navnet kan ikke inneholde tall eller spesialtegn';
       return;
     }
-    
+
     await householdStore.updateUnregisteredMember(
       props.member.id,
       {
@@ -61,7 +66,7 @@ const saveEdit = async () => {
       },
       props.member.isRegistered
     );
-    
+
     isEditing.value = false;
   } catch (err) {
     error.value = err.message || 'Kunne ikke oppdatere medlemmet';
@@ -73,7 +78,6 @@ const saveEdit = async () => {
 const confirmRemove = async () => {
   try {
     if (confirm(`Er du sikker på at du vil fjerne ${props.member.fullName}?`)) {
-      // Ensure we pass the member object with id property
       await householdStore.removeMember(props.member, props.member.isRegistered);
     }
   } catch (err) {
@@ -85,8 +89,8 @@ const confirmRemove = async () => {
 
 <template>
   <div class="bg-white rounded-md shadow mb-2 overflow-hidden">
-    <!-- Edit mode -->
-    <div v-if="isEditing" class="p-4">
+    <!-- Edit mode - Only visible to household owner -->
+    <div v-if="isEditing && householdStore.isCurrentUserOwner" class="p-4">
       <div class="space-y-3">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Navn</label>
@@ -112,11 +116,18 @@ const confirmRemove = async () => {
 
     <!-- View mode -->
     <div v-else class="flex items-center justify-between p-4">
-      <div class="flex items-center">
-        <UserIcon class="h-5 w-5 text-gray-700 mr-3" />
+      <div class="flex items-start">
+        <UserIcon class="h-5 w-5 text-gray-700 mr-3 mt-1" />
 
         <div>
-          <h3 class="font-medium">{{ member.fullName }}</h3>
+          <h3 class="font-medium flex items-center gap-1">
+            {{ member.fullName }}
+            <Crown 
+              v-if="isOwner"
+              class="w-4 h-4 text-yellow-500"
+              title="Husstandseier"
+            />
+          </h3>
 
           <p v-if="member.email" class="text-sm text-gray-600 flex items-center">
             <Mail class="w-4 h-4 mr-1" /> {{ member.email }}
@@ -126,16 +137,16 @@ const confirmRemove = async () => {
             <Phone class="w-4 h-4 mr-1" /> {{ member.tlf }}
           </p>
 
-          <p v-if="!member.email && !member.tlf" class="text-xs italic text-gray-400">
+          <p v-if="!member.email && !member.tlf" class="px-2 py-0.5 text-sm text-gray-500 bg-gray-100 border border-gray-300 rounded">
             Ikke registrert
           </p>
         </div>
       </div>
 
-      <!-- Action buttons -->
-      <div class="flex items-center gap-2">
+      <!-- Action buttons - Only visible to household owner -->
+      <div v-if="householdStore.isCurrentUserOwner" class="flex items-center gap-2">
         <Button
-          v-if="!member.isRegistered"
+          v-if="!member.isRegistered && !isOwner"
           variant="ghost"
           size="sm"
           @click="startEdit"
@@ -144,6 +155,7 @@ const confirmRemove = async () => {
         </Button>
 
         <Button
+          v-if="!isOwner"
           variant="outline"
           class="text-red-600 border-red-500 hover:bg-red-50"
           size="sm"

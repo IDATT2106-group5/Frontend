@@ -5,72 +5,48 @@ class HouseholdService extends BaseService {
     super('/household');
   }
 
-  // Fetch household details using userId 
-  async getHouseholdDetailsByUserId(userId) { 
+  // Get household details by using the userId
+  async getHouseholdDetailsByUserId(userId) {
     if (!userId) {
       throw new Error('[ERROR] userId is undefined or null when calling getHouseholdDetailsByUserId');
     }
     try {
-      console.log('[GET] details/', userId);
-      const response = await this.get(`/details/${userId}`);
+      console.log('[POST] details with userId:', userId);
+      const response = await this.post('details', { userId });
       console.log('[RESPONSE] getHouseholdDetailsByUserId:', response);
       return response;
     } catch (error) {
-      console.error("Error fetching household details by user ID:", error);
+      // Suppress expected 400 error logging
+      if (error.response?.status !== 400) {
+        console.error("Error fetching household details by user ID:", error);
+      }
       throw error;
     }
   }
-
-  // Get all members of a household
-  async getHouseholdMembers(householdId) {
-    try {
-      const response = await this.get(`/members?householdId=${householdId}`);
-      
-      const registeredMembers = response['registered members'] || [];
-      const unregisteredMembers = response['unregistered members'] || [];
-      
-      const registered = registeredMembers.map(member => ({
-        id: member.id,
-        name: member.fullName,
-        email: member.email,
-        isRegistered: true
-      }));
-
-      const unregistered = unregisteredMembers.map(member => ({
-        id: member.id,
-        name: member.fullName,
-        isRegistered: false
-      }));
-
-      return [...registered, ...unregistered];
-    } catch (error) {
-      console.error("Error fetching household members:", error);
-      throw error;
-    }
-  }
+  
 
   // Add a member to the household
   async addMember(householdId, data) {
     try {
       if (data.email) {
-        await this.post('/add-user', {
+        await this.post('add-user', {
           email: data.email,
           householdId: householdId
         });
         return {
           id: Date.now(),
-          name: data.name,
+          fullName: data.fullName,
           email: data.email,
           isRegistered: true
         };
       } else {
-        await this.post('/add-unregistered-member', {
-          fullName: data.name,
+        await this.post('add-unregistered-member', {
+          fullName: data.fullName,
           householdId: householdId
         });
         return {
           id: Date.now(),
-          name: data.name,
+          fullName: data.fullName,
           isRegistered: false
         };
       }
@@ -80,45 +56,61 @@ class HouseholdService extends BaseService {
     }
   }
 
-  // Update a unregistered member's information
+  // Update household details
+  async updateHousehold(data) {
+    try {
+      console.log('[POST] /edit household:', data);
+      return this.post('edit', {
+        householdId: data.householdId,
+        name: data.name,
+        address: data.address
+      });
+    } catch (error) {
+      console.error("Error updating household:", error);
+      throw error;
+    }
+  }
+  
+  // Update a unregistered member
   async updateUnregisteredMember(householdId, memberId, data) {
     try {
       if (data.isRegistered) {
         throw new Error("Cannot update registered members.");
       }
-
+  
       const payload = {
-        memberId: memberId,
+        memberId,
         newFullName: data.name,
-        householdId: householdId
+        householdId 
       };
-
+  
       console.log('[POST] edit-unregistered-member → Sending payload:', payload);
-
-      return this.post(`/edit-unregistered-member`, payload);
+  
+      return this.post(`edit-unregistered-member`, payload);
     } catch (error) {
       console.error("Error updating unregistered member:", error);
       throw error;
     }
   }
-
   // Remove a member from the household
-  async removeRegisteredMember(email) {
+  async removeRegisteredMember(userId, householdId) {
     try {
-      console.log('[REMOVE REGISTERED] Email:', email);
-      return this.post(`/remove-user`, email);
+      console.log('[REMOVE REGISTERED] userId:', userId, 'householdId:', householdId);
+      return this.post(`remove-user`, {
+        userId,
+        householdId
+      });
     } catch (error) {
       console.error("Error removing registered member:", error);
       throw error;
     }
   }
 
-  // Remove an unregistered user (expects memberId in DELETE path)
+  // Remove an unregistered user 
   async removeUnregisteredMember(memberId) {
     try {
       console.log('[REMOVE UNREGISTERED] ID:', memberId);
-      // FIX: Don't use this.buildUrl() which adds the base path again
-      return this.deleteItem(`/delete-unregistered-member/${memberId}`);
+      return this.post(`delete-unregistered-member`, { memberId });
     } catch (error) {
       console.error("Error removing unregistered member:", error);
       throw error;
@@ -128,7 +120,7 @@ class HouseholdService extends BaseService {
   // Invite a member by email
   async inviteMember(householdId, email) {
     try {
-      return this.post(`/invite-user`, {
+      return this.post(`invite-user`, {
         email: email,
         householdId: householdId
       });
@@ -141,7 +133,7 @@ class HouseholdService extends BaseService {
   // Create a new household
   async createHousehold(data) {
     try {
-      const response = await this.post('/create', {
+      const response = await this.post('create', {
         name: data.name,
         address: data.address,
         ownerId: data.ownerId
@@ -158,29 +150,42 @@ class HouseholdService extends BaseService {
     }
   }
 
-  // Leave the current household
-  async leaveHousehold(email) {
+  // Method to delete a household
+  async deleteHousehold(householdId, ownerId) {
     try {
-      return this.post(`/remove-user`, email);
+      return await this.post('delete', {
+        householdId,
+        ownerId
+      });
+    } catch (error) {
+      console.error('Error deleting household:', error);
+      throw error;
+    }
+  }
+
+  async transferOwnership(householdId, userId) {
+    try {
+      console.log('[POST] change-owner → Transferring ownership to userId:', userId, 'for householdId:', householdId);
+      return this.post('change-owner', {
+        householdId: householdId,
+        userId: userId
+      });
+    } catch (error) {
+      console.error("Error transferring ownership:", error);
+      throw error;
+    }
+  }
+
+  // Leave the household
+  async leaveHousehold() {
+    try {
+      return this.post('leave');
     } catch (error) {
       console.error("Error leaving household:", error);
       throw error;
     }
   }
-
-  // Support DELETE with body
-  async deleteReq(path = '', data) {
-    try {
-      // FIX: Don't use this.buildUrl() which adds the base path again
-      const url = path;
-      const config = { data };
-      const response = await this.deleteItem(url, config);
-      return response;
-    } catch (error) {
-      console.error("Error in delete request:", error);
-      throw error;
-    }
-  }
+  
 }
 
 export default new HouseholdService();
