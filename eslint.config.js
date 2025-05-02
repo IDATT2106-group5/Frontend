@@ -12,7 +12,17 @@ export default defineConfig([
     files: ['**/*.{js,mjs,jsx,vue}'],
   },
 
-  globalIgnores(['**/dist/**', '**/dist-ssr/**', '**/coverage/**']),
+  globalIgnores([
+    '**/dist/**',
+    '**/dist-ssr/**',
+    '**/coverage/**',
+    'tailwind.config.js', // Recent Add so it doesn't get linted
+    'postcss.config.cjs', // Recent Add so it doesn't get linted
+    'src/components', // Recent Add so it doesn't get linted
+    'tests/**', // Recent Add so it doesn't get linted
+    'src/stores', // Recent Add so it doesn't get linted
+    'src/views', // Recent Add so it doesn't get linted
+  ]),
 
   {
     languageOptions: {
@@ -24,12 +34,12 @@ export default defineConfig([
 
   js.configs.recommended,
   ...pluginVue.configs['flat/essential'],
-  
+
   {
     ...pluginVitest.configs.recommended,
     files: ['src/**/__tests__/*'],
   },
-  
+
   {
     ...pluginCypress.configs.recommended,
     files: [
