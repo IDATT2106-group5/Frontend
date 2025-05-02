@@ -6,15 +6,17 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 const props = defineProps({
-  email: {
-    type: String,
-    required: true
-  }
+  email: String,
+  emailMissing: Boolean
 })
 
 const router = useRouter()
 const userStore = useUserStore()
 const code = ref(['', '', '', '', '', ''])
+
+if (props.emailMissing) {
+  router.replace('/login');
+}
 
 // Function to focus next input field after entering a digit
 const focusNext = (index, event) => {
