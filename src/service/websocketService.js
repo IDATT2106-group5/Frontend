@@ -56,6 +56,7 @@ class WebSocketService {
     this.stompClient.subscribe('/topic/notifications', this.onBroadcastNotification.bind(this))
 
     // Subscribe to household notifications if applicable
+    console.log('Household ID:', this.householdId)
     if (this.householdId) {
       this.stompClient.subscribe(
         `/topic/household/${this.householdId}`,

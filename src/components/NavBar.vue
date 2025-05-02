@@ -162,21 +162,7 @@ function handleLogout() {
           <div class="flex-1">
             <div class="flex justify-between items-start">
               <span class="font-medium">
-                {{
-                  notification.type === 'INVITATION'
-                    ? 'Du har mottatt en invitasjon'
-                    : notification.type === 'INCIDENT'
-                      ? 'Det har skjedd en hendelse i nærheten av deg!'
-                      : notification.type === 'STOCK_CONTROL'
-                        ? 'Noe i ditt lager nermer seg utløpsdato'
-                        : notification.type === 'HOUSEHOLD'
-                          ? 'Du har fått en ny husstand'
-                          : notification.type === 'MEMBERSHIP_REQUEST'
-                            ? 'Du har fått en ny forespørsel om medlemskap'
-                            : notification.type === 'INFO'
-                              ? 'Informasjon fra Krisefikser'
-                              : 'Du har fått en ny varsling'
-                }}
+                {{ notification.message }}
               </span>
               <span class="text-xs text-gray-500">{{
                 formatTimestamp(notification.timestamp)
