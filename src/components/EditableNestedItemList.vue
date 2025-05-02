@@ -99,6 +99,66 @@ function calculateDuration(quantity, item) {
   return item.duration || `${Math.ceil(quantity / 3)} dager`;
 }
 
+function getExpirationStatus(expirationDate, item) {
+  if (!expirationDate || expirationDate === 'N/A') return { text: 'N/A', isExpired: false };
+
+  // Get today's date and reset time to midnight
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Parse the expiry date correctly from Norwegian format (dd.mm.yyyy)
+  let expiry;
+
+  if (typeof item.expiryDate === 'string') {
+    // Handle format like "29.04.2025" or "01.05.2025"
+    const parts = item.expiryDate.split('.');
+    if (parts.length === 3) {
+      // Norwegian format: day.month.year
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed in JS Date
+      const year = parseInt(parts[2], 10);
+      expiry = new Date(year, month, day);
+    } else {
+      // Try standard date parsing as fallback
+      expiry = new Date(item.expiryDate);
+    }
+  } else if (item.expiryDate instanceof Date) {
+    expiry = new Date(item.expiryDate);
+  } else {
+    console.error('Unsupported date format:', item.expiryDate);
+    return { text: 'Invalid date', isExpired: false };
+  }
+
+  // Reset time components to compare just the dates
+  expiry.setHours(0, 0, 0, 0);
+
+  // Validate the parsed date
+  if (isNaN(expiry.getTime())) {
+    console.error('Invalid date after parsing:', item.expiryDate);
+    return { text: 'Invalid date', isExpired: false };
+  }
+
+  // Debug information
+  console.log('Today:', today.toISOString());
+  console.log('Expiry date:', expiry.toISOString());
+  console.log('Original expiry string:', item.expiryDate);
+
+  // Calculate the difference in days
+  const diffTime = expiry.getTime() - today.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  console.log('Difference in days:', diffDays);
+
+  // Return appropriate status message with isExpired flag
+  if (diffDays < 0) {
+    return { text: 'Gått ut på dato', isExpired: true };
+  } else if (diffDays === 0) {
+    return { text: 'Utløper i dag', isExpired: false };
+  } else {
+    return { text: `${diffDays} dag${diffDays !== 1 ? 'er' : ''}`, isExpired: false };
+  }
+}
+
 function startEditing(item) {
   console.log("Starting edit for item:", item);
   console.log("Item ID being used:", item.id);
@@ -139,6 +199,11 @@ function groupItemsByExpiryDate(items) {
     if (!grouped[date]) {
       grouped[date] = [];
     }
+
+    // Calculate expiration status for each item
+    const status = getExpirationStatus(date, item);
+    item.expirationStatus = status;
+
     grouped[date].push(item);
   });
   return grouped;
@@ -153,8 +218,32 @@ function formatDate(dateString) {
   if (!dateString || dateString === 'N/A') return 'N/A';
 
   try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('no-NO'); // Norwegian date format
+    let date;
+
+    // Check if it's in Norwegian format (dd.mm.yyyy)
+    const parts = dateString.split('.');
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed in JS
+      const year = parseInt(parts[2], 10);
+      date = new Date(year, month, day);
+    } else {
+      // Try standard parsing
+      date = new Date(dateString);
+    }
+
+    // Validate date
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date in formatDate:', dateString);
+      return dateString;
+    }
+
+    // Format as dd.mm.yyyy
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+
+    return `${day}.${month}.${year}`;
   } catch (e) {
     console.error('Error formatting date:', e);
     return dateString;
@@ -222,7 +311,11 @@ function formatDate(dateString) {
               </div>
               <span v-else>{{ item.quantity }} {{ item.unit || 'stk' }}</span>
             </div>
-            <div class="flex-1">{{ calculateDuration(item.quantity, item) }}</div>
+            <div class="flex-1">
+              <span v-if="getExpirationStatus(item.expiryDate, item).isExpired"
+                style="color: red;">{{ getExpirationStatus(item.expiryDate, item).text }}</span>
+              <span v-else>{{ getExpirationStatus(item.expiryDate, item).text }}</span>
+            </div>
             <div class="w-20 flex justify-end space-x-2">
               <!-- Edit button -->
               <Button
@@ -251,14 +344,18 @@ function formatDate(dateString) {
           </div>
         </div>
 
-        <!-- Sub-accordion content - show expiry date groups if not in edit mode -->
+        <!-- Sub-accordion content - show not in edit mode -->
         <div v-else-if="openSubItems.includes(groupName)" class="mt-1 border-l-2 border-gray-200">
           <div v-for="(subGroup, expiryDate) in groupItemsByExpiryDate(group)" :key="expiryDate"
                class="flex items-center p-2 hover:bg-gray-50">
             <div class="flex-1">{{ subGroup[0].name }}</div>
             <div class="flex-1">{{ formatDate(expiryDate) }}</div>
             <div class="flex-1">{{ getSubGroupTotalQuantity(subGroup) }} {{ subGroup[0].unit || 'stk' }}</div>
-            <div class="flex-1">{{ calculateDuration(getSubGroupTotalQuantity(subGroup), subGroup[0]) }}</div>
+            <div class="flex-1">
+      <span v-if="subGroup[0].expirationStatus && subGroup[0].expirationStatus.isExpired"
+            style="color: red;">{{ subGroup[0].expirationStatus.text }}</span>
+              <span v-else>{{ subGroup[0].expirationStatus ? subGroup[0].expirationStatus.text : calculateDuration(getSubGroupTotalQuantity(subGroup), subGroup[0]) }}</span>
+            </div>
             <div class="w-6"></div> <!-- to align with the arrow column -->
           </div>
         </div>
