@@ -8,6 +8,7 @@ import VerifyEmailView from '@/views/mainViews/VerifyEmailView.vue'
 import RegisterSuccessView from '@/views/mainViews/RegisterSucessView.vue'
 import RegisterFailedView from '@/views/mainViews/RegisterFailedView.vue'
 import Admin2FaView from '@/views/adminViews/Admin2FaView.vue'
+import MapView from '@/views/mapView/MapView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -55,7 +56,6 @@ const router = createRouter({
       name: 'RegisterFailed',
       component: RegisterFailedView,
       meta:{hideNavbar: true },
-
     },
     {
       path: '/2FA',
@@ -63,6 +63,11 @@ const router = createRouter({
       component: Admin2FaView,
       props: (route) => ({ email: route.query.email || 'test' }),
       meta:{hideNavbar: true },
+    },
+    {
+      path: '/map',
+      name: 'map',
+      component: MapView,
     }
   ],
 })
