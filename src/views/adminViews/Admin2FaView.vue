@@ -21,7 +21,8 @@ const focusNext = (index, event) => {
   if (/^\d$/.test(event.target.value)) {
     // Move to next field if not the last one
     if (index < 5) {
-      document.getElementById(`code-${index + 1}`).focus()
+      const nextInput = document.getElementById(`code-${index + 1}`);
+      if (nextInput) nextInput.focus();
     }
   }
 }
