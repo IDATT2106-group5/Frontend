@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { useItemStore } from '@/stores/ItemStore';
 
 const props = defineProps({
   category: {
@@ -11,24 +12,37 @@ const props = defineProps({
 const emit = defineEmits(['add-item']);
 
 const addRows = ref([]);
-const nextId = ref(1);
 
-// Get type options based on category
+// Access the item store
+const itemStore = useItemStore();
+const { items, isLoading, error, fetchItems } = itemStore;
+
+// Fetch items from the API when the component mounts
+onMounted(() => {
+  fetchItems();
+  // Add initial row
+  addNewRow();
+});
+
+// Watch the `category` prop to refetch items if category changes
+watch(() => props.category, () => {
+  fetchItems();
+});
+
+// Get type options dynamically based on the category
 const typeOptions = computed(() => {
-  switch(props.category) {
-    case 'Væske':
-      return ['Vann', 'Juice', 'Melk', 'Brus', 'Annet'];
-    case 'Mat':
-      return ['Hermetikk', 'Tørrmat', 'Frysemat', 'Annet'];
-    case 'Medisiner':
-      return ['Smertestillende', 'Antibiotika', 'Bandasje', 'Annet'];
-    case 'Redskap':
-      return ['Verktøy', 'Batterier', 'Lys', 'Annet'];
-    case 'Diverse':
-      return ['Klær', 'Hygiene', 'Dokumenter', 'Annet'];
-    default:
-      return ['Annet'];
-  }
+  if (isLoading.value || error.value) return [];
+
+  const categoryMapping = {
+    'Væske': 'LIQUIDS',
+    'Mat': 'FOOD',
+    'Medisiner': 'MEDICATIONS',
+    'Redskap': 'TOOLS',
+    'Diverse': 'MISC',
+  };
+
+  const categoryCode = categoryMapping[props.category];
+  return items.value.filter(item => item.category === categoryCode);
 });
 
 // Get unit options based on category
@@ -54,28 +68,23 @@ const addNewRow = () => {
   const defaultUnit = props.category === 'Væske' ? 'L' : 'stk';
 
   addRows.value.push({
-    id: nextId.value++,
-    selectedType: '',
+    selectedItem: null,
     itemDate: '',
-    itemQuantity: '',
+    itemQuantity: 1, // Default to 1
     selectedUnit: defaultUnit
   });
 };
 
 // Save an item
 const saveItem = (row) => {
-  // Simple validation
-  if (!row.selectedType) {
-    return;
-  }
+  if (!row.selectedItem) return;
 
-  // Create new item object
   const newItem = {
-    name: row.selectedType, // Use type as name
+    name: row.selectedItem.name,
+    itemId: row.selectedItem.id, // Reference to backend ID
     category: props.category,
-    type: row.selectedType,
+    type: row.selectedItem.type,
     amount: parseInt(row.itemQuantity) || 1,
-    quantity: parseInt(row.itemQuantity) || 1,
     unit: row.selectedUnit,
     expiryDate: row.itemDate,
     expirationDate: row.itemDate ? new Date(row.itemDate) : null
@@ -83,154 +92,186 @@ const saveItem = (row) => {
 
   emit('add-item', newItem);
 
-  // Remove this row
-  removeRow(row.id);
+  // Remove this row from the list
+  const index = addRows.value.indexOf(row);
+  if (index !== -1) {
+    addRows.value.splice(index, 1);
+  }
+
+  // Add a new empty row if there are no rows left
+  if (addRows.value.length === 0) {
+    addNewRow();
+  }
 };
 
 // Remove a row
-const removeRow = (id) => {
-  const index = addRows.value.findIndex(row => row.id === id);
-  if (index !== -1) {
-    addRows.value.splice(index, 1);
+const removeRow = (index) => {
+  addRows.value.splice(index, 1);
+
+  // Add a new empty row if there are no rows left
+  if (addRows.value.length === 0) {
+    addNewRow();
   }
 };
 
 // Show date picker dialog
 const showDatePicker = (event) => {
-  const dateInput = event.target.previousElementSibling;
+  const dateInput = event.target.closest('.date-group').querySelector('input[type="date"]');
   if (dateInput) {
     dateInput.showPicker();
   }
 };
+
+// Watch the selectedItem to auto-populate unit if needed
+watch(() => addRows.value, (newRows) => {
+  newRows.forEach(row => {
+    if (row.selectedItem && row.selectedItem.defaultUnit) {
+      row.selectedUnit = row.selectedItem.defaultUnit;
+    }
+  });
+}, { deep: true });
 </script>
 
 <template>
-  <!-- Add rows -->
-  <div v-for="row in addRows" :key="row.id" class="w-full border-t border-gray-200">
-    <div class="flex items-center px-4 py-3">
-      <!-- Type selector -->
-      <div class="w-1/4 pr-3">
-        <div class="relative">
-          <select
-            v-model="row.selectedType"
-            class="w-full border border-gray-300 rounded py-2 px-3 appearance-none focus:outline-none focus:ring-1 focus:ring-blue-300"
-          >
-            <option value="" disabled selected>Velg type</option>
-            <option v-for="option in typeOptions" :key="option" :value="option">
-              {{ option }}
-            </option>
-          </select>
-          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2">
-            <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-            </svg>
-          </div>
-        </div>
+  <div class="add-storage-items">
+    <h3>Legg til {{ category }}</h3>
+
+    <!-- Loading and error states -->
+    <div v-if="isLoading" class="loading">Laster elementer...</div>
+    <div v-else-if="error" class="error">{{ error }}</div>
+
+    <!-- Add rows -->
+    <div v-for="(row, index) in addRows" :key="index" class="add-row">
+      <div class="form-group">
+        <label>Type</label>
+        <select v-model="row.selectedItem" class="form-control">
+          <option :value="null">Velg type</option>
+          <option v-for="item in typeOptions" :key="item.id" :value="item">
+            {{ item.name }}
+          </option>
+        </select>
       </div>
 
-      <!-- Date field -->
-      <div class="w-1/4 px-3">
-        <div class="relative">
-          <input
-            v-model="row.itemDate"
-            type="text"
-            placeholder="dd.mm.åååå"
-            class="w-full border border-gray-300 rounded py-2 pl-3 pr-10 focus:outline-none focus:ring-1 focus:ring-blue-300"
-          />
-          <div
-            class="absolute right-0 top-0 h-full flex items-center pr-3 cursor-pointer"
-            @click="showDatePicker($event, row.id)"
-          >
-            <input
-              type="date"
-              class="sr-only"
-              v-model="row.itemDate"
-            />
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-        </div>
+      <div class="form-group">
+        <label>Mengde</label>
+        <input type="number" v-model="row.itemQuantity" class="form-control" min="1">
       </div>
 
-      <!-- Quantity field and Unit selector inline -->
-      <div class="w-1/4 px-3 flex">
-        <!-- Quantity input -->
-        <input
-          v-model="row.itemQuantity"
-          type="text"
-          placeholder="Antall"
-          class="w-2/3 border border-gray-300 rounded-l py-2 px-3 focus:outline-none focus:ring-1 focus:ring-blue-300"
-        />
-
-        <!-- Unit selector -->
-        <div class="relative w-1/3">
-          <select
-            v-model="row.selectedUnit"
-            class="w-full border border-gray-300 border-l-0 rounded-r py-2 px-1 appearance-none focus:outline-none focus:ring-1 focus:ring-blue-300"
-          >
-            <option v-for="unit in unitOptions" :key="unit" :value="unit">
-              {{ unit }}
-            </option>
-          </select>
-          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1">
-            <svg class="w-3 h-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/>
-            </svg>
-          </div>
-        </div>
+      <div class="form-group">
+        <label>Enhet</label>
+        <select v-model="row.selectedUnit" class="form-control">
+          <option v-for="unit in unitOptions" :key="unit" :value="unit">
+            {{ unit }}
+          </option>
+        </select>
       </div>
 
-      <!-- Action buttons inline with other fields -->
-      <div class="w-1/4 pl-3 flex space-x-2 justify-end">
-        <button
-          @click="removeRow(row.id)"
-          class="px-3 py-2 rounded border border-red-300 text-red-500 hover:bg-red-50 flex items-center"
-        >
-          <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-          Avbryt
+      <div class="form-group date-group">
+        <label>Utløpsdato</label>
+        <input type="date" v-model="row.itemDate" class="form-control">
+        <button @click="showDatePicker" type="button" class="date-picker-button">
+          <span>📅</span>
         </button>
-        <button
-          @click="saveItem(row)"
-          class="px-3 py-2 rounded border border-green-300 text-green-600 hover:bg-green-50 flex items-center"
-        >
-          <svg class="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-          </svg>
+      </div>
+
+      <div class="actions">
+        <button @click="saveItem(row)" :disabled="!row.selectedItem" class="save-btn">
           Lagre
         </button>
+        <button @click="removeRow(index)" class="remove-btn">
+          Fjern
+        </button>
       </div>
     </div>
-  </div>
 
-  <!-- Plus icon row - always shown at the bottom -->
-  <div class="w-full border-t border-gray-200 py-3 px-0">
-    <div class="flex justify-center items-center">
-      <button
-        @click="addNewRow"
-        class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center border border-gray-200 focus:outline-none"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-        </svg>
-      </button>
-    </div>
+    <!-- Add new row button -->
+    <button @click="addNewRow" class="add-row-btn">
+      Legg til {{ category }}
+    </button>
   </div>
 </template>
 
+
 <style scoped>
-/* Hide default date input styling */
-input[type="date"] {
+.add-storage-items {
+  margin-bottom: 20px;
+}
+
+.add-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+}
+
+.date-group {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.date-picker-button {
   position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
+  right: 0;
+  bottom: 0;
+  height: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.actions {
+  display: flex;
+  gap: 5px;
+}
+
+.add-row-btn {
+  margin-top: 10px;
+  padding: 8px 16px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.save-btn {
+  padding: 6px 12px;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.remove-btn {
+  padding: 6px 12px;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.loading, .error {
+  margin: 10px 0;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.loading {
+  background-color: #e3f2fd;
+}
+
+.error {
+  background-color: #ffebee;
+  color: #f44336;
 }
 </style>
