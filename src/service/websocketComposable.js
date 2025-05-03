@@ -12,7 +12,6 @@ export default function useStompWebSocket() {
   const userStore = useUserStore()
 
   onMounted(() => {
-    userStore.fetchUser()
     connect()
   })
 
@@ -42,7 +41,7 @@ export default function useStompWebSocket() {
     })
   }
 
-  function onConnected() {
+  async function onConnected() {
     connected.value = true
     console.log('Connected to WebSocket')
 
@@ -54,13 +53,8 @@ export default function useStompWebSocket() {
     if (userStore.token && 36) {
       stompClient.value.subscribe(`/user/queue/notifications`, onPrivateNotification)
       console.log(`Subscribed to /user/queue/notifications`)
-
-      stompClient.value.subscribe(`/topic/household/${4}`, onHouseholdNotification)
-      console.log(`Subscribed to /topic/household/${4}`)
     }
-    // Fetch initial notifications
-    console.log('Fetching notifications...')
-    fetchNotifications()
+    await fetchNotifications()
   }
 
   function onDisconnected() {
@@ -74,49 +68,17 @@ export default function useStompWebSocket() {
     }
   }
 
-  function onPrivateNotification(message) {
-    console.log('Raw private message received:', message)
-    try {
-      const notification = JSON.parse(message.body)
-      console.log('Parsed private notification:', notification)
-      addNotification(notification)
-      fetchNotifications()
-    } catch (error) {
-      console.error('Error parsing private notification:', error, message)
-    }
+  async function onPrivateNotification() {
+    await fetchNotifications()
   }
 
-  function onBroadcastNotification(message) {
-    const notification = JSON.parse(message.body)
-    addNotification(notification)
-  }
-
-  function onHouseholdNotification(message) {
-    const notification = JSON.parse(message.body)
-    addNotification(notification)
-  }
-
-  function addNotification(notification) {
-    notifications.value.unshift(notification)
-    if (!notification.read) {
-      notificationCount.value++
-    }
-  }
-
-  function sendNotification(notification) {
-    if (stompClient.value && connected.value) {
-      stompClient.value.publish({
-        destination: '/app/notification',
-        body: JSON.stringify(notification),
-      })
-    } else {
-      console.error('WebSocket not connected')
-    }
+  async function onBroadcastNotification() {
+    await fetchNotifications()
   }
 
   async function markAsRead(notificationId) {
     try {
-      const response = await fetch(
+      await fetch(
         `http://localhost:8080/api/notifications/${notificationId}/read`,
         {
           method: 'PUT',
@@ -126,10 +88,6 @@ export default function useStompWebSocket() {
           },
         },
       )
-
-      if (!response.ok) {
-        throw new Error('Failed to mark notification as read')
-      }
 
       const index = notifications.value.findIndex((n) => n.id === notificationId)
       if (index !== -1 && !notifications.value[index].read) {
@@ -164,14 +122,8 @@ export default function useStompWebSocket() {
         },
         body: JSON.stringify(requestData),
       })
-      console.log(response)
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch notifications')
-      }
 
       const data = await response.json()
-      console.log(data)
       notifications.value = data
       notificationCount.value = data.filter((n) => !n.read).length
     } catch (error) {
@@ -185,6 +137,5 @@ export default function useStompWebSocket() {
     connected,
     markAsRead,
     resetNotificationCount,
-    sendNotification,
   }
 }
