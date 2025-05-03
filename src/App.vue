@@ -1,11 +1,18 @@
 <script setup>
 import { RouterView } from 'vue-router'
-import Navbar from '@/components/Navbar.vue'
+import Navbar from '@/components/NavBar.vue'
 import Footer from '@/components/Footer.vue'
 import { useRoute } from 'vue-router'
+import { onBeforeMount } from 'vue'
+import { useUserStore } from '@/stores/UserStore.js'
 
 
+const userStore = useUserStore()
 const route = useRoute()
+onBeforeMount(() => {
+  userStore.autoLogin()
+})
+
 </script>
 
 <template>

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/UserStore'
 import { ref } from 'vue'
-import useStompWebSocket from '@/stores/websocketComposable'
+import useStompWebSocket from '@/service/websocketComposable.js'
 
 const userStore = useUserStore()
 const router = useRouter()

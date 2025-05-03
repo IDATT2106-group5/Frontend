@@ -91,9 +91,11 @@ export const useUserStore = defineStore('user', {
 
     async fetchUser() {
       try {
+        const response = await apiClient.get('user/me')
         console.log("Fetch user called - implement UserService");
       } catch (err) {
         console.error("Error fetching user:", err);
+        this.logout()
       }
     },
 
