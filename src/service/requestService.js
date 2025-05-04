@@ -66,6 +66,17 @@ class RequestService extends BaseService {
       throw error;
     }
   }
+  
+    // Method for sending a join request to a household
+    async sendJoinRequest(requestData) {
+      try {
+        console.log('[SENDING JOIN REQUEST] UserId:', requestData.userId, 'To household:', requestData.householdId);
+        return await this.post('send-join-request', requestData);
+      } catch (error) {
+        console.error('[ERROR] Sending join request:', error);
+        throw error;
+      }
+    }
 
   //Method for accepting a join request
   async acceptJoinRequest(requestId) {
