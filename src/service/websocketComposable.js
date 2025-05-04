@@ -25,7 +25,6 @@ export default function useStompWebSocket() {
     }
 
     import('sockjs-client').then((SockJS) => {
-      // Add userId as query parameter
       const socket = new SockJS.default(`http://localhost:8080/ws?userId=${36}`)
 
       stompClient.value = new Client({
@@ -54,7 +53,38 @@ export default function useStompWebSocket() {
       stompClient.value.subscribe(`/user/queue/notifications`, onPrivateNotification)
       console.log(`Subscribed to /user/queue/notifications`)
     }
+
     await fetchNotifications()
+  }
+
+  async function subscribeToPosition(householdId) {
+    if (userStore.token && 4) {
+      stompClient.value.subscribe(`/topic/position/${householdId}`, onPositionUpdate)
+      console.log(`Subscribed to /topic/position/${householdId}`)
+    }
+    updatePosition(29, '10.0', '20.0')
+  }
+
+  async function updatePosition(userId, longitude, latitude) {
+    const positionData = {
+      userId: userId,
+      longitude: longitude,
+      latitude: latitude
+    }
+
+    if (stompClient.value && connected.value) {
+      try {
+        stompClient.value.publish({
+          destination: '/app/position',
+          body: JSON.stringify(positionData)
+        });
+        console.log('Position update sent successfully');
+      } catch (error) {
+        console.error('Error sending position update:', error);
+      }
+    } else {
+      console.error('Cannot send position update: STOMP client not connected');
+    }
   }
 
   function onDisconnected() {
@@ -76,18 +106,19 @@ export default function useStompWebSocket() {
     await fetchNotifications()
   }
 
+  function onPositionUpdate(position) {
+    console.log('Received position update:', JSON.parse(position.body))
+  }
+
   async function markAsRead(notificationId) {
     try {
-      await fetch(
-        `http://localhost:8080/api/notifications/${notificationId}/read`,
-        {
-          method: 'PUT',
-          headers: {
-            Authorization: `Bearer ${userStore.token}`,
-            'Content-Type': 'application/json',
-          },
+      await fetch(`http://localhost:8080/api/notifications/${notificationId}/read`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${userStore.token}`,
+          'Content-Type': 'application/json',
         },
-      )
+      })
 
       const index = notifications.value.findIndex((n) => n.id === notificationId)
       if (index !== -1 && !notifications.value[index].read) {
@@ -105,12 +136,6 @@ export default function useStompWebSocket() {
 
   async function fetchNotifications() {
     // if (!userStore.token || !userStore.user) return
-    if (stompClient.value && connected.value) {
-      stompClient.value.publish({
-        destination: '/app/echo',
-        body: JSON.stringify({ userId: 36 }),
-      })
-    }
 
     try {
       const requestData = { userId: 36 }
@@ -137,5 +162,6 @@ export default function useStompWebSocket() {
     connected,
     markAsRead,
     resetNotificationCount,
+    subscribeToPosition,
   }
 }
