@@ -11,6 +11,11 @@ import HouseholdInviteView from '@/views/householdViews/HouseholdInviteView.vue'
 import StorageView from '@/views/storageViews/StorageView.vue'
 import HouseholdCreateView from '@/views/householdViews/HouseholdCreateView.vue'
 import HouseholdJoinView from '@/views/householdViews/HouseholdJoinView.vue'
+import Admin2FAView from '@/views/adminViews/Admin2FAView.vue'
+import BeforeView from '@/views/informationViews/BeforeView.vue'
+import UnderView from '@/views/informationViews/UnderView.vue'
+import AfterView from '@/views/informationViews/AfterView.vue'
+import MapView from '@/views/mapView/MapView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -24,13 +29,13 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
-      meta:{hideNavbar: true },
+      meta:{hideNavbar: true, hideFooter: true },
     },
     {
       path: '/register',
       name: 'register',
       component: RegisterView,
-      meta:{hideNavbar: true },
+      meta:{hideNavbar: true, hideFooter: true },
     },
     {
       path: '/storage-detail',
@@ -72,15 +77,46 @@ const router = createRouter({
       path: '/register-success',
       name: 'RegisterSuccess',
       component: RegisterSuccessView,
-      meta:{hideNavbar: true },
+      meta:{hideNavbar: true, hideFooter: true },
     },
     {
       path: '/register-failed',
       name: 'RegisterFailed',
       component: RegisterFailedView,
-      meta:{hideNavbar: true },
-
+      meta:{hideNavbar: true, hideFooter: true },
     },
+    {
+      path: '/before',
+      name: 'before',
+      component: BeforeView,
+    },
+    {
+      path: '/under',
+      name: 'under',
+      component: UnderView,
+    },
+    {
+      path: '/after',
+      name: 'after',
+      component: AfterView,
+    },
+    {
+      path: '/2FA',
+      name: '2FA',
+      component: Admin2FAView,
+      props: (route) => {
+        if (!route.query.email) {
+          return { emailMissing: true };
+        }
+        return { email: route.query.email };
+      },
+      meta:{hideNavbar: true },
+    },
+    {
+      path: '/map',
+      name: 'map',
+      component: MapView,
+    }
   ],
 })
 
