@@ -1,136 +1,118 @@
-import SockJS from 'sockjs-client'
 import { Client } from '@stomp/stompjs'
 
-class WebSocketService {
+export default class WebSocketService {
   constructor() {
     this.stompClient = null
     this.connected = false
-    this.notificationHandlers = {
-      private: [],
-      broadcast: [],
-      household: [],
+    this.callbacks = {
+      onConnected: () => {},
+      onDisconnected: () => {},
+      onNotification: () => {},
+      onPositionUpdate: () => {}
     }
     this.userId = null
-    this.householdId = null
+    this.token = null
   }
 
-  connect(userId, householdId) {
+  init({ userId, token, onConnected, onDisconnected, onNotification, onPositionUpdate }) {
     this.userId = userId
-    this.householdId = householdId
+    this.token = token
 
-    const socket = new SockJS('http://localhost:8080/ws')
-    this.stompClient = new Client({
-      webSocketFactory: () => socket,
-      onConnect: this.onConnected.bind(this),
-      onDisconnect: this.onDisconnected.bind(this),
-      reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
-    })
+    if (onConnected) this.callbacks.onConnected = onConnected
+    if (onDisconnected) this.callbacks.onDisconnected = onDisconnected
+    if (onNotification) this.callbacks.onNotification = onNotification
+    if (onPositionUpdate) this.callbacks.onPositionUpdate = onPositionUpdate
 
-    this.stompClient.activate()
+    this.connect()
+  }
 
-    return new Promise((resolve) => {
-      const checkConnection = setInterval(() => {
-        if (this.connected) {
-          clearInterval(checkConnection)
-          resolve()
-        }
-      }, 100)
+  connect() {
+    if (typeof window !== 'undefined') {
+      window.global = window
+    }
+
+    import('sockjs-client').then((SockJS) => {
+      const socket = new SockJS.default(`http://localhost:8080/ws?userId=${this.userId}`)
+
+      this.stompClient = new Client({
+        webSocketFactory: () => socket,
+        onConnect: () => this._onConnected(),
+        onDisconnect: () => this._onDisconnected(),
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000,
+      })
+
+      this.stompClient.activate()
     })
   }
 
-  onConnected() {
-    console.log('Connected to WebSocket server')
+  _onConnected() {
     this.connected = true
+    console.log('Connected to WebSocket')
 
-    // Subscribe to private notifications
-    if (this.userId) {
-      this.stompClient.subscribe(
-        `/user/${this.userId}/queue/notifications`,
-        this.onPrivateNotification.bind(this),
-      )
+    console.log(`User ID: ${this.userId}, Token: ${this.token}`)
+
+    this.stompClient.subscribe('/topic/notifications', () => this.callbacks.onNotification())
+    console.log('Subscribed to /topic/notifications')
+
+    if (this.token && this.userId) {
+      this.stompClient.subscribe(`/user/queue/notifications`, () => this.callbacks.onNotification())
+      console.log(`Subscribed to /user/queue/notifications`)
     }
+    this.subscribeToPosition(4)
 
-    // Subscribe to broadcast notifications
-    this.stompClient.subscribe('/topic/notifications', this.onBroadcastNotification.bind(this))
-
-    // Subscribe to household notifications if applicable
-    console.log('Household ID:', this.householdId)
-    if (this.householdId) {
-      this.stompClient.subscribe(
-        `/topic/household/${this.householdId}`,
-        this.onHouseholdNotification.bind(this),
-      )
-    }
+    this.callbacks.onConnected()
   }
 
-  onDisconnected() {
-    console.log('Disconnected from WebSocket server')
+  _onDisconnected() {
     this.connected = false
+    console.log('Disconnected from WebSocket')
+    this.callbacks.onDisconnected()
   }
 
   disconnect() {
     if (this.stompClient) {
       this.stompClient.deactivate()
-      this.connected = false
     }
   }
 
-  sendNotification(notification) {
-    if (this.stompClient && this.connected) {
-      this.stompClient.publish({
-        destination: '/app/notification',
-        body: JSON.stringify(notification),
-      })
+  subscribeToPosition(householdId) {
+    if (this.stompClient && this.connected && this.token && householdId) {
+      this.stompClient.subscribe(
+        `/topic/position/${householdId}`,
+        (message) => this.callbacks.onPositionUpdate(JSON.parse(message.body))
+      )
+      console.log(`Subscribed to /topic/position/${householdId}`)
+      return true
     } else {
-      console.error('Not connected to WebSocket server')
+      console.error('Cannot subscribe to position: STOMP client not connected')
+      return false
     }
   }
 
-  addPrivateNotificationHandler(handler) {
-    this.notificationHandlers.private.push(handler)
-  }
+  updatePosition(userId, longitude, latitude) {
+    const positionData = {
+      userId: userId,
+      longitude: longitude,
+      latitude: latitude,
+    }
 
-  addBroadcastNotificationHandler(handler) {
-    this.notificationHandlers.broadcast.push(handler)
-  }
-
-  addHouseholdNotificationHandler(handler) {
-    this.notificationHandlers.household.push(handler)
-  }
-
-  onPrivateNotification(message) {
-    const notification = JSON.parse(message.body)
-    console.log('Received private notification:', notification)
-    this.notificationHandlers.private.forEach((handler) => handler(notification))
-  }
-
-  onBroadcastNotification(message) {
-    const notification = JSON.parse(message.body)
-    console.log('Received broadcast notification:', notification)
-    this.notificationHandlers.broadcast.forEach((handler) => handler(notification))
-  }
-
-  onHouseholdNotification(message) {
-    const notification = JSON.parse(message.body)
-    console.log('Received household notification:', notification)
-    this.notificationHandlers.household.forEach((handler) => handler(notification))
-  }
-
-  markAsRead(notificationId) {
-    return fetch(`/api/notifications/${notificationId}/read`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    }).then((response) => {
-      if (!response.ok) {
-        throw new Error('Failed to mark notification as read')
+    if (this.stompClient && this.connected) {
+      try {
+        this.stompClient.publish({
+          destination: '/app/position',
+          body: JSON.stringify(positionData),
+        })
+        console.log('Position update sent successfully')
+        return true
+      } catch (error) {
+        console.error('Error sending position update:', error)
+        return false
       }
-      return response
-    })
+    } else {
+      console.error('Cannot send position update: STOMP client not connected')
+      return false
+    }
   }
 }
-
-export default new WebSocketService()

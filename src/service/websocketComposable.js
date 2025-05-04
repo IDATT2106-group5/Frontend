@@ -1,113 +1,48 @@
-// src/stores/websocketComposable.js
-import { onBeforeUnmount, onMounted, ref } from 'vue'
-import { Client } from '@stomp/stompjs'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useUserStore } from '@/stores/UserStore.js'
+import WebSocketService from '@/service/WebSocketService.js'
 
-export default function useStompWebSocket() {
-  const stompClient = ref(null)
-  const connected = ref(false)
+export default function useWebSocket() {
   const notifications = ref([])
   const notificationCount = ref(0)
+  const connected = ref(false)
 
   const userStore = useUserStore()
+  const webSocketService = new WebSocketService()
 
   onMounted(() => {
-    connect()
+    webSocketService.init({
+      userId: 36,
+      token: userStore.token,
+      onConnected: () => {
+        connected.value = true
+        fetchNotifications()
+      },
+      onDisconnected: () => {
+        connected.value = false
+      },
+      onNotification: () => {
+        fetchNotifications()
+      },
+      onPositionUpdate: (position) => {
+        console.log('Received position update:', position)
+      }
+    })
   })
 
   onBeforeUnmount(() => {
-    disconnect()
+    webSocketService.disconnect()
   })
 
-  function connect() {
-    if (typeof window !== 'undefined') {
-      window.global = window
-    }
-
-    import('sockjs-client').then((SockJS) => {
-      const socket = new SockJS.default(`http://localhost:8080/ws?userId=${36}`)
-
-      stompClient.value = new Client({
-        webSocketFactory: () => socket,
-        onConnect: onConnected,
-        onDisconnect: onDisconnected,
-        reconnectDelay: 5000,
-        heartbeatIncoming: 4000,
-        heartbeatOutgoing: 4000,
-      })
-
-      stompClient.value.activate()
-    })
-  }
-
-  async function onConnected() {
-    connected.value = true
-    console.log('Connected to WebSocket')
-
-    console.log(`User ID: ${36}, Token: ${userStore.token}`)
-
-    stompClient.value.subscribe('/topic/notifications', onBroadcastNotification)
-    console.log('Subscribed to /topic/notifications')
-
-    if (userStore.token && 36) {
-      stompClient.value.subscribe(`/user/queue/notifications`, onPrivateNotification)
-      console.log(`Subscribed to /user/queue/notifications`)
-    }
-
-    await fetchNotifications()
-  }
-
   async function subscribeToPosition(householdId) {
-    if (userStore.token && 4) {
-      stompClient.value.subscribe(`/topic/position/${householdId}`, onPositionUpdate)
-      console.log(`Subscribed to /topic/position/${householdId}`)
-    }
-    updatePosition(29, '10.0', '20.0')
-  }
-
-  async function updatePosition(userId, longitude, latitude) {
-    const positionData = {
-      userId: userId,
-      longitude: longitude,
-      latitude: latitude
-    }
-
-    if (stompClient.value && connected.value) {
-      try {
-        stompClient.value.publish({
-          destination: '/app/position',
-          body: JSON.stringify(positionData)
-        });
-        console.log('Position update sent successfully');
-      } catch (error) {
-        console.error('Error sending position update:', error);
-      }
-    } else {
-      console.error('Cannot send position update: STOMP client not connected');
+    if (userStore.token && householdId) {
+      webSocketService.subscribeToPosition(householdId)
+      updatePosition(29, '10.0', '20.0')
     }
   }
 
-  function onDisconnected() {
-    connected.value = false
-    console.log('Disconnected from WebSocket')
-  }
-
-  function disconnect() {
-    if (stompClient.value) {
-      stompClient.value.deactivate()
-    }
-  }
-
-  async function onPrivateNotification() {
-    await fetchNotifications()
-  }
-
-  async function onBroadcastNotification() {
-    await fetchNotifications()
-  }
-
-  function onPositionUpdate(position) {
-    console.log('Received position update:', JSON.parse(position.body))
+  function updatePosition(userId, longitude, latitude) {
+    webSocketService.updatePosition(userId, longitude, latitude)
   }
 
   async function markAsRead(notificationId) {
@@ -135,8 +70,6 @@ export default function useStompWebSocket() {
   }
 
   async function fetchNotifications() {
-    // if (!userStore.token || !userStore.user) return
-
     try {
       const requestData = { userId: 36 }
       const response = await fetch('http://localhost:8080/api/notifications/get', {
@@ -156,6 +89,24 @@ export default function useStompWebSocket() {
     }
   }
 
+  async function fetchHouseholdPositions() {
+    try {
+      const response = await fetch(`http://localhost:8080/api/household/positions`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${userStore.token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+      const data = await response.json()
+      console.log('Received position update data:', data)
+      return data
+    } catch (error) {
+      console.error('Error fetching position update:', error)
+      return []
+    }
+  }
+
   return {
     notifications,
     notificationCount,
@@ -163,5 +114,7 @@ export default function useStompWebSocket() {
     markAsRead,
     resetNotificationCount,
     subscribeToPosition,
+    updatePosition,
+    fetchHouseholdPositions
   }
 }
