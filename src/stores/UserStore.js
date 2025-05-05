@@ -93,6 +93,7 @@ export const useUserStore = defineStore('user', {
       try {
         const response = await apiClient.get('user/me')
         console.log("Fetch user called - implement UserService");
+        this.user = response.data 
       } catch (err) {
         console.error("Error fetching user:", err);
         this.logout()
@@ -187,6 +188,14 @@ export const useUserStore = defineStore('user', {
       }
     },
     
+    /**
+     * Sends a password reset request to the backend for the provided email address.
+     *
+     * @param {string} email - The email address of the user requesting a password reset.
+     * @returns {Promise<{ success: boolean, message?: string }>} Result of the request.
+     *          Returns success `true` and a message if the request was successful.
+     *          Returns success `false` and sets the `error` state on failure.
+     */
     async requestPasswordReset(email) {
       this.isLoading = true;
       this.error = null;
@@ -203,6 +212,15 @@ export const useUserStore = defineStore('user', {
       }
     },
     
+    /**
+     * Sends a request to reset the user's password using a valid token and the new password.
+     *
+     * @param {string} token - The reset token sent to the user's email.
+     * @param {string} newPassword - The new password to set.
+     * @returns {Promise<{ success: boolean, message?: string }>} Result of the password reset.
+     *          Returns success `true` if the password was reset.
+     *          Returns success `false` and sets the `error` state on failure.
+     */
     async resetPassword(token, newPassword) {
       this.isLoading = true;
       this.error = null;
@@ -217,6 +235,15 @@ export const useUserStore = defineStore('user', {
       }
     },
 
+
+    /**
+     * Validates whether the given reset token is still valid and not expired.
+     *
+     * @param {string} token - The reset token to validate.
+     * @returns {Promise<{ success: boolean, message?: string }>} Result of the token validation.
+     *          Returns success `true` if the token is valid.
+     *          Returns success `false` and sets the `error` state if the token is invalid or expired.
+     */
     async validateResetToken(token) {
       this.isLoading = true;
       this.error = null;
