@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 import HouseholdService from '@/service/householdService';
-import { useUserStore } from '@/stores/UserStore'; 
-import RequestService from '@/service/requestService'; 
+import { useUserStore } from '@/stores/UserStore';
+import RequestService from '@/service/requestService';
 
 export const useHouseholdStore = defineStore('household', {
   state: () => ({
@@ -10,8 +10,8 @@ export const useHouseholdStore = defineStore('household', {
       registered: [],
       unregistered: []
     },
-    ownershipRequests: [],      
-    sentInvitations: [],  
+    ownershipRequests: [],
+    sentInvitations: [],
     error: null,
     isLoading: false,
     hasHousehold: false
@@ -44,7 +44,7 @@ export const useHouseholdStore = defineStore('household', {
       try {
         this.isLoading = true;
         const userStore = useUserStore();
-        
+
         if (!userStore.user || !userStore.user.id) {
           this.hasHousehold = false;
           return false;
@@ -52,19 +52,19 @@ export const useHouseholdStore = defineStore('household', {
         const response = await HouseholdService.getHouseholdDetailsByUserId(userStore.user.id);
         this.currentHousehold = {
           ...response.household,
-          ownerId: response.household.owner.id 
+          ownerId: response.household.owner.id
         };
         this.members.registered = (response.users || []).map(user => ({
           id: user.id,
           fullName: user.fullName,
-          tlf: user.tlf,         
+          tlf: user.tlf,
           email: user.email,
           isRegistered: true
-        }))       
-    
+        }))
+
         this.members.unregistered = (response.unregisteredMembers || []).map(member => ({
           id: member.id,
-          fullName: member.fullName,      
+          fullName: member.fullName,
           isRegistered: false
         }))
         this.hasHousehold = true;
@@ -83,9 +83,9 @@ export const useHouseholdStore = defineStore('household', {
       this.isLoading = true;
       try {
         this._verifyOwnership();
-        
+
         await HouseholdService.updateHousehold({
-          householdId: householdData.id, 
+          householdId: householdData.id,
           name: householdData.name,
           address: householdData.address
         });
@@ -115,15 +115,15 @@ export const useHouseholdStore = defineStore('household', {
       try {
         this.isLoading = true;
         this._verifyOwnership();
-        
+
         const addedMember = await HouseholdService.addMember(
-          this.currentHousehold.id, 
+          this.currentHousehold.id,
           {
             fullName: newMember.name || newMember.fullName,
             email: newMember.email
           }
         );
-        
+
         if (addedMember.isRegistered) {
           this.members.registered.push({
             ...addedMember,
@@ -152,21 +152,21 @@ export const useHouseholdStore = defineStore('household', {
       try {
         this.isLoading = true;
         this._verifyOwnership();
-    
+
         await HouseholdService.updateUnregisteredMember(
           this.currentHousehold.id,
           memberId,
           data
         );
-  
+
         const targetArray = isRegistered ? 'registered' : 'unregistered';
         const index = this.members[targetArray].findIndex(member => member.id === memberId);
-    
+
         if (index !== -1) {
           this.members[targetArray][index].fullName = data.name;
         }
-    
-        return this.members[targetArray][index]; 
+
+        return this.members[targetArray][index];
       } catch (err) {
         this.error = err.response?.data?.error || err.message || 'Kunne ikke oppdatere medlem';
         throw err;
@@ -174,31 +174,31 @@ export const useHouseholdStore = defineStore('household', {
         this.isLoading = false;
       }
     },
-    
+
     // Method to remove a member from the household
     async removeMember(member, isRegistered) {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husholdning');
       }
-    
+
       try {
         this.isLoading = true;
         this._verifyOwnership();
-    
+
         const memberId = typeof member === 'number' ? member : member.id;
-    
+
         if (isRegistered) {
           if (!memberId) {
             throw new Error('ID mangler for registrert medlem');
           }
-    
+
           await HouseholdService.removeRegisteredMember(memberId, this.currentHousehold.id);
           this.members.registered = this.members.registered.filter(m => m.id !== memberId);
         } else {
           if (!memberId) {
             throw new Error('ID mangler for uregistrert medlem');
           }
-    
+
           await HouseholdService.removeUnregisteredMember(memberId);
           this.members.unregistered = this.members.unregistered.filter(m => m.id !== memberId);
         }
@@ -215,19 +215,19 @@ export const useHouseholdStore = defineStore('household', {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husholdning');
       }
-    
+
       try {
         this.isLoading = true;
         this._verifyOwnership();
-    
+
         const request = {
           email: email,
           householdId: this.currentHousehold.id
         };
-    
+
         await RequestService.sendInvitation(request);
         await this.fetchSentInvitations();
-    
+
         return true;
       } catch (err) {
         if (err.status === 400 && err.message?.includes('User with email not found')) {
@@ -240,15 +240,15 @@ export const useHouseholdStore = defineStore('household', {
         this.isLoading = false;
       }
     },
-    
+
     // Method to cancel an invitation
     async cancelInvitation(email) {
       try {
         this.isLoading = true;
         this._verifyOwnership();
-        
+
         await HouseholdService.cancelInvitation(email);
-        await this.fetchSentInvitations(); 
+        await this.fetchSentInvitations();
       } catch (err) {
         this.error = err.response?.data?.error || err.message;
         throw err;
@@ -263,10 +263,10 @@ export const useHouseholdStore = defineStore('household', {
         console.warn('[FETCH INVITATIONS] No active household');
         return;
       }
-    
+
       try {
         const invites = await RequestService.getSentInvitationsByHousehold(this.currentHousehold.id);
-    
+
         this.sentInvitations = Array.isArray(invites)
           ? invites.map(invite => {
               const mapped = {
@@ -274,10 +274,10 @@ export const useHouseholdStore = defineStore('household', {
                 date: invite.sentAt?.split('T')[0] || 'Ukjent dato',
                 status: invite.status
               };
-        
+
               return mapped;
             })
-          : [];      
+          : [];
       } catch (err) {
         this.error = err.response?.data?.error || err.message || 'Kunne ikke hente invitasjoner';
         this.sentInvitations = [];
@@ -285,11 +285,11 @@ export const useHouseholdStore = defineStore('household', {
         throw err;
       }
     },
-    
+
     // Method to fetch all join requests received by the household
     async fetchJoinRequests() {
       if (!this.currentHousehold?.id) return;
-    
+
       try {
         const requests = await RequestService.getReceivedJoinRequests(this.currentHousehold.id);
         this.ownershipRequests = Array.isArray(requests)
@@ -311,7 +311,7 @@ export const useHouseholdStore = defineStore('household', {
       try {
         this.isLoading = true;
         this._verifyOwnership();
-    
+
         if (action === 'ACCEPTED') {
           await RequestService.acceptJoinRequest(requestId);
         } else if (action === 'REJECTED') {
@@ -319,7 +319,7 @@ export const useHouseholdStore = defineStore('household', {
         } else {
           throw new Error('Ugyldig handling for forespørsel');
         }
-    
+
         const request = this.ownershipRequests.find(r => r.id === requestId);
         if (request) request.status = action;
       } catch (err) {
@@ -336,14 +336,14 @@ export const useHouseholdStore = defineStore('household', {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husstand funnet');
       }
-      
+
       try {
         this.isLoading = true;
         this._verifyOwnership();
-        
+
         await HouseholdService.transferOwnership(this.currentHousehold.id, userId);
-        
-        await this.checkCurrentHousehold(); 
+
+        await this.checkCurrentHousehold();
         return true;
       } catch (error) {
         console.error("Error transferring ownership:", error);
@@ -353,7 +353,7 @@ export const useHouseholdStore = defineStore('household', {
         this.isLoading = false;
       }
     },
-    
+
     // Method to create a new household
     async createHousehold(data) {
       try {
@@ -373,13 +373,13 @@ export const useHouseholdStore = defineStore('household', {
     // Method to delete the current household
     async deleteHousehold() {
       const userStore = useUserStore();
-    
+
       if (!this.currentHousehold?.id || !userStore.user?.id) {
         throw new Error('Manglende husstand eller brukerinfo');
       }
-    
+
       this._verifyOwnership();
-    
+
       try {
         this.isLoading = true;
         await HouseholdService.deleteHousehold(this.currentHousehold.id, userStore.user.id);
@@ -399,11 +399,11 @@ export const useHouseholdStore = defineStore('household', {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husholdning å forlate');
       }
-    
+
       try {
         this.isLoading = true;
-    
-        await HouseholdService.leaveHousehold(); 
+
+        await HouseholdService.leaveHousehold();
 
         this.currentHousehold = null;
         this.hasHousehold = false;
@@ -415,6 +415,6 @@ export const useHouseholdStore = defineStore('household', {
         this.isLoading = false;
       }
     }
-    
+
   }
 });

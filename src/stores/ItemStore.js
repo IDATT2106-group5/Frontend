@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref,  computed } from 'vue';
-import ItemService from '@/service/ItemService';
+import ItemService from '@/service/itemService';
 import { ItemType } from '@/types/ItemType';
 
 export const useItemStore = defineStore('item', () => {
