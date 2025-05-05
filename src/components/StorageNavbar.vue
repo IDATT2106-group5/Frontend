@@ -1,10 +1,13 @@
 <script setup>
-import { ShoppingBasket, Apple, Droplet, Pill, Package, Hammer, UsersRound, Menu } from 'lucide-vue-next'
 import { inject, ref } from 'vue'
+import { useHouseholdStore } from '@/stores/HouseholdStore'
+import { ShoppingBasket, Apple, Droplet, Pill, Package, Hammer, UsersRound, Menu } from 'lucide-vue-next'
 
 const handleNavItemClick = inject('handleNavItemClick')
 const activeCategory = ref('all')
 const isMenuOpen = ref(false)
+
+const householdStore = useHouseholdStore()
 
 const onNavItemClick = (category) => {
   activeCategory.value = category
@@ -55,7 +58,9 @@ const onNavItemClick = (category) => {
       <!-- Right side: Medlemmer -->
       <div class="flex items-center gap-2 text-sm sm:text-base font-medium">
         <UsersRound class="w-5 h-5 sm:w-5 sm:h-5 text-black" />
-        <a href="#" class="hover:underline">Medlemmer i husstand</a>
+        <a href="#" class="hover:underline">
+          Antall medlemmer i husstand: {{ householdStore.totalMemberCount }}
+        </a>
       </div>
 
       <!-- Hamburger menu (mobile) - now on right side -->
