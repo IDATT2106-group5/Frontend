@@ -5,13 +5,13 @@
   import { Input } from "@/components/ui/input"
   import { useUserStore } from "@/stores/UserStore"
   import { useRouter } from "vue-router"
+  import { RouterLink } from "vue-router"
 
 
   const showPassword = ref(false)
   const userStore = useUserStore()
   const router = useRouter()
 
-    
   async function onSubmit(event) {
   event.preventDefault()
   const formData = new FormData(event.target)
@@ -19,10 +19,13 @@
     email: formData.get("email"),
     password: formData.get("password"),
     }
-  
+
     try {
-      await userStore.login(credentials)
-      router.push("/") 
+      const resp = await userStore.login(credentials)
+
+      if (resp) {
+        router.push("/")
+      }
     }   catch (error) {
       console.error("Login failed:", error)
     }
@@ -79,7 +82,9 @@
             <input type="checkbox" class="accent-black" />
             Husk meg
           </label>
-          <a href="#" class="text-gray-800 hover:underline">Glemt passord?</a>
+          <RouterLink to="/request-reset" class="text-gray-800 hover:underline">
+            Glemt passord?  
+          </RouterLink>
         </div>
       </form>
     </main>

@@ -1,13 +1,23 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/mainViews/HomeView.vue'
-import LoginView from '../views/mainViews/LoginView.vue'
+import LoginView from '../views/login/LoginView.vue'
 import RegisterView from '../views/mainViews/RegisterView.vue'
 import HouseholdView from '@/views/householdViews/HouseholdView.vue'
 import StorageDetailView from '@/views/storageViews/StorageDetailView.vue'
 import VerifyEmailView from '@/views/mainViews/VerifyEmailView.vue'
 import RegisterSuccessView from '@/views/mainViews/RegisterSucessView.vue'
 import RegisterFailedView from '@/views/mainViews/RegisterFailedView.vue'
+import HouseholdInviteView from '@/views/householdViews/HouseholdInviteView.vue'
+import StorageView from '@/views/storageViews/StorageView.vue'
+import HouseholdCreateView from '@/views/householdViews/HouseholdCreateView.vue'
+import HouseholdJoinView from '@/views/householdViews/HouseholdJoinView.vue'
+import Admin2FAView from '@/views/adminViews/Admin2FAView.vue'
+import BeforeView from '@/views/informationViews/BeforeView.vue'
+import UnderView from '@/views/informationViews/UnderView.vue'
+import AfterView from '@/views/informationViews/AfterView.vue'
 import MapView from '@/views/mapView/MapView.vue'
+import RequestPasswordView from '@/views/login/RequestResetView.vue'
+import ResetPasswordConfirmView from '@/views/login/ResetPasswordConfirmView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -24,6 +34,18 @@ const router = createRouter({
       meta:{hideNavbar: true },
     },
     {
+      path: '/request-reset',
+      name: 'request-reset',
+      component: RequestPasswordView,
+      meta:{hideNavbar: true, hideFooter: true },
+    },
+    {
+      path: '/reset-password',
+      name: 'reset-password-confirm',
+      component: ResetPasswordConfirmView,
+      meta:{hideNavbar: true, hideFooter: true },
+    },
+    {
       path: '/register',
       name: 'register',
       component: RegisterView,
@@ -33,11 +55,32 @@ const router = createRouter({
       path: '/storage-detail',
       name: 'storage detail',
       component: StorageDetailView,
+      props: true
+    },
+    {
+      path: '/storage',
+      name: 'storage',
+      component: StorageView,
     },
     {
       path: '/household',
       name: 'household',
       component: HouseholdView,
+    },
+    {
+      path: '/household/create',
+      name: 'household-create',
+      component: HouseholdCreateView,
+    },
+    {
+      path: '/household/join',
+      name: 'household-join',
+      component: HouseholdJoinView,
+    },
+    {
+      path: '/household/invite',
+      name: 'household-invite',
+      component: HouseholdInviteView,
     },
     {
       path: '/verify-email',
@@ -54,7 +97,35 @@ const router = createRouter({
       path: '/register-failed',
       name: 'RegisterFailed',
       component: RegisterFailedView,
+      meta:{hideNavbar: true, hideFooter: true },
+    },
+    {
+      path: '/before',
+      name: 'before',
+      component: BeforeView,
+    },
+    {
+      path: '/under',
+      name: 'under',
+      component: UnderView,
+    },
+    {
+      path: '/after',
+      name: 'after',
+      component: AfterView,
+    },
+    {
+      path: '/2FA',
+      name: '2FA',
+      component: Admin2FAView,
+      props: (route) => {
+        if (!route.query.email) {
+          return { emailMissing: true };
+        }
+        return { email: route.query.email };
+      },
       meta:{hideNavbar: true },
+
     },
     {
       path: '/map',
