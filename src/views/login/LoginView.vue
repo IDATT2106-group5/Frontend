@@ -5,6 +5,7 @@
   import { Input } from "@/components/ui/input"
   import { useUserStore } from "@/stores/UserStore"
   import { useRouter } from "vue-router"
+  import { RouterLink } from "vue-router"
 
 
   const showPassword = ref(false)
@@ -81,7 +82,9 @@
             <input type="checkbox" class="accent-black" />
             Husk meg
           </label>
-          <a href="#" class="text-gray-800 hover:underline">Glemt passord?</a>
+          <RouterLink to="/request-reset" class="text-gray-800 hover:underline">
+            Glemt passord?  
+          </RouterLink>
         </div>
       </form>
     </main>
