@@ -1,5 +1,5 @@
 // src/service/map/incidentMapService.js
-import BaseService from '@/service/BaseService';
+import BaseService from '@/service/baseService';
 
 /**
  * Service to handle incidents data
