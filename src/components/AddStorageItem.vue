@@ -164,6 +164,16 @@ function saveItem(row) {
     addNewRow();
   }
 }
+
+// Move this watch AFTER the filteredItems computed property is defined
+watch(filteredItems, async (items) => {
+  // Check if filtered results are getting low and we need to load more
+  if (items.length < 3 && itemStore.hasMoreItems && !itemStore.isLoading) {
+    console.log('Filtered items below 5, loading more items...');
+    await itemStore.loadMoreItems();
+    console.log(`Loaded more items, now have ${itemStore.items.length} total items`);
+  }
+});
 </script>
 
 <template>
@@ -221,11 +231,6 @@ function saveItem(row) {
               {{ item.name }}
             </div>
           </div>
-        </div>
-
-        <!-- Search results info -->
-        <div class="mt-1 text-xs text-gray-500">
-          Viser {{ filteredItems.length }} varer
         </div>
       </div>
 
