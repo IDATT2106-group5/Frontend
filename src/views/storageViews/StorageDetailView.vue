@@ -133,8 +133,10 @@ const handleItemAdd = async (item) => {
   <div>
     <StorageNavbar />
     <div>
-      <SearchBar />
-      <div class="pl-20 pr-20">
+      <div class="mt-6">
+        <SearchBar />
+      </div>
+      <div class="pl-20 pr-20" >
 
         <div class="mb-4 mt-4 flex justify-between items-center">
           <h2 class="text-xl font-bold">

@@ -29,9 +29,18 @@ onMounted(async () => {
   addNewRow();
 });
 
-// Watch the `category` prop to filter items if category changes
-watch(() => props.category, () => {
-  console.log("Category changed to:", props.category);
+// Watch for item type changes to set appropriate unit
+watch(() => props.category, (newCategory) => {
+  console.log("Category changed to:", newCategory);
+
+  // Set default unit based on category
+  addRows.value.forEach(row => {
+    if (newCategory === 'Væske') {
+      row.selectedUnit = "Liter";
+    } else if (newCategory === 'Mat') {
+      row.selectedUnit = "Gram";
+    }
+  });
 });
 
 // Watch search term to keep dropdowns open
@@ -84,13 +93,26 @@ const filteredItems = computed(() => {
 
 // Add a new empty row
 function addNewRow() {
+  const defaultUnit = getDefaultUnitForCategory(props.category);
+
   addRows.value.push({
     selectedItem: null,
-    selectedUnit: "stk",
+    selectedUnit: defaultUnit,
     itemQuantity: 1,
     itemDate: null,
     isDropdownOpen: false // Add this property to track dropdown state
   });
+}
+
+// Helper function to get default unit based on category
+function getDefaultUnitForCategory(category) {
+  if (category === 'Væske') {
+    return "Liter";
+  } else if (category === 'Mat') {
+    return "Gram";
+  } else {
+    return "Stk";
+  }
 }
 
 // Remove a row
@@ -114,7 +136,7 @@ function saveItem(row) {
 
   // Create the object in the format expected by your storage service
   const newItem = {
-    unit: row.selectedUnit || "stk",
+    unit: row.selectedUnit || "Stk",
     amount: parseInt(row.itemQuantity) || 1,
     expirationDate: row.itemDate ? new Date(row.itemDate) : null
   };
@@ -238,8 +260,10 @@ function saveItem(row) {
           <input
             :id="`unit-${index}`"
             v-model="row.selectedUnit"
-            placeholder="stk"
+            :placeholder="getDefaultUnitForCategory(props.category)"
+            :disabled="props.category === 'Væske' || props.category === 'Mat'"
             class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            :class="{'bg-gray-100': props.category === 'Væske' || props.category === 'Mat'}"
           />
         </div>
 
