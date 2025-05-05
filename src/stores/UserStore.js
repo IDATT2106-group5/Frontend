@@ -31,16 +31,16 @@ export const useUserStore = defineStore('user', {
     async register(userData) {
       this.isLoading = true;
       this.error = null;
-      try {        
+      try {
         const response = await AuthService.register(userData);
         return true;
-      } catch (err) {        
+      } catch (err) {
         if (err.response && err.response.data && err.response.data.error === "Email already in use") {
           this.error = "E-postadressen er allerede registrert.";
         } else {
           this.error = err.message || "Noe gikk galt under registrering.";
         }
-        return false; 
+        return false;
       } finally {
         this.isLoading = false;
       }
@@ -119,10 +119,9 @@ export const useUserStore = defineStore('user', {
       try {
         const response = await TwoFactorAuthService.verify2FA(credentials);
 
-        const { token } = response.data;
-        this.token = token;
-        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        localStorage.setItem('jwt', token);
+        this.token = response.token;
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
+        localStorage.setItem('jwt', this.token);
         await this.fetchUser();
         return true;
       } catch (err) {
