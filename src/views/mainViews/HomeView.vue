@@ -1,71 +1,72 @@
 <script setup>
+import { onMounted, onUnmounted } from 'vue'
+import { useDateStore } from '@/stores/DateStore'
 
+const dateStore = useDateStore()
+
+onMounted(() => {
+  dateStore.startClock()
+})
+
+onUnmounted(() => {
+  dateStore.stopClock()
+})
 </script>
 
 <template>
   <div class="min-h-screen bg-gray-100 font-sans">
     <!-- Header -->
-    <header class="flex items-center justify-between p-4 bg-white shadow">
-      <div class="flex items-center space-x-4">
-        <h1 class="text-5xl font-bold">KRISESITUASJON</h1>
-      </div>
-      <div class="text-right text-sm">
+    <header class="flex flex-col sm:flex-row items-center justify-between p-4 bg-white shadow text-center sm:text-left gap-2 sm:gap-0">
+      <h1 class="text-3xl md:text-5xl font-bold">KRISESITUASJON</h1>
+      <div class="text-sm">
         <p class="font-semibold">Norske myndigheter</p>
-        <p>24.04.2025 12:33</p>
+        <p>{{ dateStore.formattedDateTime }}</p>
       </div>
     </header>
 
     <!-- Danger Section -->
-    <section class="bg-white p-6 flex flex-col md:flex-row gap-6">
-      <div>
+    <section class="bg-white p-4 md:p-6 flex flex-col md:flex-row gap-4 md:gap-6">
+      <!-- Left: Danger Level -->
+      <div class="text-center md:text-left">
         <p class="font-semibold">Farenivå:</p>
         <p class="text-red-600 font-bold text-lg">KRITISK</p>
       </div>
 
       <!-- Warning Message -->
-      <div class="bg-gray-50 p-4 border rounded max-w-4xl mx-auto">
+      <div class="bg-gray-50 p-4 border rounded w-full max-w-4xl mx-auto text-sm">
         <h2 class="font-bold text-lg mb-2">Flom i Trondheim</h2>
-        <p class="text-sm">
+        <p>
           Store nedbørsmengder har ført til alvorlige oversvømmelser i Trøndelag.
           Vannstanden er kritisk høy, særlig i Trondheim. Veier er stengt og flere
           distrikter isolert. Myndighetene har erklært katastrofetilstand i de hardest
           rammede områdene. Situasjonen kan forverre seg grunnet fortsatt kraftig regn.
         </p>
       </div>
-      
+
       <!-- Map Placeholder -->
       <router-link to="/map" class="w-full md:w-1/3">
-        <div class="h-64 bg-gray-300 rounded flex items-center justify-center text-gray-700 hover:bg-gray-400 transition cursor-pointer">
+        <div class="h-48 md:h-64 bg-gray-300 rounded flex items-center justify-center text-gray-700 hover:bg-gray-400 transition cursor-pointer">
           Kart
         </div>
       </router-link>
-
     </section>
 
     <!-- Latest News -->
     <section class="bg-[#2c3e50] text-white py-8 px-4">
-      <h2 class="text-4xl font-bold text-center mb-6">Siste nytt</h2>
+      <h2 class="text-3xl md:text-4xl font-bold text-center mb-6">Siste nytt</h2>
 
       <div class="space-y-4 max-w-3xl mx-auto">
-        <div class="bg-white text-black p-4 rounded flex justify-between">
-          <p class="text-base font-semibold leading-relaxed text-black">
-            Flom i Trondheim: Evakuering pågår i sentrale områder
-          </p>
-          <span class="text-red-600 font-bold">13 min</span>
-
+        <div class="bg-white text-black p-4 rounded flex flex-col sm:flex-row justify-between gap-2">
+          <p class="font-semibold">Flom i Trondheim: Evakuering pågår i sentrale områder</p>
+          <span class="text-red-600 font-bold text-right sm:text-left">13 min</span>
         </div>
-        <div class="bg-white text-black p-4 rounded flex justify-between">
-          <p class="text-base font-semibold leading-relaxed text-black">
-            Flom i Trondheim: Flere skoler og barnehager stengt
-          </p>
-          <span class="text-red-600 font-bold">1 time 18 min</span>
-
+        <div class="bg-white text-black p-4 rounded flex flex-col sm:flex-row justify-between gap-2">
+          <p class="font-semibold">Flom i Trondheim: Flere skoler og barnehager stengt</p>
+          <span class="text-red-600 font-bold text-right sm:text-left">1 time 18 min</span>
         </div>
-        <div class="bg-white text-black p-4 rounded flex justify-between">
-          <p class="text-base font-semibold leading-relaxed text-black">
-            Flom i Trondheim: To personer reddet fra vannmasser
-          </p>
-          <span class="text-red-600 font-bold">2 timer 20 min</span>
+        <div class="bg-white text-black p-4 rounded flex flex-col sm:flex-row justify-between gap-2">
+          <p class="font-semibold">Flom i Trondheim: To personer reddet fra vannmasser</p>
+          <span class="text-red-600 font-bold text-right sm:text-left">2 timer 20 min</span>
         </div>
       </div>
 
@@ -78,45 +79,43 @@
 
     <!-- Preparedness -->
     <section class="py-10 px-4 bg-gray-100 text-center">
-      <h2 class="text-5xl font-bold mb-6 text-[#2c3e50]">Beredskap</h2>
-      <div class="flex flex-col md:flex-row justify-center gap-6">
+      <h2 class="text-3xl md:text-5xl font-bold mb-6 text-[#2c3e50]">Beredskap</h2>
+
+      <!-- Wrapper for desktop layout -->
+      <div class="flex flex-col md:flex-row justify-center items-center md:gap-32 gap-8 text-center">
 
         <!-- Før -->
-        <div class="flex flex-col md:flex-row justify-center items-center md:gap-32 gap-8 text-center">
-          <!-- Før -->
-          <router-link to="/before" class="block">
-            <div class="bg-[#2c3e50] text-white p-6 rounded-lg w-52 h-52 flex flex-col justify-between hover:shadow-lg transition cursor-pointer">
-              <p class="text-xl font-bold text-center drop-shadow-md">Før</p>
-              <div class="flex items-center justify-between">
-                <span class="text-lg font-bold">Les mer</span>
-                <span class="bg-white text-[#2c3e50] rounded-md px-3 py-1 text-xl font-bold leading-none">→</span>
-              </div>
+        <router-link to="/before" class="block">
+          <div class="bg-[#2c3e50] text-white p-6 rounded-lg w-52 h-52 flex flex-col justify-between hover:shadow-lg transition cursor-pointer">
+            <p class="text-xl font-bold text-center drop-shadow-md">Før</p>
+            <div class="flex items-center justify-between">
+              <span class="text-lg font-bold">Les mer</span>
+              <span class="bg-white text-[#2c3e50] rounded-md px-3 py-1 text-xl font-bold leading-none">→</span>
             </div>
-          </router-link>
+          </div>
+        </router-link>
 
-          <!-- Under -->
-          <router-link to="/under" class="block">
-            <div class="bg-[#2c3e50] text-white p-6 rounded-lg w-52 h-52 flex flex-col justify-between hover:shadow-lg transition cursor-pointer">
-              <p class="text-xl font-bold text-center drop-shadow-md">Under</p>
-              <div class="flex items-center justify-between">
-                <span class="text-lg font-bold">Les mer</span>
-                <span class="bg-white text-[#2c3e50] rounded-md px-3 py-1 text-xl font-bold leading-none">→</span>
-              </div>
+        <!-- Under -->
+        <router-link to="/under" class="block">
+          <div class="bg-[#2c3e50] text-white p-6 rounded-lg w-52 h-52 flex flex-col justify-between hover:shadow-lg transition cursor-pointer">
+            <p class="text-xl font-bold text-center drop-shadow-md">Under</p>
+            <div class="flex items-center justify-between">
+              <span class="text-lg font-bold">Les mer</span>
+              <span class="bg-white text-[#2c3e50] rounded-md px-3 py-1 text-xl font-bold leading-none">→</span>
             </div>
-          </router-link>
+          </div>
+        </router-link>
 
-          <!-- Etter -->
-          <router-link to="/after" class="block">
-            <div class="bg-[#2c3e50] text-white p-6 rounded-lg w-52 h-52 flex flex-col justify-between hover:shadow-lg transition cursor-pointer">
-              <p class="text-xl font-bold text-center drop-shadow-md">Etter</p>
-              <div class="flex items-center justify-between">
-                <span class="text-lg font-bold">Les mer</span>
-                <span class="bg-white text-[#2c3e50] rounded-md px-3 py-1 text-xl font-bold leading-none">→</span>
-              </div>
+        <!-- Etter -->
+        <router-link to="/after" class="block">
+          <div class="bg-[#2c3e50] text-white p-6 rounded-lg w-52 h-52 flex flex-col justify-between hover:shadow-lg transition cursor-pointer">
+            <p class="text-xl font-bold text-center drop-shadow-md">Etter</p>
+            <div class="flex items-center justify-between">
+              <span class="text-lg font-bold">Les mer</span>
+              <span class="bg-white text-[#2c3e50] rounded-md px-3 py-1 text-xl font-bold leading-none">→</span>
             </div>
-          </router-link>
-        </div>
-
+          </div>
+        </router-link>
 
       </div>
     </section>
