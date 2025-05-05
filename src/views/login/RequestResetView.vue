@@ -74,6 +74,12 @@ const checkEmailAndSendResetLink = async () => {
       <div v-if="success" class="p-2 bg-green-50 border border-green-200 rounded">
         <p class="text-green-600 text-sm">{{ success }}</p>
       </div>
+      <RouterLink
+        to="/login"
+        class="mt-4 text-sm text-blue-700 hover:underline"
+      >
+        ← Tilbake til innlogging
+      </RouterLink>
     </div>
   </div>
 </template>

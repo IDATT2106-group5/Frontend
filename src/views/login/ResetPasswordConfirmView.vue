@@ -25,7 +25,7 @@ onMounted(async () => {
   if (result.success) {
     tokenValid.value = true
   } else {
-    error.value = userStore.error
+    error.value = 'Lenken er ugyldig eller har utløpt.'
   }
 })
 
@@ -67,7 +67,7 @@ const resetPassword = async () => {
     <h1 class="text-2xl font-bold mb-4">Lag nytt passord</h1>
     <p class="text-gray-700 mb-4">Fyll inn nytt passord for å tilbakestille kontoen din.</p>
 
-    <!-- Show form only if token is valid -->
+    <!-- Form vises bare hvis tokenet er gyldig -->
     <div v-if="tokenValid" class="w-full max-w-md space-y-4">
       <input
         v-model="newPassword"
@@ -92,12 +92,18 @@ const resetPassword = async () => {
       </button>
     </div>
 
-    <!-- Error or success messages -->
-    <div v-if="error" class="p-2 mt-4 bg-red-50 border border-red-200 rounded max-w-md w-full">
-      <p class="text-red-600 text-sm">{{ error }}</p>
-    </div>
+    <!-- Meldinger -->
+    <p v-if="error" class="text-sm text-gray-700 mt-4">{{ error }}</p>
     <div v-if="success" class="p-2 mt-4 bg-green-50 border border-green-200 rounded max-w-md w-full">
       <p class="text-green-600 text-sm">{{ success }}</p>
     </div>
+
+    <!-- Tilbake til innlogging -->
+    <RouterLink
+      to="/login"
+      class="mt-4 text-sm text-blue-700 hover:underline"
+    >
+      ← Tilbake til innlogging
+    </RouterLink>
   </div>
 </template>
