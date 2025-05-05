@@ -24,7 +24,7 @@ const createHousehold = async () => {
     await householdStore.createHousehold({
       name: householdName.value,
       address: address.value,
-      ownerId: userStore.user?.id 
+      ownerId: 36,
     })
     router.push('/household')
   } catch (err) {

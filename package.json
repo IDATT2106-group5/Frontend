@@ -16,6 +16,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@stomp/stompjs": "^7.1.1",
     "@unhead/vue": "^2.0.8",
     "@vuelidate/core": "^2.0.3",
     "@vuelidate/validators": "^2.0.4",
@@ -26,6 +27,8 @@
     "lucide-vue-next": "^0.503.0",
     "pinia": "^3.0.1",
     "reka-ui": "^2.2.0",
+    "sockjs-client": "^1.6.1",
+    "sockjs-client-web": "^1.1.1-alpha.2",
     "tailwind-merge": "^3.2.0",
     "tailwindcss-animate": "^1.0.7",
     "vee-validate": "^4.15.0",
