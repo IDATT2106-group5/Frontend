@@ -1,4 +1,10 @@
 <script setup>
+/**
+ * Props accepted by InfoBox component.
+ * 
+ * @prop {string} title - The title displayed inside the InfoBox.
+ * @prop {string} description - The description text shown below the title.
+ */
 defineProps({
   title: String,
   description: String

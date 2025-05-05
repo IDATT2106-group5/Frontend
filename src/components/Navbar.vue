@@ -112,20 +112,6 @@ function handleLogout() {
         <User class="w-5 h-5 text-white" />
         Min husstand
       </RouterLink>
-      <div class="pt-2">
-        <template v-if="userStore.token">
-          <Button @click="handleLogout" variant="outline" class="w-full text-white border-white bg-[#2c3e50] hover:bg-red-600">
-            Logg ut
-          </Button>
-        </template>
-        <template v-else>
-          <RouterLink to="/login">
-            <Button variant="outline" class="w-full text-white border-white bg-[#2c3e50] hover:bg-gray-300">
-              Login
-            </Button>
-          </RouterLink>
-        </template>
-      </div>
     </div>
   </header>
 

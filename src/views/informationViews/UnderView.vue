@@ -1,14 +1,53 @@
 <script setup>
+/**
+ * Imports Vue Router's useRouter for programmatic navigation
+ * and custom components used in this view.
+ */
 import { useRouter } from 'vue-router'
+
+/**
+ * Step indicator component displayed at the bottom of the page.
+ * Shows the user's progress through the preparation steps.
+ */
 import StepIndicator from '@/components/StepIndicator.vue'
+
+/**
+ * Arrow icon component used as a visual cue inside cards.
+ */
 import ArrowIcon from '@/components/ArrowIcon.vue'
+
+/**
+ * InfoBox component used to display title, description, and icon for each card.
+ */
 import InfoBox from '@/components/InfoBox.vue'
+
+/**
+ * MainCard is a wrapper component providing title, subtitle, and content section.
+ */
 import MainCard from '@/components/MainCard.vue'
 
+/**
+ * Instance of the Vue Router used to navigate between routes.
+ * @type {import('vue-router').Router}
+ */
 const router = useRouter()
+
+/**
+ * Navigates to the "before crisis" view when triggered.
+ * Usually connected to the "FØR KRISE" button.
+ * @function
+ * @returns {void}
+ */
 const goToBefore = () => {
   router.push('/before')
 }
+
+/**
+ * Navigates to the "after crisis" view when triggered.
+ * Usually connected to the "ETTER KRISE" button.
+ * @function
+ * @returns {void}
+ */
 const goToAfter = () => {
   router.push('/after')
 }

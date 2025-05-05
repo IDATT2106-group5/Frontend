@@ -1,4 +1,10 @@
 <script setup>
+/**
+ * Props accepted by MainCard component.
+ * 
+ * @prop {string} title - The main heading text displayed at the top of the card.
+ * @prop {string} subtitle - A descriptive subtitle displayed below the title.
+ */
 defineProps({
   title: {
     type: String,
