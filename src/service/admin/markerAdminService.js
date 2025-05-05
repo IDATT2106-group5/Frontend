@@ -6,7 +6,7 @@ import BaseService from '@/service/baseService';
  */
 class MarkerAdminService extends BaseService {
   constructor() {
-    super('admin/map-icons');
+    super('map-icons');
   }
 
   /**
@@ -15,7 +15,15 @@ class MarkerAdminService extends BaseService {
    */
   async fetchAllMarkersForAdmin() {
     try {
-      return await this.get();
+      // Since the API requires lat/long/radius, we'll use a large radius from Trondheim
+      // to effectively get all markers
+      return await this.get('', {
+        params: {
+          latitude: 63.4305,
+          longitude: 10.3951,
+          radiusKm: 100 // Large radius to get all markers
+        }
+      });
     } catch (error) {
       console.error('Error fetching all markers for admin:', error);
       throw error;
@@ -25,7 +33,7 @@ class MarkerAdminService extends BaseService {
   /**
    * Create a new marker
    * @param {Object} markerData - Marker data
-   * @returns {Promise<Object>} Created marker
+   * @returns {Promise<Object>} Response with status message
    */
   async createMarker(markerData) {
     try {
@@ -38,9 +46,9 @@ class MarkerAdminService extends BaseService {
 
   /**
    * Update an existing marker
-   * @param {string|number} id - Marker ID
+   * @param {number} id - Marker ID
    * @param {Object} markerData - Updated marker data
-   * @returns {Promise<Object>} Updated marker
+   * @returns {Promise<Object>} Response with status message
    */
   async updateMarker(id, markerData) {
     try {
@@ -53,8 +61,8 @@ class MarkerAdminService extends BaseService {
 
   /**
    * Delete a marker
-   * @param {string|number} id - Marker ID
-   * @returns {Promise<void>}
+   * @param {number} id - Marker ID
+   * @returns {Promise<Object>} Response with status message
    */
   async deleteMarker(id) {
     try {

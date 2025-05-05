@@ -18,6 +18,7 @@ import AfterView from '@/views/informationViews/AfterView.vue'
 import MapView from '@/views/mapView/MapView.vue'
 import RequestPasswordView from '@/views/login/RequestResetView.vue'
 import ResetPasswordConfirmView from '@/views/login/ResetPasswordConfirmView.vue'
+import MarkerAdmin from '@/views/adminViews/MarkerAdmin.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -131,6 +132,15 @@ const router = createRouter({
       path: '/map',
       name: 'map',
       component: MapView,
+    },
+    {
+      path: '/admin/map-icons',
+      name: 'MarkerAdmin',
+      component: MarkerAdmin,
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true
+      }
     }
   ],
 })

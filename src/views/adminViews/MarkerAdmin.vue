@@ -1,0 +1,985 @@
+<!-- src/views/admin/MarkerAdmin.vue -->
+<template>
+  <div class="marker-admin-container">
+    <!-- Alert messages -->
+    <div v-if="success" class="alert alert-success">
+      {{ success }}
+      <button class="close-btn" @click="clearSuccess">×</button>
+    </div>
+
+    <div v-if="error" class="alert alert-error">
+      {{ error }}
+      <button class="close-btn" @click="clearError">×</button>
+    </div>
+
+    <!-- Loading overlay -->
+    <div v-if="isLoading" class="loading-overlay">
+      <div class="loading-spinner"></div>
+      <p>Laster...</p>
+    </div>
+
+    <!-- Left panel: List or Form -->
+    <div class="left-panel">
+      <!-- Marker List -->
+      <div v-if="!isEditing && !isCreating" class="marker-list-panel">
+        <h1>Markører</h1>
+
+        <!-- Search and Filter -->
+        <div class="search-filter-container">
+          <input
+            type="text"
+            v-model="searchTerm"
+            class="search-input"
+            placeholder="Søk markører..."
+            @input="onSearchChange"
+          />
+
+          <div class="filter-dropdown">
+            <button
+              class="filter-button"
+              @click="toggleFilterDropdown"
+            >
+              Filtrer etter ikoner <span class="dropdown-arrow">▼</span>
+            </button>
+
+            <div v-if="showFilterDropdown" class="filter-options">
+              <div class="filter-option">
+                <input
+                  type="radio"
+                  id="all-types"
+                  name="filter"
+                  value=""
+                  v-model="filterType"
+                  @change="onFilterChange"
+                />
+                <label for="all-types">Alle typer</label>
+              </div>
+
+              <div
+                v-for="type in markerTypes"
+                :key="type.id"
+                class="filter-option"
+              >
+                <input
+                  type="radio"
+                  :id="type.id"
+                  name="filter"
+                  :value="type.id"
+                  v-model="filterType"
+                  @change="onFilterChange"
+                />
+                <label :for="type.id">{{ type.name }}</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Markers List -->
+        <div class="markers-container">
+          <div
+            v-for="marker in filteredMarkers"
+            :key="marker.id"
+            class="marker-item"
+          >
+            <div class="marker-icon">
+              <component
+                :is="getMarkerIcon(marker.type)"
+                :color="getMarkerColor(marker.type)"
+                size="20"
+              />
+            </div>
+            <div class="marker-info">
+              <h3>{{ marker.name }}</h3>
+              <p>{{ marker.address }}, {{ marker.city }}</p>
+            </div>
+            <button
+              class="edit-btn"
+              @click="onEditMarker(marker)"
+            >
+              Rediger
+            </button>
+          </div>
+
+          <div v-if="filteredMarkers.length === 0" class="empty-markers">
+            <p>Ingen markører funnet</p>
+          </div>
+        </div>
+
+        <button
+          class="add-new-btn"
+          @click="onAddNew"
+        >
+          + Legg til ny
+        </button>
+      </div>
+
+      <!-- Marker Form (Edit/Create) -->
+      <div v-else class="marker-form-panel">
+        <h1>{{ isCreating ? 'Legg til ny markør' : 'Rediger markør' }}</h1>
+
+        <div class="info-box">
+          <span class="info-icon">?</span>
+          <span>Hvordan lage ny markør på kartet</span>
+          <button class="close-btn" @click="closeInfoBox">X</button>
+        </div>
+        <p class="click-info">Klikk på kartet for å endre markørens posisjon.</p>
+
+        <form @submit.prevent="onSaveMarker">
+          <div class="form-group">
+            <label for="type">Type</label>
+            <select
+              id="type"
+              v-model="markerFormData.type"
+              class="form-control"
+            >
+              <option
+                v-for="type in markerTypes"
+                :key="type.id"
+                :value="type.id"
+              >
+                {{ type.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="name">Tittel</label>
+            <input
+              id="name"
+              type="text"
+              v-model="markerFormData.name"
+              class="form-control"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="address">Adresse</label>
+            <input
+              id="address"
+              type="text"
+              v-model="markerFormData.address"
+              class="form-control"
+            />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="postalCode">Postkode</label>
+              <input
+                id="postalCode"
+                type="text"
+                v-model="markerFormData.postalCode"
+                class="form-control"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="city">Sted</label>
+              <input
+                id="city"
+                type="text"
+                v-model="markerFormData.city"
+                class="form-control"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="description">
+              Beskrivelse
+              <button
+                type="button"
+                class="info-btn"
+                @click="toggleDescriptionTips"
+              >
+                ?
+              </button>
+            </label>
+
+            <div v-if="showDescriptionTips" class="tips-box">
+              <h4>Tips for en god beskrivelse:</h4>
+              <ul>
+                <li>Vær konkret om hva som finnes på stedet</li>
+                <li>Nevn relevante detaljer som kan være viktige i en krisesituasjon</li>
+                <li>Inkluder informasjon om tilgjengelighet</li>
+                <li>Beskriv synlige kjennetegn ved stedet</li>
+              </ul>
+              <button
+                type="button"
+                class="close-btn"
+                @click="toggleDescriptionTips"
+              >
+                X
+              </button>
+            </div>
+
+            <textarea
+              id="description"
+              v-model="markerFormData.description"
+              class="form-control"
+              rows="4"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="contactInfo">Kontaktinformasjon</label>
+            <input
+              id="contactInfo"
+              type="text"
+              v-model="markerFormData.contactInfo"
+              class="form-control"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="openingHours">Åpningstider</label>
+            <input
+              id="openingHours"
+              type="text"
+              v-model="markerFormData.openingHours"
+              class="form-control"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Koordinater</label>
+            <div class="form-row">
+              <div class="form-group">
+                <input
+                  type="text"
+                  v-model="markerFormData.latitude"
+                  class="form-control coordinate-input"
+                  placeholder="Breddgrad °N"
+                />
+              </div>
+
+              <div class="form-group">
+                <input
+                  type="text"
+                  v-model="markerFormData.longitude"
+                  class="form-control coordinate-input"
+                  placeholder="Lengdegrad °E"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="button-row">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              @click="onCancelEdit"
+            >
+              Avbryt
+            </button>
+
+            <button
+              v-if="isEditing"
+              type="button"
+              class="btn btn-danger"
+              @click="onDeleteMarker"
+            >
+              <span class="trash-icon">🗑️</span> Slett
+            </button>
+
+            <button
+              type="submit"
+              class="btn btn-primary"
+            >
+              Lagre
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Right panel: Map -->
+    <div class="right-panel">
+      <div ref="mapContainer" class="admin-map"></div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { useMarkerAdminStore } from '@/stores/admin/markerAdminStore';
+import { storeToRefs } from 'pinia';
+import MarkerConfigService from '@/service/map/markerConfigService';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+export default {
+  name: 'markerAdmin',
+
+  setup() {
+    const mapContainer = ref(null);
+    const map = ref(null);
+    const tempMarker = ref(null);
+    const showFilterDropdown = ref(false);
+    const showDescriptionTips = ref(false);
+    const showInfoBox = ref(true);
+
+    const markerAdminStore = useMarkerAdminStore();
+    const {
+      markers,
+      filteredMarkers,
+      markerFormData,
+      isEditing,
+      isCreating,
+      isLoading,
+      error,
+      success
+    } = storeToRefs(markerAdminStore);
+
+    const searchTerm = ref('');
+    const filterType = ref('');
+
+    // Get marker configurations
+    const markerConfigs = MarkerConfigService.getMarkerConfigs();
+
+    // Computed properties
+    const markerTypes = computed(() => markerAdminStore.markerTypes);
+
+    // Methods
+    const initMap = () => {
+      if (!mapContainer.value) return;
+
+      // Initialize Leaflet map
+      map.value = L.map(mapContainer.value, {
+        center: [63.4305, 10.3951], // Trondheim
+        zoom: 13,
+        zoomControl: false
+      });
+
+      // Add zoom controls to top right
+      L.control.zoom({
+        position: 'topright'
+      }).addTo(map.value);
+
+      // Add the base tile layer
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(map.value);
+
+      // Add click handler for setting marker position
+      map.value.on('click', onMapClick);
+    };
+
+    const onMapClick = (e) => {
+      if (!isEditing.value && !isCreating.value) return;
+
+      const { lat, lng } = e.latlng;
+
+      // Update form data
+      markerAdminStore.updateMarkerCoordinates(lat, lng);
+
+      // Update or create temporary marker
+      if (tempMarker.value) {
+        tempMarker.value.setLatLng([lat, lng]);
+      } else {
+        const icon = createMarkerIcon(markerFormData.value.type);
+        tempMarker.value = L.marker([lat, lng], { icon }).addTo(map.value);
+      }
+    };
+
+    const createMarkerIcon = (type) => {
+      // Get configuration for this marker type
+      const config = markerConfigs[type];
+      if (!config) return null;
+
+      // Create Leaflet icon using MarkerConfigService
+      return MarkerConfigService.createLeafletIcon(
+        config.iconType,
+        config.color
+      );
+    };
+
+    const getMarkerIcon = (type) => {
+      return markerConfigs[type]?.lucideIcon || null;
+    };
+
+    const getMarkerColor = (type) => {
+      return markerConfigs[type]?.color || '#333333';
+    };
+
+    const onSearchChange = () => {
+      markerAdminStore.setSearchTerm(searchTerm.value);
+    };
+
+    const onFilterChange = () => {
+      markerAdminStore.setFilterType(filterType.value);
+      showFilterDropdown.value = false;
+    };
+
+    const toggleFilterDropdown = () => {
+      showFilterDropdown.value = !showFilterDropdown.value;
+    };
+
+    const toggleDescriptionTips = () => {
+      showDescriptionTips.value = !showDescriptionTips.value;
+    };
+
+    const closeInfoBox = () => {
+      showInfoBox.value = false;
+    };
+
+    const onAddNew = () => {
+      markerAdminStore.initNewMarker();
+
+      // Center map at default location
+      if (map.value) {
+        map.value.setView([markerFormData.value.latitude, markerFormData.value.longitude], 14);
+      }
+
+      // Create temporary marker
+      if (tempMarker.value) {
+        tempMarker.value.remove();
+      }
+
+      const icon = createMarkerIcon(markerFormData.value.type);
+      tempMarker.value = L.marker(
+        [markerFormData.value.latitude, markerFormData.value.longitude],
+        { icon }
+      ).addTo(map.value);
+    };
+
+    const onEditMarker = (marker) => {
+      markerAdminStore.editMarker(marker);
+
+      // Center map at marker location
+      if (map.value) {
+        map.value.setView([marker.latitude, marker.longitude], 14);
+      }
+
+      // Create temporary marker
+      if (tempMarker.value) {
+        tempMarker.value.remove();
+      }
+
+      const icon = createMarkerIcon(marker.type);
+      tempMarker.value = L.marker(
+        [marker.latitude, marker.longitude],
+        { icon }
+      ).addTo(map.value);
+    };
+
+    const onSaveMarker = async () => {
+      const success = await markerAdminStore.saveMarker();
+
+      if (success) {
+        // Clear temporary marker
+        if (tempMarker.value) {
+          tempMarker.value.remove();
+          tempMarker.value = null;
+        }
+      }
+    };
+
+    const onCancelEdit = () => {
+      markerAdminStore.cancelEdit();
+
+      // Clear temporary marker
+      if (tempMarker.value) {
+        tempMarker.value.remove();
+        tempMarker.value = null;
+      }
+    };
+
+    const onDeleteMarker = async () => {
+      if (!confirm('Er du sikker på at du vil slette denne markøren?')) {
+        return;
+      }
+
+      const success = await markerAdminStore.deleteMarker(markerFormData.value.id);
+
+      if (success) {
+        // Clear temporary marker
+        if (tempMarker.value) {
+          tempMarker.value.remove();
+          tempMarker.value = null;
+        }
+      }
+    };
+
+    const clearSuccess = () => {
+      markerAdminStore.clearSuccess();
+    };
+
+    const clearError = () => {
+      markerAdminStore.clearError();
+    };
+
+    // Watch for changes to marker type to update icon
+    watch(() => markerFormData.value.type, (newType) => {
+      if (tempMarker.value && map.value) {
+        // Update the icon
+        const icon = createMarkerIcon(newType);
+        tempMarker.value.setIcon(icon);
+      }
+    });
+
+    // Lifecycle hooks
+    onMounted(async () => {
+      // Initialize the map
+      initMap();
+
+      // Fetch markers
+      await markerAdminStore.fetchMarkers();
+
+      // Initialize search and filter
+      searchTerm.value = markerAdminStore.searchTerm;
+      filterType.value = markerAdminStore.filterType;
+    });
+
+    onUnmounted(() => {
+      // Clean up map
+      if (map.value) {
+        map.value.remove();
+        map.value = null;
+      }
+    });
+
+    return {
+      mapContainer,
+      markers,
+      filteredMarkers,
+      markerFormData,
+      isEditing,
+      isCreating,
+      isLoading,
+      error,
+      success,
+      markerTypes,
+      searchTerm,
+      filterType,
+      showFilterDropdown,
+      showDescriptionTips,
+      showInfoBox,
+      onSearchChange,
+      onFilterChange,
+      toggleFilterDropdown,
+      toggleDescriptionTips,
+      closeInfoBox,
+      onAddNew,
+      onEditMarker,
+      onSaveMarker,
+      onCancelEdit,
+      onDeleteMarker,
+      getMarkerIcon,
+      getMarkerColor,
+      clearSuccess,
+      clearError
+    };
+  }
+};
+</script>
+
+<style scoped>
+.marker-admin-container {
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 60px);
+  gap: 16px;
+  padding: 16px;
+  position: relative;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1010;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.alert {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 4px;
+  z-index: 1020;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 300px;
+  max-width: 400px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.alert-success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.alert-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.left-panel {
+  flex: 1;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 16px;
+  overflow-y: auto;
+  max-width: 400px;
+  min-width: 320px;
+}
+
+.right-panel {
+  flex: 2;
+  position: relative;
+}
+
+.admin-map {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+h1 {
+  color: #2c3e50;
+  font-size: 28px;
+  margin-bottom: 24px;
+}
+
+/* Form styles */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #2c3e50;
+}
+
+.form-control {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+textarea.form-control {
+  resize: vertical;
+}
+
+.coordinate-input {
+  width: 100%;
+}
+
+.button-row {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.btn-primary {
+  background-color: #27ae60;
+  color: white;
+  margin-left: auto;
+}
+
+.btn-primary:hover {
+  background-color: #219653;
+}
+
+.btn-secondary {
+  background-color: #f1f1f1;
+  color: #333;
+}
+
+.btn-secondary:hover {
+  background-color: #e0e0e0;
+}
+
+.btn-danger {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #c0392b;
+}
+
+/* Markers list styles */
+.search-filter-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.search-input {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.filter-dropdown {
+  position: relative;
+}
+
+.filter-button {
+  width: 100%;
+  padding: 10px;
+  background-color: #f1f1f1;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.filter-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  z-index: 10;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.filter-option {
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-option:hover {
+  background-color: #f1f1f1;
+}
+
+.markers-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.marker-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background-color: white;
+  border-radius: 4px;
+  border: 1px solid #eee;
+}
+
+.marker-icon {
+  font-size: 24px;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.marker-info {
+  flex: 1;
+}
+
+.marker-info h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+}
+
+.marker-info p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.edit-btn {
+  padding: 6px 12px;
+  background-color: #f1f1f1;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.edit-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.add-new-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #27ae60;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.add-new-btn:hover {
+  background-color: #219653;
+}
+
+.empty-markers {
+  padding: 20px;
+  text-align: center;
+  color: #666;
+  background-color: white;
+  border-radius: 4px;
+  border: 1px solid #eee;
+}
+
+/* Info boxes */
+.info-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #e3f2fd;
+  padding: 12px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.info-icon {
+  background-color: #2196f3;
+  color: white;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.click-info {
+  margin-bottom: 16px;
+  font-size: 14px;
+  color: #666;
+}
+
+.info-btn {
+  background-color: #f1f1f1;
+  border: 1px solid #ddd;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 8px;
+  cursor: pointer;
+}
+
+.tips-box {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 12px;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+.tips-box h4 {
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.tips-box ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.tips-box li {
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.trash-icon {
+  margin-right: 4px;
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .marker-admin-container {
+    flex-direction: column;
+    height: auto;
+    min-height: calc(100vh - 60px);
+  }
+
+  .left-panel {
+    max-width: 100%;
+    min-width: 100%;
+    order: 2;
+  }
+
+  .right-panel {
+    height: 400px;
+    order: 1;
+    margin-bottom: 16px;
+  }
+
+  .markers-container {
+    max-height: 300px;
+  }
+}
+</style>
