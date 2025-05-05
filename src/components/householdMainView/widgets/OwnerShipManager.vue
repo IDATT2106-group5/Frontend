@@ -97,7 +97,7 @@ async function give() {
     <button
       @click="give"
       :disabled="!selected"
-      class="mt-2 px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+      class="mt-2 px-4 py-1 bg-primary text-white rounded hover:bg-[hsl(var(--primary-hover))] disabled:opacity-50"
     >
       Gi eierskap
     </button>
