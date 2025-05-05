@@ -173,12 +173,6 @@ export default {
 
       const { userId, longitude, latitude } = positionData
 
-      // Skip processing if this is the current user's position
-      if (userId === 36) {
-        console.log(`Skipping marker display for current user (ID: ${userId})`)
-        return
-      }
-
       // Validate coordinates before processing
       if (
         !userId ||
@@ -202,13 +196,14 @@ export default {
 
       // If map is initialized, update marker immediately
       if (mapInitialized.value && map.value) {
-        updateUserMarker(userId, parsedLong, parsedLat)
+        const isCurrentUser = userId === 29;
+        updateUserMarker(userId, parsedLong, parsedLat, isCurrentUser)
       } else {
         console.log(`Map not ready yet. Storing position for user ${userId} for later display`)
       }
     }
 
-    function updateUserMarker(userId, longitude, latitude) {
+    function updateUserMarker(userId, longitude, latitude, isCurrentUser = false) {
       // Ensure map is initialized
       if (!map.value || !mapInitialized.value) {
         console.warn('Cannot update marker: Map not initialized')
@@ -223,14 +218,34 @@ export default {
         marker.setLatLng([latitude, longitude])
         console.log(`Updated existing marker for user ${userId}`)
       } else {
-        // Create new marker with a more visible style
+        // Create new marker with style based on whether it's current user or not
         try {
-          const markerIcon = L.divIcon({
-            className: 'user-position-marker',
-            html: `<div style="background-color: #ff4d4f; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">${userId}</div>`,
-            iconSize: [30, 30],
-            iconAnchor: [15, 15],
-          })
+          let markerIcon;
+
+          if (isCurrentUser) {
+            // Blue marker with pulse effect for current user
+            markerIcon = L.divIcon({
+              className: 'user-position-marker current-user-marker',
+              html: `
+                <div class="pulse-container">
+                  <div class="marker-pulse"></div>
+                  <div class="marker-core" style="background-color: #2196F3;">
+                    <span>ME</span>
+                  </div>
+                </div>
+              `,
+              iconSize: [40, 40],
+              iconAnchor: [20, 20],
+            })
+          } else {
+            // Red marker for other users
+            markerIcon = L.divIcon({
+              className: 'user-position-marker',
+              html: `<div style="background-color: #ff4d4f; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">${userId}</div>`,
+              iconSize: [30, 30],
+              iconAnchor: [15, 15],
+            })
+          }
 
           const marker = L.marker([latitude, longitude], {
             icon: markerIcon,
@@ -313,6 +328,54 @@ export default {
 </script>
 
 <style scoped>
+.pulse-container {
+  position: relative;
+  width: 40px;
+  height: 40px;
+}
+
+.marker-core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 26px;
+  height: 26px;
+  background-color: #2196F3;
+  border-radius: 50%;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 12px;
+  z-index: 2;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+}
+
+.marker-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  background-color: rgba(33, 150, 243, 0.4);
+  border-radius: 50%;
+  z-index: 1;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.5);
+    opacity: 0;
+  }
+}
 /* No changes to the styles */
 .map-container {
   width: 100%;
