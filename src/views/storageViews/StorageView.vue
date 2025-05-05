@@ -42,6 +42,7 @@ const storageItems = ref([
 </script>
 
 <template>
+
   <div class="w-full max-w-3xl mx-auto p-6 text-center">
     <h1 class="text-3xl font-bold mb-4">Mitt lagerinnhold</h1>
 
