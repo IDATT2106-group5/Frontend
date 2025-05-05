@@ -30,16 +30,16 @@ export const useUserStore = defineStore('user', {
     async register(userData) {
       this.isLoading = true;
       this.error = null;
-      try {
+      try {        
         const response = await AuthService.register(userData);
         return true;
-      } catch (err) {
+      } catch (err) {        
         if (err.response && err.response.data && err.response.data.error === "Email already in use") {
           this.error = "E-postadressen er allerede registrert.";
         } else {
           this.error = err.message || "Noe gikk galt under registrering.";
         }
-        return false;
+        return false; 
       } finally {
         this.isLoading = false;
       }
@@ -91,9 +91,12 @@ export const useUserStore = defineStore('user', {
 
     async fetchUser() {
       try {
-        console.log("Fetch user called - implement UserService");
+        const response = await apiClient.get('/user/me');
+        this.user = response.data;
+        console.log('✅ User fetched from backend:', this.user);
       } catch (err) {
         console.error("Error fetching user:", err);
+        this.logout();
       }
     },
 
