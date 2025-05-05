@@ -1,12 +1,30 @@
 <script setup>
+/**
+ * Vue Composition API lifecycle imports.
+ */
 import { onMounted, onUnmounted } from 'vue'
+
+/**
+ * Imports the user store to manage authentication and user related actions.
+ * @see useUserStore
+ */
 import { useUserStore } from '@/stores/UserStore'
+
+/**
+ * Imports the date store to show and update the current time.
+ * @see useDateStore
+ */
 import { useDateStore } from '@/stores/DateStore'
 
 const userStore = useUserStore()
 const dateStore = useDateStore()
 
-
+/**
+ * Lifecycle hook: called when the component is mounted.
+ * Starts the clock (updates time every minute).
+ * Attempts to auto login the user.
+ * Fetches user data from the backend.
+ */
 onMounted(async () => {
   if (!userStore.user) {
     userStore.autoLogin()
@@ -15,6 +33,10 @@ onMounted(async () => {
   }
 }),
 
+/**
+ * Lifecycle hook: called when the component is unmounted.
+ * Stops the clock interval to prevent memory leaks.
+ */
 onUnmounted(() => {
   dateStore.stopClock()
 })

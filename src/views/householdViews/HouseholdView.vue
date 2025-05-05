@@ -3,7 +3,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { Copy, Edit } from 'lucide-vue-next'
+import { Copy, Edit, User } from 'lucide-vue-next'
 import { toast } from '@/components/ui/toast'
 
 import useHousehold from '@/components/householdMainView/useHouseholdViewModel.js'
@@ -98,18 +98,36 @@ async function handleDelete() {
         {{ error }}
       </div>
 
-      <div v-else-if="!hasHousehold" class="text-center py-12 bg-white rounded-lg shadow">
-        <h2 class="text-xl font-bold mb-4">Ingen husstand funnet</h2>
-        <p class="mb-6">Du er ikke tilknyttet en husstand ennå.</p>
-        <div class="flex justify-center space-x-4">
-          <button @click="goCreate" class="px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700">
-            Opprett husstand
-          </button>
-          <button @click="goJoin" class="px-4 py-2 border border-gray-700 rounded shadow hover:bg-gray-100">
-            Søk husstand
-          </button>
+      <div v-else-if="!hasHousehold" class="text-center py-16 bg-base ">
+        <h2 class="text-3xl font-bold text-black mb-4">
+          Du er ikke medlem i en<br />
+          en eksisterende husstand
+        </h2>
+        <p class="text-primary mb-8 font-medium">
+          Velg om du vil opprette en ny husstand<br />
+          eller bli med i en eksisterende
+        </p>
+
+        <div class="flex justify-center gap-12">
+          <div>
+            <h3 class="font-semibold text-lg mb-2">Opprett ny husstand</h3>
+            <button @click="goCreate"
+                    class="flex items-center gap-2 px-5 py-2 rounded-md bg-primary text-white font-medium shadow hover:opacity-90">
+              <span class="text-xl">+</span>
+              Opprett husstand
+            </button>
+          </div>
+          <div>
+            <h3 class="font-semibold text-lg mb-2">Bli med i husstand</h3>
+            <button @click="goJoin"
+                    class="flex items-center gap-2 px-5 py-2 rounded-md bg-primary text-white font-medium shadow hover:opacity-90">
+              <User class="w-5 h-5" />
+              Bli med i husstand
+            </button>
+          </div>
         </div>
       </div>
+
 
       <div v-else>
         <div class="flex justify-between items-center">
