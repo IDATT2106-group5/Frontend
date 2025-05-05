@@ -1,23 +1,32 @@
 <script setup>
-import { Bell, Globe, Newspaper, ShoppingCart, User } from 'lucide-vue-next'
+import { Bell, Globe, Newspaper, ShoppingCart, User, Map } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/UserStore'
-import { ref } from 'vue'
-import useStompWebSocket from '@/service/websocketComposable.js'
+import { ref, onBeforeUnmount } from 'vue'
+import useWebSocket from '@/service/websocketComposable.js'
 
 const userStore = useUserStore()
 const router = useRouter()
 
-// Define a multi-word component name
 defineOptions({
   name: 'Navbar',
 })
 
-// Use the new composable for WebSocket notifications
-const { notifications, notificationCount, markAsRead, resetNotificationCount } = useStompWebSocket()
-// Notification panel state
+const {
+  notifications,
+  notificationCount,
+  markAsRead,
+  resetNotificationCount,
+  connected,
+  updatePosition,
+  subscribeToPosition
+} = useWebSocket()
+
 const showNotifications = ref(false)
+const isSharing = ref(localStorage.getItem('isSharing') === 'true')
+const locationError = ref(null)
+let positionUpdateInterval = null
 
 function toggleNotifications() {
   showNotifications.value = !showNotifications.value
@@ -44,6 +53,67 @@ function handleLogout() {
   userStore.logout()
   router.push('/login')
 }
+
+function updateUserPosition() {
+  if (!connected.value) return
+
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const { latitude, longitude } = position.coords
+      const userId = userStore.userId || 29
+      updatePosition(userId, longitude.toString(), latitude.toString())
+      locationError.value = null
+    },
+    (error) => {
+      console.error("Geolocation error:", error)
+      locationError.value = "Could not access your location"
+      stopPositionSharing()
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 30000
+    }
+  )
+}
+
+function startPositionSharing() {
+  if (!navigator.geolocation) {
+    locationError.value = "Geolocation is not supported by your browser"
+    return
+  }
+
+  const householdId = userStore.householdId || 4
+  subscribeToPosition(householdId)
+  updateUserPosition()
+  positionUpdateInterval = setInterval(updateUserPosition, 30000)
+  isSharing.value = true
+  localStorage.setItem('isSharing', true)
+  console.log("Position sharing allowed:", localStorage.getItem('isSharing'))
+}
+
+function stopPositionSharing() {
+  if (positionUpdateInterval) {
+    clearInterval(positionUpdateInterval)
+    positionUpdateInterval = null
+  }
+  isSharing.value = false
+  localStorage.setItem('isSharing', false)
+  console.log("Position sharing allowed:", localStorage.getItem('isSharing'))
+}
+
+function togglePositionSharing() {
+  if (isSharing.value) {
+    stopPositionSharing()
+  } else {
+    startPositionSharing()
+  }
+  localStorage.setItem('isSharing', isSharing.value)
+}
+
+onBeforeUnmount(() => {
+  stopPositionSharing()
+})
 </script>
 
 <template>
@@ -116,6 +186,19 @@ function handleLogout() {
       </template>
     </div>
   </header>
+
+  <!-- Add this button next to the notifications button in the Auth and notifications div -->
+  <Button
+    @click="togglePositionSharing"
+    variant="outline"
+    :class="[
+      'text-white border-white bg-[#2c3e50]',
+      isSharing ? 'hover:bg-red-600' : 'hover:bg-green-600'
+    ]"
+  >
+    <Map class="w-4 h-4 mr-2" />
+    {{ isSharing ? 'Stop deling' : 'Del posisjon' }}
+  </Button>
 
   <!-- Notification panel -->
   <div
