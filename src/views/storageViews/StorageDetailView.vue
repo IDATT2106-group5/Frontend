@@ -15,7 +15,6 @@ import SearchBar from '@/components/SearchBar.vue';
 
 // Services and store
 import { useStorageStore } from '@/stores/StorageStore.js';
-import { ItemType } from '@/types/ItemType';
 import { useUserStore } from '@/stores/UserStore.js';
 import UserService from '@/service/userService';
 import AddStorageItem from '@/components/AddStorageItem.vue'
@@ -144,7 +143,9 @@ const handleItemAdd = async (item) => {
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
             />
+            <!-- Only show AddStorageItem when in edit mode -->
             <AddStorageItem
+              v-if="isEditing"
               category="Væske"
               @add-item="handleItemAdd"
             />
@@ -166,7 +167,9 @@ const handleItemAdd = async (item) => {
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
             />
+            <!-- Only show AddStorageItem when in edit mode -->
             <AddStorageItem
+              v-if="isEditing"
               category="Mat"
               @add-item="handleItemAdd"
             />
@@ -188,7 +191,9 @@ const handleItemAdd = async (item) => {
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
             />
+            <!-- Only show AddStorageItem when in edit mode -->
             <AddStorageItem
+              v-if="isEditing"
               category="Medisiner"
               @add-item="handleItemAdd"
             />
@@ -210,7 +215,9 @@ const handleItemAdd = async (item) => {
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
             />
+            <!-- Only show AddStorageItem when in edit mode -->
             <AddStorageItem
+              v-if="isEditing"
               category="Redskap"
               @add-item="handleItemAdd"
             />
@@ -232,7 +239,9 @@ const handleItemAdd = async (item) => {
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
             />
+            <!-- Only show AddStorageItem when in edit mode -->
             <AddStorageItem
+              v-if="isEditing"
               category="Diverse"
               @add-item="handleItemAdd"
             />

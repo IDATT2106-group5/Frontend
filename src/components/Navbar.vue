@@ -11,12 +11,11 @@ const router = useRouter()
 
 // Define a multi-word component name
 defineOptions({
-  name: 'NavBar'
+  name: 'Navbar',
 })
 
 // Use the new composable for WebSocket notifications
 const { notifications, notificationCount, markAsRead, resetNotificationCount } = useStompWebSocket()
-
 // Notification panel state
 const showNotifications = ref(false)
 
@@ -36,6 +35,8 @@ function formatTimestamp(timestamp) {
   return date.toLocaleString('no-NO', {
     hour: '2-digit',
     minute: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
   })
 }
 

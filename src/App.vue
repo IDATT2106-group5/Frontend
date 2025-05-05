@@ -1,11 +1,11 @@
 <script setup>
 import { RouterView } from 'vue-router'
-import Navbar from '@/components/NavBar.vue'
+import Navbar from '@/components/Navbar.vue'
 import Footer from '@/components/Footer.vue'
 import { useRoute } from 'vue-router'
+import { useUserStore } from '@/stores/UserStore'
 import { onBeforeMount } from 'vue'
-import { useUserStore } from '@/stores/UserStore.js'
-
+import { Toaster } from '@/components/ui/toast'
 
 const userStore = useUserStore()
 const route = useRoute()
@@ -24,6 +24,7 @@ onBeforeMount(() => {
     <!-- Main view fills space -->
     <div class="flex-1">
       <RouterView />
+      <Toaster />
     </div>
     <!-- Footer always at bottom -->
     <Footer v-if="!route.meta.hideFooter" />

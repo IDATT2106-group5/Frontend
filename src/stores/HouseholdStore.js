@@ -12,6 +12,7 @@ export const useHouseholdStore = defineStore('household', {
     },
     ownershipRequests: [],
     sentInvitations: [],
+    sentJoinRequests: [],
     error: null,
     isLoading: false,
     hasHousehold: false
@@ -414,7 +415,59 @@ export const useHouseholdStore = defineStore('household', {
       } finally {
         this.isLoading = false;
       }
-    }
+    },
+
+    async searchHouseholdById(householdId) {
+      try {
+        this.isLoading = true;
+        if (!householdId || isNaN(Number(householdId))) {
+          throw new Error('Ugyldig husstands-ID format');
+        }
+
+        const response = await HouseholdService.searchHouseholdById({
+          householdId: Number(householdId)
+        });
+        return response;
+      } catch (err) {
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke søke etter husstand';
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    //Send a join request to a household
+    async sendJoinRequest(householdId) {
+      try {
+        this.isLoading = true;
+        const userStore = useUserStore();
+
+        if (!userStore.user || !userStore.user.id) {
+          throw new Error('Bruker må være logget inn');
+        }
+
+        const request = {
+          userId: userStore.user.id,
+          householdId: householdId
+        };
+
+        await RequestService.sendJoinRequest(request);
+
+        // Add to sent join requests tracking
+        this.sentJoinRequests.push({
+          householdId: householdId,
+          date: new Date().toISOString().split('T')[0],
+          status: 'PENDING'
+        });
+
+        return true;
+      } catch (err) {
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke sende forespørsel om å bli med i husstand';
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
+    },
 
   }
 });

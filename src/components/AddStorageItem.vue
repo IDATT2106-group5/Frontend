@@ -1,7 +1,8 @@
 <script setup>
 import {ref, computed, watch, onMounted} from 'vue';
 import {useItemStore} from '@/stores/ItemStore';
-import {ItemType} from '@/types/ItemType';
+import { PlusCircle, Undo, Save } from 'lucide-vue-next';
+import { Button } from '@/components/ui/button/index.js'
 
 const props = defineProps({
   category: {
@@ -21,7 +22,7 @@ const itemStore = useItemStore();
 onMounted(async () => {
   // Fetch all items first
   await itemStore.fetchItems();
-  console.log("Items loaded in AddStorageItem:", itemStore.items.value);
+  console.log("Items loaded in AddStorageItem:", itemStore.items);
 
   // Add initial row
   addNewRow();
@@ -34,13 +35,10 @@ watch(() => props.category, () => {
 
 // Create a computed property that provides items based on the selected category
 const itemOptions = computed(() => {
-  if (itemStore.isLoading.value || itemStore.error.value) {
+  if (itemStore.isLoading || itemStore.error) {
     console.log("Still loading or error occurred");
     return [];
   }
-
-  console.log("All available items:", itemStore.items);
-  console.log("Current category:", props.category);
 
   // Map frontend categories to backend enum values
   const categoryMapping = {
@@ -57,15 +55,11 @@ const itemOptions = computed(() => {
     return [];
   }
 
-  console.log("Looking for items with type:", itemType);
-
   // Filter items based on their itemType matching the current category
   const filteredItems = itemStore.items.filter(item => {
-    console.log("Checking item:", item.name, "Type:", item.itemType);
     return item.itemType === itemType;
   });
 
-  console.log("Filtered items for display:", filteredItems);
   return filteredItems;
 });
 
@@ -73,7 +67,7 @@ const itemOptions = computed(() => {
 function addNewRow() {
   addRows.value.push({
     selectedItem: null,
-    selectedUnit: "",
+    selectedUnit: "stk",
     itemQuantity: 1,
     itemDate: null
   });
@@ -102,7 +96,8 @@ function saveItem(row) {
   const newItem = {
     unit: row.selectedUnit || "stk",
     amount: parseInt(row.itemQuantity) || 1,
-    expirationDate: row.itemDate ? formatDateForBackend(row.itemDate) : null
+    expirationDate: row.itemDate ? new Date(row.itemDate) : null
+    // Changed: Instead of a formatted string, we're now passing a Date object
   };
 
   // Emit the event to add the item to storage
@@ -122,109 +117,78 @@ function saveItem(row) {
     addNewRow();
   }
 }
-
-// Helper function to format date for backend
-function formatDateForBackend(dateString) {
-  if (!dateString) return null;
-
-  // Create a Date object from the date string
-  const date = new Date(dateString);
-
-  // Format as ISO string that LocalDateTime.parse can handle
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}T00:00:00`;
-}
 </script>
 
 <template>
-  <div class="add-item-form">
+  <div class="mt-4">
     <!-- Row for each item to add -->
-    <div v-for="(row, index) in addRows" :key="index" class="add-item-row">
+    <div v-for="(row, index) in addRows" :key="index" class="flex flex-wrap md:flex-nowrap items-end gap-4 mb-4">
       <!-- Item selection dropdown -->
-      <v-select
-        v-model="row.selectedItem"
-        :items="itemOptions"
-        item-title="name"
-        item-value="id"
-        label="Velg vare"
-        return-object
-        class="input-field"
-      ></v-select>
+      <div class="flex-1 flex flex-col">
+        <label :for="`item-select-${index}`" class="mb-1 text-sm font-medium">Velg vare</label>
+        <select
+          :id="`item-select-${index}`"
+          v-model="row.selectedItem"
+          class="w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+          <option value="">Velg vare</option>
+          <option
+            v-for="item in itemOptions"
+            :key="item.id"
+            :value="item">
+            {{ item.name }}
+          </option>
+        </select>
+      </div>
 
-      <!-- Unit input -->
-      <v-text-field
-        v-model="row.selectedUnit"
-        label="Enhet"
-        placeholder="stk"
-        class="input-field"
-      ></v-text-field>
+      <!-- Date input -->
+      <div class="flex-1 flex flex-col">
+        <label :for="`date-${index}`" class="mb-1 text-sm font-medium">Utløpsdato</label>
+        <input
+          :id="`date-${index}`"
+          v-model="row.itemDate"
+          type="date"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
 
       <!-- Quantity input -->
-      <v-text-field
-        v-model="row.itemQuantity"
-        label="Antall"
-        type="number"
-        min="1"
-        class="input-field"
-      ></v-text-field>
+      <div class="flex-1 flex flex-col">
+        <label :for="`quantity-${index}`" class="mb-1 text-sm font-medium">Antall</label>
+        <input
+          :id="`quantity-${index}`"
+          v-model="row.itemQuantity"
+          type="number"
+          min="1"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
 
-      <!-- Date picker -->
-      <v-menu>
-        <template v-slot:activator="{ props }">
-          <v-text-field
-            v-model="row.itemDate"
-            label="Utløpsdato"
-            v-bind="props"
-            prepend-icon="mdi-calendar"
-            class="input-field"
-          ></v-text-field>
-        </template>
-        <v-date-picker
-          v-model="row.itemDate"
-          no-title
-          scrollable
-        ></v-date-picker>
-      </v-menu>
+      <!-- Unit input -->
+      <div class="flex-1 flex flex-col">
+        <label :for="`unit-${index}`" class="mb-1 text-sm font-medium">Enhet</label>
+        <input
+          :id="`unit-${index}`"
+          v-model="row.selectedUnit"
+          placeholder="stk"
+          class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        />
+      </div>
 
       <!-- Action buttons -->
-      <div class="action-buttons">
-        <v-btn icon @click="saveItem(row)" color="success">
-          <v-icon>mdi-check</v-icon>
-        </v-btn>
-        <v-btn icon @click="removeRow(index)" color="error">
-          <v-icon>mdi-close</v-icon>
-        </v-btn>
+      <div class="flex items-center space-x-4 ml-2 h-10">
+        <Button @click="saveItem(row)" class="hover:bg-blue-600 cursor-pointer">
+          <PlusCircle
+            class="h-6 w-6 text-white"
+          />
+        </Button>
+
+        <Button @click="removeRow(index)" class="hover:bg-red-600 cursor-pointer">
+          <Undo
+            class="h-6 w-6 text-white"
+          />
+        </Button>
+
       </div>
     </div>
-
-    <!-- Button to add more rows -->
-    <v-btn @click="addNewRow" block color="primary" class="mt-3">
-      Legg til fler
-    </v-btn>
   </div>
 </template>
-
-<style scoped>
-.add-item-form {
-  margin-top: 1rem;
-}
-
-.add-item-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-.input-field {
-  flex: 1;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 0.5rem;
-}
-</style>
