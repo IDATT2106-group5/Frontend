@@ -16,11 +16,17 @@ const props = defineProps({
   token: {
     type: String,
     required: true
-  }
+  },
+  emailMissing: Boolean,
+  tokenMissing: Boolean
 })
 
 const router = useRouter()
 const userStore = useUserStore()
+
+if (props.emailMissing || props.tokenMissing) {
+  router.replace('/login');
+}
 
 const formData = reactive({
   password: '',
