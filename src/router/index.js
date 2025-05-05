@@ -9,6 +9,8 @@ import RegisterSuccessView from '@/views/mainViews/RegisterSucessView.vue'
 import RegisterFailedView from '@/views/mainViews/RegisterFailedView.vue'
 import HouseholdInviteView from '@/views/householdViews/HouseholdInviteView.vue'
 import StorageView from '@/views/storageViews/StorageView.vue'
+import HouseholdCreateView from '@/views/householdViews/HouseholdCreateView.vue'
+import HouseholdJoinView from '@/views/householdViews/HouseholdJoinView.vue'
 import Admin2FAView from '@/views/adminViews/Admin2FAView.vue'
 import BeforeView from '@/views/informationViews/BeforeView.vue'
 import UnderView from '@/views/informationViews/UnderView.vue'
@@ -27,13 +29,13 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
-      meta:{hideNavbar: true, hideFooter: true },
+      meta:{hideNavbar: true },
     },
     {
       path: '/register',
       name: 'register',
       component: RegisterView,
-      meta:{hideNavbar: true, hideFooter: true },
+      meta:{hideNavbar: true },
     },
     {
       path: '/storage-detail',
@@ -52,6 +54,16 @@ const router = createRouter({
       component: HouseholdView,
     },
     {
+      path: '/household/create',
+      name: 'household-create',
+      component: HouseholdCreateView,
+    },
+    {
+      path: '/household/join',
+      name: 'household-join',
+      component: HouseholdJoinView,
+    },
+    {
       path: '/household/invite',
       name: 'household-invite',
       component: HouseholdInviteView,
@@ -65,7 +77,7 @@ const router = createRouter({
       path: '/register-success',
       name: 'RegisterSuccess',
       component: RegisterSuccessView,
-      meta:{hideNavbar: true, hideFooter: true },
+      meta:{hideNavbar: true },
     },
     {
       path: '/register-failed',
@@ -99,6 +111,7 @@ const router = createRouter({
         return { email: route.query.email };
       },
       meta:{hideNavbar: true },
+
     },
     {
       path: '/map',
