@@ -3,6 +3,8 @@ import { defineStore } from 'pinia';
 import MapService from '@/service/map/mapService';
 import MarkerService from '@/service/map/markerService';
 import IncidentMapService from '@/service/map/incidentMapService';
+import RoutingService from '@/service/map/routingService';
+
 import L from 'leaflet';
 import {
   Heart,
@@ -203,7 +205,14 @@ export const useMapStore = defineStore('map', {
     silentLoading: false,
 
     // Cleanup reference
-    mapMoveCleanup: null
+    mapMoveCleanup: null,
+
+    // Map Routing
+    activeRoute: null,
+    routeStart: null,
+    routeEnd: null,
+    isGeneratingRoute: false,
+    routeError: null
   }),
 
   getters: {
@@ -339,6 +348,8 @@ export const useMapStore = defineStore('map', {
         },
         500 // debounce time in ms
       );
+
+
     },
 
     /**
@@ -856,6 +867,7 @@ export const useMapStore = defineStore('map', {
      * Clean up resources when component is unmounted
      */
     cleanupMap() {
+      this.clearRoute();
       this.cleanupEventListeners();
       this.cleanupMapLayers();
       this.resetState();
@@ -902,6 +914,80 @@ export const useMapStore = defineStore('map', {
       this.markerTypes = [];
       this.incidents = [];
       this.initialMarkersLoaded = false;
-    }
+    },
+
+    /**
+     * Generate and display a route on the map
+     *
+     * @param {Array} startCoords - Starting coordinates [lat, lng]
+     * @param {Array} endCoords - Destination coordinates [lat, lng]
+     */
+    async generateRoute(startCoords, endCoords) {
+      if (!this.map || !startCoords || !endCoords) return;
+
+      this.isGeneratingRoute = true;
+      this.routeError = null;
+
+      try {
+        // Store the coordinates
+        this.routeStart = startCoords;
+        this.routeEnd = endCoords;
+
+        // Show the route
+        this.activeRoute = RoutingService.showRoute(this.map, startCoords, endCoords);
+
+        // Add a popup to the destination marker if it exists
+        const destinationType = this.findMarkerTypeByCoords(endCoords[0], endCoords[1]);
+        if (destinationType) {
+          const typeData = this.markerTypes.find(type => type.id === destinationType);
+          L.popup()
+          .setLatLng([endCoords[0], endCoords[1]])
+          .setContent(`
+            <div class="route-destination-popup">
+              <h3>Destinasjon: ${typeData?.title || 'Ukjent'}</h3>
+              <p>Følg den blå ruten</p>
+            </div>
+          `)
+          .openOn(this.map);
+        }
+      } catch (error) {
+        console.error("Error generating route:", error);
+        this.routeError = "Kunne ikke generere rute. Vennligst prøv igjen senere.";
+      } finally {
+        this.isGeneratingRoute = false;
+      }
+    },
+
+    /**
+     * Clear the current route
+     */
+    clearRoute() {
+      RoutingService.clearRoute();
+      this.activeRoute = null;
+      this.routeStart = null;
+      this.routeEnd = null;
+      this.routeError = null;
+    },
+
+    /**
+     * Find marker type by coordinates
+     */
+    findMarkerTypeByCoords(lat, lng) {
+      // Set a small threshold for coordinate comparison (to handle floating point precision)
+      const threshold = 0.0001;
+
+      // Check all marker types and their markers
+      for (const [typeId, markers] of Object.entries(this.markerData)) {
+        for (const marker of markers) {
+          if (
+            Math.abs(marker.lat - lat) < threshold &&
+            Math.abs(marker.lng - lng) < threshold
+          ) {
+            return typeId;
+          }
+        }
+      }
+      return null;
+    },
   }
 });

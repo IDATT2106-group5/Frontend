@@ -2,6 +2,11 @@
   <div class="map-container">
     <div id="map" ref="mapContainer"></div>
 
+    <!-- Add the closest facility finder panel -->
+    <div class="closest-facility-container">
+      <ClosestFacilityFinder v-if="!isLoadingMarkers && !markersLoadError" />
+    </div>
+
     <!-- Loading indicator -->
     <div v-if="isLoadingMarkers" class="map-loading-overlay">
       <div class="map-loading-spinner"></div>
@@ -69,10 +74,12 @@ import { storeToRefs } from 'pinia';
 import MarkerFilter from '@/components/map/MarkerFilter.vue';
 import Button from '@/components/ui/button/Button.vue';
 import 'leaflet/dist/leaflet.css';
+import ClosestFacilityFinder from "@/components/map/ClosestFacilityFinder.vue";
 
 export default {
   name: 'EmergencyMap',
   components: {
+    ClosestFacilityFinder,
     MarkerFilter,
     Button
   },
@@ -182,6 +189,21 @@ export default {
   height: calc(100vh - 60px);
   position: relative;
   overflow: hidden;
+}
+
+.closest-facility-container {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+}
+
+@media (max-width: 767px) {
+  .closest-facility-container {
+    top: auto;
+    bottom: 16px;
+    right: 16px;
+  }
 }
 
 #map {
