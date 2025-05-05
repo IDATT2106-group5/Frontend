@@ -31,7 +31,7 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
-      meta:{hideNavbar: true, hideFooter: true },
+      meta:{hideNavbar: true },
     },
     {
       path: '/request-reset',
@@ -49,7 +49,7 @@ const router = createRouter({
       path: '/register',
       name: 'register',
       component: RegisterView,
-      meta:{hideNavbar: true, hideFooter: true },
+      meta:{hideNavbar: true },
     },
     {
       path: '/storage-detail',
@@ -91,7 +91,7 @@ const router = createRouter({
       path: '/register-success',
       name: 'RegisterSuccess',
       component: RegisterSuccessView,
-      meta:{hideNavbar: true, hideFooter: true },
+      meta:{hideNavbar: true },
     },
     {
       path: '/register-failed',
@@ -125,6 +125,7 @@ const router = createRouter({
         return { email: route.query.email };
       },
       meta:{hideNavbar: true },
+
     },
     {
       path: '/map',
