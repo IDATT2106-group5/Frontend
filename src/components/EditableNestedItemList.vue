@@ -1,9 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 import { Trash, Pencil, Save } from 'lucide-vue-next';
-import { Button } from '@/components/ui/button';
 
-// Props
 const props = defineProps({
   items: {
     type: Array,
@@ -15,36 +13,155 @@ const props = defineProps({
   }
 });
 
-// Emits
 const emit = defineEmits(['update-item', 'delete-item']);
 
-// Reactive state
 const openSubItems = ref([]);
 const editingItem = ref(null);
 const editingData = ref({
-  name: '',
   expiryDate: '',
   quantity: 0
 });
 
-// Computed properties
+
+/**
+ * Parses a date string in Norwegian format (dd.mm.yyyy) to a Date object
+ * Falls back to standard date parsing if not in Norwegian format
+ *
+ * @param {string} dateString - The date string to parse
+ * @returns {Date} A JavaScript Date object
+ */
+function parseNorwegianDate(dateString) {
+  if (!dateString) return new Date();
+
+  const parts = dateString.split('.');
+  if (parts.length === 3) {
+    const day = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed in JS Date
+    const year = parseInt(parts[2], 10);
+    return new Date(year, month, day);
+  }
+
+  return new Date(dateString);
+}
+
+/**
+ * Formats a date string to Norwegian format (dd.mm.yyyy)
+ * Handles both Norwegian format input and standard Date objects
+ *
+ * @param {string|Date} dateString - The date to format
+ * @returns {string} Formatted date string in dd.mm.yyyy format, or 'N/A' if invalid
+ */
+function formatDate(dateString) {
+  if (!dateString || dateString === 'N/A') return 'N/A';
+
+  try {
+    let date;
+
+    const parts = dateString.split('.');
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed in JS
+      const year = parseInt(parts[2], 10);
+      date = new Date(year, month, day);
+    } else {
+      date = new Date(dateString);
+    }
+
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date in formatDate:', dateString);
+      return dateString;
+    }
+
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+
+    return `${day}.${month}.${year}`;
+  } catch (e) {
+    console.error('Error formatting date:', e);
+    return dateString;
+  }
+}
+
+/**
+ * Calculates the expiration status of an item based on its expiry date
+ * Returns text description and whether the item is expired
+ *
+ * @param {string} expirationDate - The expiry date string
+ * @param {Object} item - The item object containing the expiry date
+ * @returns {Object} Object with text description and isExpired flag
+ */
+function getExpirationStatus(expirationDate, item) {
+  if (!expirationDate || expirationDate === 'N/A') return { text: 'N/A', isExpired: false };
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  let expiry;
+
+  if (typeof item.expiryDate === 'string') {
+    // Parse using our utility function
+    expiry = parseNorwegianDate(item.expiryDate);
+  } else if (item.expiryDate instanceof Date) {
+    expiry = new Date(item.expiryDate);
+  } else {
+    console.error('Unsupported date format:', item.expiryDate);
+    return { text: 'Invalid date', isExpired: false };
+  }
+
+  expiry.setHours(0, 0, 0, 0);
+
+  if (isNaN(expiry.getTime())) {
+    console.error('Invalid date after parsing:', item.expiryDate);
+    return { text: 'Invalid date', isExpired: false };
+  }
+
+  const diffTime = expiry.getTime() - today.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) {
+    return { text: 'Gått ut på dato', isExpired: true };
+  } else if (diffDays === 0) {
+    return { text: 'Utløper i dag', isExpired: false };
+  } else {
+    return { text: `${diffDays} dag${diffDays !== 1 ? 'er' : ''}`, isExpired: false };
+  }
+}
+
+
+/**
+ * Extracts the base name from a product name, removing any text in parentheses
+ *
+ * @param {string} fullName - The full product name
+ * @returns {string} The base name without parenthetical content
+ */
+function getBaseName(fullName) {
+  if (!fullName) return 'Unknown';
+
+  const match = fullName.match(/^([^(]+)/);
+  return match ? match[1].trim() : fullName;
+}
+
+/**
+ * Groups items by their base name (e.g., all "Water" items together)
+ * Handles various data formats and provides defaults for missing values
+ * @returns {Object} An object with base names as keys and arrays of normalized items as values
+ */
 const groupedSubItems = computed(() => {
-  // Group items by name (e.g., group all "Water" items together)
   const grouped = {};
 
-  // Handle undefined or empty items array
   if (!props.items || !Array.isArray(props.items) || props.items.length === 0) {
     return grouped;
   }
 
-  props.items.forEach(rawItem => {
+  props.items.forEach(storageItem => {
     const item = {
-      id: rawItem.id,  // Use the correct id property consistently
-      name: rawItem.name || rawItem.item?.name || 'Ukjent navn',
-      expiryDate: rawItem.expiryDate || rawItem.item?.expiryDate || '',
-      quantity: rawItem.quantity ?? rawItem.amount ?? 0,
-      unit: rawItem.unit || 'stk',
-      duration: rawItem.duration || null,
+      id: storageItem.id,
+      name: storageItem.name || storageItem.item?.name || 'Ukjent navn',
+      expiryDate: storageItem.expiryDate || storageItem.item?.expiryDate || '',
+      quantity: storageItem.quantity ?? storageItem.amount ?? 0,
+      unit: storageItem.unit || 'Stk',
+      duration: storageItem.duration || null,
     };
 
     const baseName = getBaseName(item.name);
@@ -57,16 +174,13 @@ const groupedSubItems = computed(() => {
   return grouped;
 });
 
-// Methods
-function getBaseName(fullName) {
-  // Extract the base name (e.g., "Water" from "Water (Brand A)")
-  // Or "Vann" from "Vann (Imsdal)"
-  if (!fullName) return 'Unknown';
 
-  const match = fullName.match(/^([^(]+)/);
-  return match ? match[1].trim() : fullName;
-}
-
+/**
+ * Toggles the expansion/collapse state of a group in the accordion
+ * Prevents toggling when in edit mode with an active edit
+ *
+ * @param {string} groupName - The name of the group to toggle
+ */
 function toggleSubAccordion(groupName) {
   if (!props.isEditing || (props.isEditing && editingItem.value === null)) {
     if (openSubItems.value.includes(groupName)) {
@@ -77,130 +191,67 @@ function toggleSubAccordion(groupName) {
   }
 }
 
+/**
+ * Finds the earliest expiry date among all items in a group
+ *
+ * @param {Array} group - Array of items in a group
+ * @returns {string} The earliest expiry date string or 'N/A' if none
+ */
 function getEarliestExpiryDate(group) {
-  // Find the earliest expiry date in a group
   const dates = group
     .filter(item => item.expiryDate)
     .map(item => item.expiryDate);
 
   if (dates.length === 0) return 'N/A';
 
-  return dates.sort((a, b) => new Date(a) - new Date(b))[0];
+  return dates.sort((a, b) => new Date(parseNorwegianDate(a)) - new Date(parseNorwegianDate(b)))[0];
 }
 
+/**
+ * Calculates the total quantity of all items in a group
+ *
+ * @param {Array} group - Array of items in a group
+ * @returns {number} The total quantity
+ */
 function getTotalQuantity(group) {
-  // Sum up the quantities in a group
   return group.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0);
 }
 
+/**
+ * Gets the expiration status of the earliest expiring item in a group
+ *
+ * @param {Array} group - Array of items in a group
+ * @returns {Object} Object with text description and isExpired flag
+ */
 function getEarliestItemExpirationStatus(group) {
-  // If no items, return a default status
   if (!group || group.length === 0) {
     return { text: 'N/A', isExpired: false };
   }
 
-  // Find the item with the earliest expiry date
   const itemsWithDates = group.filter(item => item.expiryDate);
   if (itemsWithDates.length === 0) {
     return { text: 'N/A', isExpired: false };
   }
 
-  // Sort by expiry date
   const sortedItems = [...itemsWithDates].sort((a, b) => {
-    const dateA = new Date(parseNorwegianDate(a.expiryDate));
-    const dateB = new Date(parseNorwegianDate(b.expiryDate));
+    const dateA = parseNorwegianDate(a.expiryDate);
+    const dateB = parseNorwegianDate(b.expiryDate);
     return dateA - dateB;
   });
 
-  // Get the earliest item
   const earliestItem = sortedItems[0];
 
-  // Return its expiration status
   return getExpirationStatus(earliestItem.expiryDate, earliestItem);
 }
 
-function getExpirationStatus(expirationDate, item) {
-  if (!expirationDate || expirationDate === 'N/A') return { text: 'N/A', isExpired: false };
-
-  // Get today's date and reset time to midnight
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  // Parse the expiry date correctly from Norwegian format (dd.mm.yyyy)
-  let expiry;
-
-  if (typeof item.expiryDate === 'string') {
-    // Handle format like "29.04.2025" or "01.05.2025"
-    const parts = item.expiryDate.split('.');
-    if (parts.length === 3) {
-      // Norwegian format: day.month.year
-      const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed in JS Date
-      const year = parseInt(parts[2], 10);
-      expiry = new Date(year, month, day);
-    } else {
-      // Try standard date parsing as fallback
-      expiry = new Date(item.expiryDate);
-    }
-  } else if (item.expiryDate instanceof Date) {
-    expiry = new Date(item.expiryDate);
-  } else {
-    console.error('Unsupported date format:', item.expiryDate);
-    return { text: 'Invalid date', isExpired: false };
-  }
-
-  // Reset time components to compare just the dates
-  expiry.setHours(0, 0, 0, 0);
-
-  // Validate the parsed date
-  if (isNaN(expiry.getTime())) {
-    console.error('Invalid date after parsing:', item.expiryDate);
-    return { text: 'Invalid date', isExpired: false };
-  }
-
-  // Calculate the difference in days
-  const diffTime = expiry.getTime() - today.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-  // Return appropriate status message with isExpired flag
-  if (diffDays < 0) {
-    return { text: 'Gått ut på dato', isExpired: true };
-  } else if (diffDays === 0) {
-    return { text: 'Utløper i dag', isExpired: false };
-  } else {
-    return { text: `${diffDays} dag${diffDays !== 1 ? 'er' : ''}`, isExpired: false };
-  }
-}
-
-function startEditing(item) {
-  editingItem.value = item.id;
-  editingData.value = {
-    expiryDate: item.expiryDate || '',
-    quantity: item.quantity || 0
-  };
-}
-
-function saveItemEdit(itemId) {
-  // Create updated item data with the edited fields
-  const updatedData = {
-    expiryDate: editingData.value.expiryDate,
-    quantity: parseFloat(editingData.value.quantity)
-  };
-
-  // Emit an event to parent component to update the item via the store
-  emit('update-item', itemId, updatedData);
-
-  // Reset editing state
-  editingItem.value = null;
-}
-
-function deleteItem(itemId) {
-  // Emit an event to parent component to delete the item
-  emit('delete-item', itemId);
-}
-
+/**
+ * Groups items by their expiry date
+ * Adds expiration status to each item
+ *
+ * @param {Array} items - Array of items to group
+ * @returns {Object} Object with expiry dates as keys and arrays of items as values
+ */
 function groupItemsByExpiryDate(items) {
-  // Group items by expiry date
   const grouped = {};
   items.forEach(item => {
     const date = item.expiryDate || 'N/A';
@@ -208,7 +259,6 @@ function groupItemsByExpiryDate(items) {
       grouped[date] = [];
     }
 
-    // Calculate expiration status for each item
     const status = getExpirationStatus(date, item);
     item.expirationStatus = status;
 
@@ -217,66 +267,61 @@ function groupItemsByExpiryDate(items) {
   return grouped;
 }
 
+/**
+ * Calculates the total quantity of items in a subgroup (items with same expiry date)
+ *
+ * @param {Array} subGroup - Array of items with the same expiry date
+ * @returns {number} The total quantity
+ */
 function getSubGroupTotalQuantity(subGroup) {
-  // Sum up quantities for items with the same expiry date
   return subGroup.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0);
 }
 
-function formatDate(dateString) {
-  if (!dateString || dateString === 'N/A') return 'N/A';
 
-  try {
-    let date;
-
-    // Check if it's in Norwegian format (dd.mm.yyyy)
-    const parts = dateString.split('.');
-    if (parts.length === 3) {
-      const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed in JS
-      const year = parseInt(parts[2], 10);
-      date = new Date(year, month, day);
-    } else {
-      // Try standard parsing
-      date = new Date(dateString);
-    }
-
-    // Validate date
-    if (isNaN(date.getTime())) {
-      console.error('Invalid date in formatDate:', dateString);
-      return dateString;
-    }
-
-    // Format as dd.mm.yyyy
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-
-    return `${day}.${month}.${year}`;
-  } catch (e) {
-    console.error('Error formatting date:', e);
-    return dateString;
-  }
+/**
+ * Enters edit mode for a specific item
+ * Sets the current editing item ID and initializes the edit form with item data
+ *
+ * @param {Object} item - The item to edit
+ */
+function startEditing(item) {
+  editingItem.value = item.id;
+  editingData.value = {
+    expiryDate: item.expiryDate || '',
+    quantity: item.quantity || 0
+  };
 }
 
-function parseNorwegianDate(dateString) {
-  if (!dateString) return new Date();
+/**
+ * Saves the edited item data
+ * Emits an update-item event to the parent component with the updated data
+ *
+ * @param {string|number} itemId - The ID of the item being edited
+ */
+function saveItemEdit(itemId) {
+  const updatedData = {
+    expiryDate: editingData.value.expiryDate,
+    quantity: parseFloat(editingData.value.quantity)
+  };
 
-  const parts = dateString.split('.');
-  if (parts.length === 3) {
-    // Norwegian format: day.month.year
-    const day = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed in JS Date
-    const year = parseInt(parts[2], 10);
-    return new Date(year, month, day);
-  }
+  emit('update-item', itemId, updatedData);
 
-  return new Date(dateString);
+  editingItem.value = null;
+}
+
+/**
+ * Deletes an item
+ * Emits a delete-item event to the parent component
+ *
+ * @param {string|number} itemId - The ID of the item to delete
+ */
+function deleteItem(itemId) {
+  emit('delete-item', itemId);
 }
 </script>
 
 <template>
   <div class="p-4 bg-white rounded">
-    <!-- Header Row - Always consistent width regardless of edit mode -->
     <div class="grid grid-cols-5 items-center p-3 font-semibold text-gray-700 border-b border-gray-300">
       <div class="font-medium pb-3">Navn:</div>
       <div class="font-medium pb-3">Utløps dato:</div>
@@ -286,7 +331,6 @@ function parseNorwegianDate(dateString) {
 
     <div v-if="groupedSubItems && Object.keys(groupedSubItems).length > 0">
       <div v-for="(group, groupName) in groupedSubItems" :key="groupName" class="mb-4">
-        <!-- Group header - using same grid layout -->
         <div
           @click="toggleSubAccordion(groupName)"
           class="grid grid-cols-5 items-center p-2 cursor-pointer hover:bg-gray-50 border-b border-gray-200"
@@ -311,7 +355,6 @@ function parseNorwegianDate(dateString) {
           </div>
         </div>
 
-        <!-- Edit Mode - Individual Items -->
         <div v-if="openSubItems.includes(groupName) && isEditing" class="mt-1 border-l-2 border-gray-200">
           <div v-for="item in group" :key="item.id"
                class="grid grid-cols-5 items-center p-2 hover:bg-gray-50">
@@ -344,7 +387,6 @@ function parseNorwegianDate(dateString) {
               <span v-else>{{ getExpirationStatus(item.expiryDate, item).text }}</span>
             </div>
             <div class="flex justify-end space-x-2">
-              <!-- Action buttons - only visible in edit mode -->
               <div class="flex space-x-2">
                 <Pencil
                   v-if="editingItem !== item.id"
@@ -365,7 +407,6 @@ function parseNorwegianDate(dateString) {
           </div>
         </div>
 
-        <!-- View Mode - Grouped by Expiry Date -->
         <div v-else-if="openSubItems.includes(groupName)" class="mt-1 border-l-2 border-gray-200">
           <div v-for="(subGroup, expiryDate) in groupItemsByExpiryDate(group)" :key="expiryDate"
                class="grid grid-cols-5 items-center p-2 hover:bg-gray-50">
@@ -377,13 +418,12 @@ function parseNorwegianDate(dateString) {
                     class="text-red-600 font-medium">{{ subGroup[0].expirationStatus.text }}</span>
               <span v-else>{{ subGroup[0].expirationStatus ? subGroup[0].expirationStatus.text : '' }}</span>
             </div>
-            <div></div> <!-- Empty cell to maintain grid alignment -->
+            <div></div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Fallback message if no items are provided -->
     <p v-else class="text-gray-500 italic text-center mt-4">
       Ingen varer funnet.
     </p>

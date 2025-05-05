@@ -12,33 +12,41 @@ import { Button } from '@/components/ui/button';
 import StorageNavbar from "@/components/StorageNavbar.vue";
 import EditableNestedItemList from "@/components/EditableNestedItemList.vue";
 import SearchBar from '@/components/SearchBar.vue';
+import AddStorageItem from '@/components/AddStorageItem.vue';
 
-// Services and store
 import { useStorageStore } from '@/stores/StorageStore.js';
 import { useUserStore } from '@/stores/UserStore.js';
+import { useHouseholdStore } from '@/stores/HouseholdStore.js';
 import UserService from '@/service/userService';
-import AddStorageItem from '@/components/AddStorageItem.vue'
-import { useHouseholdStore } from '@/stores/HouseholdStore.js'
 
-// Component state
+/**
+ * Category mapping for accordion values
+ * Maps display category names to their corresponding accordion values
+ * @type {Object}
+ */
+const CATEGORY_TO_ACCORDION = {
+  'all': null,
+  'væske': 'vaske',
+  'mat': 'mat',
+  'medisiner': 'medisiner',
+  'redskap': 'redskap',
+  'diverse': 'diverse'
+};
+
 const openItem = ref(null);
 const isEditing = ref(false);
 const isLoading = ref(true);
 const error = ref(null);
-const activeCategory = ref('all'); // New state to track active category
+const activeCategory = ref('all');
 
-// Initialize store
 const storageStore = useStorageStore();
 const userStore = useUserStore();
 const householdStore = useHouseholdStore();
 
-// Custom event bus to listen for navbar clicks
-const handleNavItemClick = (category) => {
-  console.log(`Nav item clicked: ${category}`);
-  setActiveCategory(category);
-};
-
-// Capitalize first letter of category for heading
+/**
+ * Computes the capitalized category name for display in the heading
+ * @returns {string} The properly capitalized category name
+ */
 const capitalizedCategory = computed(() => {
   if (activeCategory.value === 'all') {
     return 'Lager innhold';
@@ -46,42 +54,91 @@ const capitalizedCategory = computed(() => {
   return activeCategory.value.charAt(0).toUpperCase() + activeCategory.value.slice(1);
 });
 
-// Provide the event handler to be used by StorageNavbar
-provide('handleNavItemClick', handleNavItemClick);
-
-// Set active category and open corresponding accordion
-const setActiveCategory = (category) => {
-  activeCategory.value = category;
-
-  // Map category names to accordion values
-  const categoryToAccordion = {
-    'all': null, // Show all accordions but keep them closed
-    'væske': 'vaske',
-    'mat': 'mat',
-    'medisiner': 'medisiner',
-    'redskap': 'redskap',
-    'diverse': 'diverse'
-  };
-
-  // Set the open accordion based on category
-  openItem.value = categoryToAccordion[category.toLowerCase()];
+/**
+ * Event handler for navigation item clicks
+ * Sets the active category and updates the open accordion item
+ * @param {string} category - The category that was clicked
+ */
+const handleNavItemClick = (category) => {
+  console.log(`Nav item clicked: ${category}`);
+  setActiveCategory(category);
 };
 
-// Fetch household ID and then storage items on mount
+/**
+ * Sets the active category and updates the open accordion item accordingly
+ * @param {string} category - The category to set as active
+ */
+const setActiveCategory = (category) => {
+  activeCategory.value = category;
+  openItem.value = CATEGORY_TO_ACCORDION[category.toLowerCase()];
+};
+
+/**
+ * Toggles the accordion open/closed state
+ * @param {string} value - The accordion item value to toggle
+ */
+const toggleAccordion = (value) => {
+  openItem.value = openItem.value === value ? null : value;
+};
+
+/**
+ * Handles item updates by delegating to the store
+ * @param {string|number} id - The ID of the item to update
+ * @param {Object} data - The updated item data
+ */
+const handleItemUpdate = async (id, data) => {
+  console.log("Parent received update-item event with ID:", id);
+  console.log("Data to update:", data);
+  try {
+    await storageStore.updateItem(id, data);
+  } catch (e) {
+    console.error('Failed to update item:', e);
+  }
+};
+
+/**
+ * Handles item deletion by delegating to the store
+ * @param {string|number} id - The ID of the item to delete
+ */
+const handleItemDelete = async (id) => {
+  try {
+    await storageStore.deleteItem(id);
+  } catch (e) {
+    console.error('Failed to delete item:', e);
+  }
+};
+
+/**
+ * Handles item addition by delegating to the store
+ * @param {Object} item - The item object containing itemId and data properties
+ * @param {string|number} item.itemId - The ID of the item template
+ * @param {Object} item.data - The additional item data
+ */
+const handleItemAdd = async (item) => {
+  try {
+    await storageStore.addItem(item.itemId, item.data);
+  } catch (e) {
+    console.error('Failed to add item:', e);
+  }
+};
+
+/**
+ * Initializes the component by loading household data and storage items
+ * Runs once on component mount
+ */
 onMounted(async () => {
   try {
     isLoading.value = true;
     error.value = null;
 
-    // Check if user has a household
     await householdStore.checkCurrentHousehold();
 
-    // If they do, load their household items
     if (householdStore.hasHousehold) {
       const response = await UserService.getCurrentHouseholdByUserId(userStore.user.id);
       const householdId = response.id;
       storageStore.setCurrentHouseholdId(householdId);
       await storageStore.fetchItems();
+      console.log('Items:', storageStore.items);
     }
 
   } catch (e) {
@@ -92,41 +149,7 @@ onMounted(async () => {
   }
 });
 
-// Accordion toggle (keeping this for manual toggles)
-const toggleAccordion = (value) => {
-  openItem.value = openItem.value === value ? null : value;
-};
-
-// Handle updates/deletes
-const handleItemUpdate = async (id, data) => {
-  console.log("Parent received update-item event with ID:", id);
-  console.log("Data to update:", data);
-  try {
-    await storageStore.updateItem(id, data);
-  } catch (e) {
-    console.error('Failed to update item:', e);
-    // You could show an error message to the user here
-  }
-};
-
-const handleItemDelete = async (id) => {
-  try {
-    await storageStore.deleteItem(id);
-  } catch (e) {
-    console.error('Failed to delete item:', e);
-    // You could show an error message to the user here
-  }
-};
-
-const handleItemAdd = async (item) => {
-  try {
-    // The item object now contains itemId and data properties
-    await storageStore.addItem(item.itemId, item.data);
-  } catch (e) {
-    console.error('Failed to add item:', e);
-    // Show an error message to the user
-  }
-};
+provide('handleNavItemClick', handleNavItemClick);
 </script>
 
 <template>
@@ -153,26 +176,21 @@ const handleItemAdd = async (item) => {
           </div>
         </div>
 
-        <!-- Show loading state during initial household and items fetch -->
         <div v-if="isLoading || storageStore.isLoading" class="flex justify-center py-10">
           <div
             class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
         </div>
 
-        <!-- Show primary errors from component level -->
         <div v-else-if="error" class="p-4 bg-red-100 text-red-700 rounded">
           {{ error }}
         </div>
 
-        <!-- Show errors from store -->
         <div v-else-if="storageStore.error" class="p-4 bg-red-100 text-red-700 rounded">
           {{ storageStore.error }}
         </div>
 
-        <!-- Main content when data is available -->
         <Accordion type="single" collapsible
                    v-model:value="openItem">
-          <!-- Væske - Only show when activeCategory is 'all' or 'væske' -->
           <AccordionItem v-if="activeCategory === 'all' || activeCategory === 'væske'" value="vaske">
             <AccordionTrigger @click="toggleAccordion('vaske')">
               <div class="flex items-center gap-3">
@@ -187,7 +205,6 @@ const handleItemAdd = async (item) => {
                 @update-item="handleItemUpdate"
                 @delete-item="handleItemDelete"
               />
-              <!-- Only show AddStorageItem when in edit mode -->
               <AddStorageItem
                 v-if="isEditing"
                 category="Væske"
@@ -196,7 +213,6 @@ const handleItemAdd = async (item) => {
             </AccordionContent>
           </AccordionItem>
 
-          <!-- Mat - Only show when activeCategory is 'all' or 'mat' -->
           <AccordionItem v-if="activeCategory === 'all' || activeCategory === 'mat'" value="mat">
             <AccordionTrigger @click="toggleAccordion('mat')">
               <div class="flex items-center gap-3">
@@ -211,7 +227,6 @@ const handleItemAdd = async (item) => {
                 @update-item="handleItemUpdate"
                 @delete-item="handleItemDelete"
               />
-              <!-- Only show AddStorageItem when in edit mode -->
               <AddStorageItem
                 v-if="isEditing"
                 category="Mat"
@@ -220,7 +235,6 @@ const handleItemAdd = async (item) => {
             </AccordionContent>
           </AccordionItem>
 
-          <!-- Medisiner - Only show when activeCategory is 'all' or 'medisiner' -->
           <AccordionItem v-if="activeCategory === 'all' || activeCategory === 'medisiner'" value="medisiner">
             <AccordionTrigger @click="toggleAccordion('medisiner')">
               <div class="flex items-center gap-3">
@@ -235,7 +249,6 @@ const handleItemAdd = async (item) => {
                 @update-item="handleItemUpdate"
                 @delete-item="handleItemDelete"
               />
-              <!-- Only show AddStorageItem when in edit mode -->
               <AddStorageItem
                 v-if="isEditing"
                 category="Medisiner"
@@ -244,7 +257,6 @@ const handleItemAdd = async (item) => {
             </AccordionContent>
           </AccordionItem>
 
-          <!-- Redskap - Only show when activeCategory is 'all' or 'redskap' -->
           <AccordionItem v-if="activeCategory === 'all' || activeCategory === 'redskap'" value="redskap">
             <AccordionTrigger @click="toggleAccordion('redskap')">
               <div class="flex items-center gap-3">
@@ -259,7 +271,6 @@ const handleItemAdd = async (item) => {
                 @update-item="handleItemUpdate"
                 @delete-item="handleItemDelete"
               />
-              <!-- Only show AddStorageItem when in edit mode -->
               <AddStorageItem
                 v-if="isEditing"
                 category="Redskap"
@@ -268,7 +279,6 @@ const handleItemAdd = async (item) => {
             </AccordionContent>
           </AccordionItem>
 
-          <!-- Diverse - Only show when activeCategory is 'all' or 'diverse' -->
           <AccordionItem v-if="activeCategory === 'all' || activeCategory === 'diverse'" value="diverse">
             <AccordionTrigger @click="toggleAccordion('diverse')">
               <div class="flex items-center gap-3">
@@ -283,7 +293,6 @@ const handleItemAdd = async (item) => {
                 @update-item="handleItemUpdate"
                 @delete-item="handleItemDelete"
               />
-              <!-- Only show AddStorageItem when in edit mode -->
               <AddStorageItem
                 v-if="isEditing"
                 category="Diverse"

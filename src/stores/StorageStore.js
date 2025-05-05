@@ -58,7 +58,7 @@ export const useStorageStore = defineStore('storage', () => {
           expiryDate: item.expiration ? new Date(item.expiration).toISOString().split('T')[0] : null,
           quantity: item.amount,
           unit: item.unit,
-          duration: null, // Calculate if needed
+          caloricAmount: item.item.caloricAmount || 0,
           itemType: item.item.itemType
         };
 

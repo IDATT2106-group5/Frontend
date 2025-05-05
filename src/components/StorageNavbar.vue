@@ -56,11 +56,9 @@ const onNavItemClick = (category) => {
       </div>
 
       <!-- Right side: Medlemmer -->
-      <div class="flex items-center gap-2 text-sm sm:text-base font-medium">
+      <div class="flex items-center gap-2 font-small">
         <UsersRound class="w-5 h-5 sm:w-5 sm:h-5 text-black" />
-        <a href="#" class="hover:underline">
           Antall medlemmer i husstand: {{ householdStore.totalMemberCount }}
-        </a>
       </div>
 
       <!-- Hamburger menu (mobile) - now on right side -->
