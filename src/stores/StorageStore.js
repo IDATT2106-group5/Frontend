@@ -1,7 +1,7 @@
 // storageStore.js
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import StorageService from '@/service/StorageService';
+import StorageService from '@/service/storageService';
 import { ItemType } from '@/types/ItemType';
 
 // Helper function to format date for backend in ISO string format with time component
