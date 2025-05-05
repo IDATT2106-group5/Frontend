@@ -123,11 +123,13 @@ const router = createRouter({
       name: 'admin-registration',
       component: AdminRegisterView,
       props: (route) => {
-        // if (!route.query.email) {
-        //   return { emailMissing: true };
-        // }
-        // return { email: route.query.email };
-        return { email: 'test@admin.no', token: 'test-token'};
+        if (!route.query.email) {
+          return { emailMissing: true };
+        }
+        if (!route.query.token) {
+          return { tokenMissing: true }
+        }
+        return { email: route.query.email, token: route.query.token };
       },
       meta:{hideNavbar: true, hideFooter: true },
     },
