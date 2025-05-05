@@ -56,7 +56,6 @@ const totalCalories = computed(() => {
   return storageStore.items.reduce((sum, item) => {
     if (item.item && item.item.itemType === 'FOOD') {
       const itemCalories = getCaloriesForFood(item)
-      console.log(`Adding ${itemCalories} calories to total`)
       return sum + itemCalories
     }
     return sum
@@ -120,27 +119,57 @@ const progressColor = computed(() => {
  * Find the earliest expiry date for items of a specific type
  *
  * @param {string} itemType - Type of item to check for expiration
- * @returns {string} - Formatted days until expiry or N/A
+ * @returns {{text: string, isExpired: boolean}} - Formatted days until expiry or N/A
  */
 function getEarliestExpiry(itemType) {
   const items = storageStore.getItemsByType(itemType);
-  if (!items || items.length === 0) return 'N/A';
+  if (!items || items.length === 0) return { text: 'N/A', isExpired: false };
 
   const now = new Date();
-  let daysUntilExpiry = null;
+  let daysUntilExpiry = Infinity;
+  let isExpired = false;
 
-  items.forEach((item) => {
-    if (item.expiration) {
-      const expiryDate = new Date(item.expiration);
-      const daysDiff = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+  items.forEach(item => {
+    const expiryDateStr = item.expiryDate || item.expiration ||
+      (item.item && item.item.expiryDate) || null;
 
-      if (daysDiff > 0 && daysDiff < daysUntilExpiry) {
-        daysUntilExpiry = daysDiff;
+    if (!expiryDateStr || expiryDateStr === 'N/A') return;
+
+    let expiryDate;
+
+    if (typeof expiryDateStr === 'string' && expiryDateStr.includes('.')) {
+      const [day, month, year] = expiryDateStr.split('.').map(Number);
+      if (day && month && year) {
+        expiryDate = new Date(year, month - 1, day);
       }
+    }
+
+    if (!expiryDate || isNaN(expiryDate.getTime())) {
+      expiryDate = new Date(expiryDateStr);
+    }
+
+    if (isNaN(expiryDate.getTime())) return;
+
+    const daysDiff = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+
+    if (daysDiff < 0) {
+      if (!isExpired || daysDiff > daysUntilExpiry) {
+        daysUntilExpiry = daysDiff;
+        isExpired = true;
+      }
+    }
+    else if (!isExpired && daysDiff < daysUntilExpiry) {
+      daysUntilExpiry = daysDiff;
     }
   });
 
-  return daysUntilExpiry !== null ? `${daysUntilExpiry} dager` : 'N/A';
+  if (daysUntilExpiry !== Infinity) {
+    return isExpired
+      ? { text: 'Gått ut på dato', isExpired: true }
+      : { text: `${daysUntilExpiry} dager`, isExpired: false };
+  }
+
+  return { text: 'N/A', isExpired: false };
 }
 
 /**
@@ -195,7 +224,6 @@ onMounted(async () => {
       const hasHousehold = await householdStore.checkCurrentHousehold()
 
       if (!hasHousehold) {
-        console.log('No household found, redirecting...')
         await router.replace('/household')
         return
       }
@@ -282,7 +310,7 @@ onMounted(async () => {
 
         <div class="flex justify-between md:justify-start">
           <span class="md:hidden font-medium">Utløper om:</span>
-          <span>{{ item.expires }}</span>
+          <span :class="{ 'text-red-500': item.expires.isExpired }">{{ item.expires.text }}</span>
         </div>
       </div>
 
