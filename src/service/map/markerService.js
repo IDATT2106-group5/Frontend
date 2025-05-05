@@ -1,5 +1,6 @@
 // service/map/markerService.js
 import BaseService from '@/service/baseService';
+import MarkerConfigService from './markerConfigService';
 
 class MarkerService extends BaseService {
   constructor() {
@@ -162,6 +163,43 @@ class MarkerService extends BaseService {
     } catch (error) {
       console.error('Error finding closest marker:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Fetch and process marker types
+   * @param {Array|null} cachedTypes - Cached marker types if available
+   * @returns {Promise<Array>} Processed marker types
+   */
+  async fetchAndProcessMarkerTypes(cachedTypes) {
+    // Use cached marker types if available
+    if (cachedTypes) {
+      return cachedTypes;
+    }
+
+    // Otherwise fetch and process marker types
+    try {
+      // Fetch all markers with null bounds to get available types
+      const allMarkers = await this.fetchAllMarkers(null);
+
+      // Extract unique types from markers
+      const typeSet = new Set();
+      Object.keys(allMarkers).forEach(typeId => {
+        typeSet.add(typeId);
+      });
+
+      // Convert to array of marker type objects
+      const types = Array.from(typeSet).map(typeId => ({
+        id: typeId,
+        title: MarkerConfigService.formatTypeTitle(typeId),
+        visible: true
+      }));
+
+      // Add icon information to marker types
+      return MarkerConfigService.processMarkerTypes(types);
+    } catch (error) {
+      console.error('Error fetching marker types:', error);
+      return [];
     }
   }
 }
