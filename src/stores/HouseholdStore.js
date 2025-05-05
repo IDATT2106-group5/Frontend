@@ -216,27 +216,33 @@ export const useHouseholdStore = defineStore('household', {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husholdning');
       }
-    
+
       try {
         this.isLoading = true;
         this._verifyOwnership();
-    
+
         const request = {
           email: email,
           householdId: this.currentHousehold.id
         };
-    
+
         await RequestService.sendInvitation(request);
         await this.fetchSentInvitations();
-    
+
         return true;
       } catch (err) {
-        if (err.status === 400 && err.message?.includes('User with email not found')) {
-          this.error = 'Ingen registrert bruker med denne e-posten.';
+        if (err.response?.status === 400) {
+          const errorMessage = err.response.data || 'Kunne ikke sende invitasjon';
+          
+          if (typeof errorMessage === 'string' && errorMessage.includes('User with email not found')) {
+            this.error = 'Ingen registrert bruker med denne e-posten.';
+          } else {
+            this.error = errorMessage;
+          }
         } else {
           this.error = err.message || 'Kunne ikke sende invitasjon';
         }
-        throw err;
+        throw this.error; 
       } finally {
         this.isLoading = false;
       }

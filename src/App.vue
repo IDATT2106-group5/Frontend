@@ -25,6 +25,7 @@ onBeforeMount(() => {
     <!-- Main view fills space -->
     <div class="flex-1">
       <RouterView />
+      <Toaster />
     </div>
     <!-- Footer always at bottom -->
     <Footer v-if="!route.meta.hideFooter" />
