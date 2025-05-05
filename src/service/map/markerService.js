@@ -122,6 +122,48 @@ class MarkerService extends BaseService {
       throw error; // Re-throw to let caller handle the error
     }
   }
+
+  /**
+   * Find the closest marker of a specific type
+   * @param {number} lat - User's current latitude
+   * @param {number} lng - User's current longitude
+   * @param {string} type - Optional marker type (e.g., 'SHELTER')
+   * @returns {Promise<Object>} - The closest marker data
+   */
+  async findClosestMarker(lat, lng, type = null) {
+    try {
+      const params = {
+        latitude: lat,
+        longitude: lng
+      };
+
+      if (type) {
+        params.type = type;
+      }
+
+      const response = await this.get('/closest', { params });
+
+      if (response) {
+        // Transform response to match marker format expected by the UI
+        return {
+          id: response.id,
+          name: iconConfig[response.type]?.norwegianName || '',
+          address: response.address || '',
+          lat: response.latitude,
+          lng: response.longitude,
+          description: response.description || '',
+          opening_hours: response.openingHours || '',
+          contact_info: response.contactInfo || '',
+          type: response.type,
+          distance: this.calculateDistance(lat, lng, response.latitude, response.longitude)
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error finding closest marker:', error);
+      throw error;
+    }
+  }
 }
 
 export default new MarkerService();
