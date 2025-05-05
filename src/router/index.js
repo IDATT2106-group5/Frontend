@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/mainViews/HomeView.vue'
-import LoginView from '../views/mainViews/LoginView.vue'
+import LoginView from '../views/login/LoginView.vue'
 import RegisterView from '../views/mainViews/RegisterView.vue'
 import HouseholdView from '@/views/householdViews/HouseholdView.vue'
 import StorageDetailView from '@/views/storageViews/StorageDetailView.vue'
@@ -16,6 +16,8 @@ import BeforeView from '@/views/informationViews/BeforeView.vue'
 import UnderView from '@/views/informationViews/UnderView.vue'
 import AfterView from '@/views/informationViews/AfterView.vue'
 import MapView from '@/views/mapView/MapView.vue'
+import RequestPasswordView from '@/views/login/RequestResetView.vue'
+import ResetPasswordConfirmView from '@/views/login/ResetPasswordConfirmView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -29,6 +31,18 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
+      meta:{hideNavbar: true, hideFooter: true },
+    },
+    {
+      path: '/request-reset',
+      name: 'request-reset',
+      component: RequestPasswordView,
+      meta:{hideNavbar: true, hideFooter: true },
+    },
+    {
+      path: '/reset-password',
+      name: 'reset-password-confirm',
+      component: ResetPasswordConfirmView,
       meta:{hideNavbar: true, hideFooter: true },
     },
     {

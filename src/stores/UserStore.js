@@ -174,12 +174,66 @@ export const useUserStore = defineStore('user', {
      * appropriate authorization header. Fetches the user data after setting the token.
      */
     autoLogin() {
-      const token = localStorage.getItem('jwt');
+      const token = localStorage.getItem('jwt')
       if (token) {
-        this.token = token;
-        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        this.fetchUser();
+        this.token = token
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
+        
+        // Only fetch user if you're not on a public route
+        const publicRoutes = ['/login', '/register', '/reset-password']
+        const currentPath = window.location.pathname
+        if (!publicRoutes.includes(currentPath)) {
+          this.fetchUser()
+        }
+      }
+    },
+    
+    async requestPasswordReset(email) {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        const response = await AuthService.requestPasswordReset(email);
+        console.log('Password reset response:', response);
+        return { success: true, message: response.data.message };
+      } catch (err) {
+        this.error = err.response?.data?.error || "Feil ved tilbakestilling av passord.";
+        console.error('Error during password reset request:', err);
+        return { success: false };
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    
+    async resetPassword(token, newPassword) {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        const res = await AuthService.resetPassword(token, newPassword);
+        return { success: true, message: res.data.message };
+      } catch (err) {
+        this.error = err.response?.data?.error || "Kunne ikke tilbakestille passord.";
+        return { success: false };
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async validateResetToken(token) {
+      this.isLoading = true;
+      this.error = null;
+    
+      try {
+        const response = await AuthService.validateResetToken(token);
+        return { success: true, message: response.data.message };
+      } catch (err) {
+        this.error = err.response?.data?.error || 'Ugyldig eller utløpt lenke.';
+        return { success: false };
+      } finally {
+        this.isLoading = false;
       }
     }
+    
+    
+    
   }
 });
