@@ -40,7 +40,7 @@ async function save() {
       address: address.value
     })
 
-    await store.checkCurrentHousehold() // Ensure UI stays in sync
+    await store.checkCurrentHousehold() 
 
     toast({
       title: 'Husstand oppdatert',

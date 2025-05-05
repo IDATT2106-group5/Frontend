@@ -1,22 +1,26 @@
-// Component for pagination (the pagination will only show itself if there are more than one page).
 <template>
-  <div
-    v-if="totalPages > 1"
-    class="flex justify-center items-center space-x-2 mt-4"
-  >
+  <div v-if="totalPages > 1" class="flex justify-center items-center space-x-2 mt-4">
     <Button :disabled="currentPage === 1" @click="prev">
       &larr;
     </Button>
 
-    <template v-for="i in pagesToShow" :key="i">
+    <template v-for="(page, index) in pagesToShow" :key="`${page}-${index}`">
       <button
-        @click="emit('change-page', i)"
+        v-if="typeof page === 'number'"
+        @click="emit('change-page', page)"
         class="w-8 h-8 flex items-center justify-center border rounded font-medium"
-        :class="i === currentPage
+        :class="page === currentPage
           ? 'bg-primary text-white'
           : 'border-gray-400 text-gray-700 hover:bg-gray-100'"
       >
-        {{ i }}
+        {{ page }}
+      </button>
+      <button
+        v-else
+        @click="handleEllipsisClick(index)"
+        class="w-8 h-8 flex items-center justify-center text-gray-500 hover:bg-gray-200 rounded"
+      >
+        ...
       </button>
     </template>
 
@@ -48,7 +52,6 @@ function next() {
 }
 
 const pagesToShow = computed(() => {
-  const pages = []
   const total = props.totalPages
   const current = props.currentPage
 
@@ -64,4 +67,18 @@ const pagesToShow = computed(() => {
     return [1, '...', current, '...', total]
   }
 })
+
+function handleEllipsisClick(index) {
+  if (pagesToShow.value[index] !== '...') return
+
+  if (index === 1) {
+    const target = Math.max(1, props.currentPage - 2)
+    emit('change-page', target)
+  }
+  else if (index === 3) {
+    const target = Math.min(props.totalPages, props.currentPage + 2)
+    emit('change-page', target)
+  }
+}
 </script>
+1
