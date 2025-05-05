@@ -8,7 +8,7 @@ class StorageService extends BaseService {
   // Get all storage items for a household
   async getStorageItemsByHousehold(householdId) {
     try {
-      const response = await this.get(`/household/${householdId}`);
+      const response = await this.get(`household/${householdId}`);
       return response;
     } catch (error) {
       console.error("Error fetching storage items:", error);
@@ -19,7 +19,7 @@ class StorageService extends BaseService {
   // Get storage items by household and type
   async getStorageItemsByType(householdId, itemType) {
     try {
-      const response = await this.get(`/household/${householdId}/type/${itemType}`);
+      const response = await this.get(`household/${householdId}/type/${itemType}`);
       return response;
     } catch (error) {
       console.error(`Error fetching ${itemType} items:`, error);
@@ -32,7 +32,7 @@ class StorageService extends BaseService {
     try {
       // Format date as ISO string for the API
       const formattedDate = beforeDate.toISOString();
-      const response = await this.get(`/household/${householdId}/expiring?before=${formattedDate}`);
+      const response = await this.get(`household/${householdId}/expiring?before=${formattedDate}`);
       return response;
     } catch (error) {
       console.error("Error fetching expiring items:", error);
@@ -61,7 +61,7 @@ class StorageService extends BaseService {
 
       console.log('Sending formatted data to backend:', payload);
 
-      const response = await this.post(`/household/${householdId}/item/${itemId}`, payload);
+      const response = await this.post(`household/${householdId}/item/${itemId}`, payload);
       return response;
     } catch (error) {
       console.error("Error adding item to storage:", error);
@@ -72,7 +72,7 @@ class StorageService extends BaseService {
   // Remove an item from storage
   async removeItemFromStorage(storageItemId) {
     try {
-      const response = await this.post(`/${storageItemId}`);
+      const response = await this.post(`${storageItemId}`);
       return response;
     } catch (error) {
       console.error("Error removing item from storage:", error);
@@ -111,7 +111,7 @@ class StorageService extends BaseService {
 
       console.log("Data: ", payload);
 
-      const response = await this.put(`/${storageItemId}`, payload);
+      const response = await this.put(`${storageItemId}`, payload);
       return response;
     } catch (error) {
       console.error("Error updating storage item:", error);
