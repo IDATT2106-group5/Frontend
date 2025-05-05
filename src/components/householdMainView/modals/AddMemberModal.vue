@@ -67,11 +67,11 @@ async function addMember() {
       <div class="flex justify-end gap-2">
         <Button variant="outline" @click="emit('close')">Avbryt</Button>
         <Button
-          class="bg-green-600 text-white"
-          :disabled="addingMember"
+        class="px-4 py-2 rounded text-white bg-[#27AE60] hover:bg-[#219653] disabled:opacity-50"
+        :disabled="addingMember"
           @click="addMember"
         >
-          {{ addingMember ? 'Legger til...' : 'Legg til' }}
+          {{ addingMember ? 'Legger til...' : 'Legg til medlem' }}
         </Button>
       </div>
     </div>

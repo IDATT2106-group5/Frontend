@@ -1,17 +1,18 @@
-<script setup>
-import { Bell, Globe, Newspaper, ShoppingCart, User, Map } from 'lucide-vue-next'
+<script setup xmlns="http://www.w3.org/1999/html">
+import { Bell, Globe, Map, Menu, Newspaper, ShoppingCart, User } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/UserStore'
-import { ref, onBeforeUnmount } from 'vue'
 import useWebSocket from '@/service/websocketComposable.js'
+import { onBeforeUnmount, ref } from 'vue'
 
 const userStore = useUserStore()
 const router = useRouter()
-
-defineOptions({
-  name: 'Navbar',
-})
+const mobileMenuOpen = ref(false)
+const showNotifications = ref(false)
+const isSharing = ref(localStorage.getItem('isSharing') === 'true')
+const locationError = ref(null)
+let positionUpdateInterval = null
 
 const {
   notifications,
@@ -20,13 +21,8 @@ const {
   resetNotificationCount,
   connected,
   updatePosition,
-  subscribeToPosition
+  subscribeToPosition,
 } = useWebSocket()
-
-const showNotifications = ref(false)
-const isSharing = ref(localStorage.getItem('isSharing') === 'true')
-const locationError = ref(null)
-let positionUpdateInterval = null
 
 function toggleNotifications() {
   showNotifications.value = !showNotifications.value
@@ -65,21 +61,21 @@ function updateUserPosition() {
       locationError.value = null
     },
     (error) => {
-      console.error("Geolocation error:", error)
-      locationError.value = "Could not access your location"
+      console.error('Geolocation error:', error)
+      locationError.value = 'Could not access your location'
       stopPositionSharing()
     },
     {
       enableHighAccuracy: true,
       timeout: 10000,
-      maximumAge: 30000
-    }
+      maximumAge: 30000,
+    },
   )
 }
 
 function startPositionSharing() {
   if (!navigator.geolocation) {
-    locationError.value = "Geolocation is not supported by your browser"
+    locationError.value = 'Geolocation is not supported by your browser'
     return
   }
 
@@ -89,7 +85,7 @@ function startPositionSharing() {
   positionUpdateInterval = setInterval(updateUserPosition, 30000)
   isSharing.value = true
   localStorage.setItem('isSharing', true)
-  console.log("Position sharing allowed:", localStorage.getItem('isSharing'))
+  console.log('Position sharing allowed:', localStorage.getItem('isSharing'))
 }
 
 function stopPositionSharing() {
@@ -99,7 +95,7 @@ function stopPositionSharing() {
   }
   isSharing.value = false
   localStorage.setItem('isSharing', false)
-  console.log("Position sharing allowed:", localStorage.getItem('isSharing'))
+  console.log('Position sharing allowed:', localStorage.getItem('isSharing'))
 }
 
 function togglePositionSharing() {
@@ -117,18 +113,79 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <header class="bg-[#2c3e50] text-white px-8 py-4 shadow flex items-center justify-between">
-    <!-- Left section: logo -->
-    <div class="flex items-center gap-2">
-      <RouterLink to="/">
-        <img src="/src/assets/icons/Krisefikser.png" alt="Logo" class="w-10 h-10 bg-gray-300" />
+  <header class="bg-[#2c3e50] text-white px-6 py-4 shadow">
+    <div class="flex items-center justify-between">
+      <RouterLink to="/" class="flex items-center gap-3">
+        <img
+          src="/src/assets/icons/Krisefikser.png"
+          alt="Logo"
+          class="h-12 w-auto object-contain bg-white rounded-full p-1"
+        />
+        <span class="text-xl font-semibold hidden sm:inline">Krisefikser</span>
       </RouterLink>
+
+      <nav class="hidden md:flex gap-8 items-center text-sm font-medium">
+        <a href="#" class="flex items-center gap-2 hover:underline">
+          <Newspaper class="w-5 h-5 text-white" />
+          Nyheter
+        </a>
+        <RouterLink to="/map" class="flex items-center gap-2 hover:underline">
+          <Globe class="w-5 h-5 text-white" />
+          Kart
+        </RouterLink>
+        <a href="#" class="flex items-center gap-2 hover:underline">
+          <ShoppingCart class="w-5 h-5 text-white" />
+          Min beholdning
+        </a>
+        <RouterLink to="/household" class="flex items-center gap-2 hover:underline">
+          <User class="w-5 h-5 text-white" />
+          Min husstand
+        </RouterLink>
+      </nav>
+
+      <div class="flex gap-4 items-center">
+        <Button
+          @click="toggleNotifications"
+          variant="outline"
+          class="text-white border-white bg-[#2c3e50] hover:bg-blue-600 relative"
+        >
+          <Bell class="w-4 h-4 mr-2" />
+          Varsler
+          <span
+            v-if="notificationCount > 0"
+            class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
+          >
+            {{ notificationCount }}
+          </span>
+        </Button>
+
+        <template v-if="userStore.token">
+          <Button
+            @click="handleLogout"
+            variant="outline"
+            class="text-white border-white bg-[#2c3e50] hover:bg-red-600"
+          >
+            Logg ut
+          </Button>
+        </template>
+        <template v-else>
+          <RouterLink to="/login">
+            <Button
+              variant="outline"
+              class="text-white border-white bg-[#2c3e50] hover:bg-gray-300"
+            >
+              Login
+            </Button>
+          </RouterLink>
+        </template>
+      </div>
+
+      <button class="md:hidden" @click="mobileMenuOpen = !mobileMenuOpen">
+        <Menu class="w-6 h-6 text-white" />
+      </button>
     </div>
 
-    <!-- Routing push -->
-
-    <!-- Navigation links -->
-    <nav class="flex gap-8 items-center text-sm font-medium">
+    <div v-if="mobileMenuOpen" class="md:hidden mt-4 flex flex-col gap-4 text-sm font-medium">
       <a href="#" class="flex items-center gap-2 hover:underline">
         <Newspaper class="w-5 h-5 text-white" />
         Nyheter
@@ -141,49 +198,10 @@ onBeforeUnmount(() => {
         <ShoppingCart class="w-5 h-5 text-white" />
         Min beholdning
       </a>
-      <RouterLink to="/household">
-        <a href="#" class="flex items-center gap-2 hover:underline">
-          <User class="w-5 h-5 text-white" />
-          Min husstand
-        </a>
+      <RouterLink to="/household" class="flex items-center gap-2 hover:underline">
+        <User class="w-5 h-5 text-white" />
+        Min husstand
       </RouterLink>
-    </nav>
-
-    <!-- Auth and notifications -->
-    <div class="flex gap-4 items-center">
-      <!-- Notification button -->
-      <Button
-        @click="toggleNotifications"
-        variant="outline"
-        class="text-white border-white bg-[#2c3e50] hover:bg-blue-600 relative"
-      >
-        <Bell class="w-4 h-4 mr-2" />
-        Varsler
-        <span
-          v-if="notificationCount > 0"
-          class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
-        >
-          {{ notificationCount }}
-        </span>
-      </Button>
-
-      <!-- Auth button -->
-      <template v-if="userStore.token">
-        <Button
-          @click="handleLogout"
-          variant="outline"
-          class="text-white border-white bg-[#2c3e50] hover:bg-red-600"
-        >
-          Logg ut
-        </Button>
-      </template>
-      <template v-else>
-        <RouterLink to="/login">
-          <Button variant="outline" class="text-white border-white bg-[#2c3e50] hover:bg-gray-300">
-            Login
-          </Button>
-        </RouterLink>
-      </template>
     </div>
   </header>
 
@@ -193,7 +211,7 @@ onBeforeUnmount(() => {
     variant="outline"
     :class="[
       'text-white border-white bg-[#2c3e50]',
-      isSharing ? 'hover:bg-red-600' : 'hover:bg-green-600'
+      isSharing ? 'hover:bg-red-600' : 'hover:bg-green-600',
     ]"
   >
     <Map class="w-4 h-4 mr-2" />
@@ -201,6 +219,10 @@ onBeforeUnmount(() => {
   </Button>
 
   <!-- Notification panel -->
+  <div
+    v-if="showNotifications"
+    class="fixed right-4 top-16 w-72 bg-white shadow-lg rounded-md border border-gray-200 z-50"
+  ></div>
   <div
     v-if="showNotifications"
     class="fixed right-4 top-16 w-72 bg-white shadow-lg rounded-md border border-gray-200 z-50"
@@ -217,7 +239,6 @@ onBeforeUnmount(() => {
       <div v-if="notifications.length === 0" class="p-4 text-center text-gray-500">
         Ingen varsler
       </div>
-
       <div
         v-for="notification in notifications"
         :key="notification.id"
@@ -245,9 +266,7 @@ onBeforeUnmount(() => {
           </div>
           <div class="flex-1">
             <div class="flex justify-between items-start">
-              <span class="font-medium">
-                {{ notification.message }}
-              </span>
+              <span class="font-medium">{{ notification.message }}</span>
               <span class="text-xs text-gray-500">{{
                 formatTimestamp(notification.timestamp)
               }}</span>
