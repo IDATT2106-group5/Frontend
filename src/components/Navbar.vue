@@ -57,10 +57,12 @@ function handleLogout() {
           <Globe class="w-5 h-5 text-white" />
           Kart
         </RouterLink>
+        <RouterLink to="/storage" class="flex items-center gap-2 hover:underline">
         <a href="#" class="flex items-center gap-2 hover:underline">
           <ShoppingCart class="w-5 h-5 text-white" />
           Min beholdning
         </a>
+        </RouterLink>
         <RouterLink to="/household" class="flex items-center gap-2 hover:underline">
           <User class="w-5 h-5 text-white" />
           Min husstand
