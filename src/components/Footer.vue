@@ -30,7 +30,7 @@
         <!-- Info -->
         <div>
           <p class="uppercase font-bold mb-3 text-xs tracking-wider">Info</p>
-          <p class="mb-1">Personvern</p>
+          <RouterLink to="/personvern" class="mb-1 hover:underline block">Personvern</RouterLink>
           <p class="mb-1">Har du spørsmål?</p>
           <p class="font-bold">Kontakt oss</p>
         </div>

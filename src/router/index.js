@@ -18,6 +18,7 @@ import AfterView from '@/views/informationViews/AfterView.vue'
 import MapView from '@/views/mapView/MapView.vue'
 import RequestPasswordView from '@/views/login/RequestResetView.vue'
 import ResetPasswordConfirmView from '@/views/login/ResetPasswordConfirmView.vue'
+import PersonVern from '@/views/mainViews/PersonVern.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -113,6 +114,11 @@ const router = createRouter({
       path: '/after',
       name: 'after',
       component: AfterView,
+    },
+    {
+      path: '/personvern',
+      name: 'personvern',
+      component: PersonVern,
     },
     {
       path: '/2FA',
