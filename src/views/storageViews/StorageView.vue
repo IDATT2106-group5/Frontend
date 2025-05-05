@@ -3,7 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { Progress } from '@/components/ui/progress'
 import { Button } from '@/components/ui/button'
 import { Hourglass, Droplet, Package, Apple, Pill, Hammer } from 'lucide-vue-next'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import { useStorageStore } from '@/stores/StorageStore'
 import { useHouseholdStore } from '@/stores/HouseholdStore'
 
@@ -17,6 +17,11 @@ import { useHouseholdStore } from '@/stores/HouseholdStore'
 // Access stores
 const storageStore = useStorageStore()
 const householdStore = useHouseholdStore()
+const router = useRouter()
+
+// State to track loading state
+const isLoading = ref(true)
+const hasValidHousehold = ref(false)
 
 /**
  * Constants for daily needs per person according to emergency preparedness standards
@@ -191,24 +196,54 @@ const storageItems = computed(() => [
  * Initialize component and fetch data
  */
 onMounted(async () => {
-  if (householdStore.hasHousehold && householdStore.currentHousehold) {
-    // Set the current household ID in the storage store
-    storageStore.setCurrentHouseholdId(householdStore.currentHousehold.id)
-    // Fetch all items
-    await storageStore.fetchItems()
-  } else {
-    // Check if the user has a household if not set
-    const hasHousehold = await householdStore.checkCurrentHousehold()
-    if (hasHousehold && householdStore.currentHousehold) {
+  isLoading.value = true
+
+  try {
+    // First check if the householdStore already has a value for hasHousehold
+    if (!householdStore.hasHousehold) {
+      // If not, check if the user has a household
+      const hasHousehold = await householdStore.checkCurrentHousehold()
+
+      if (!hasHousehold) {
+        // User doesn't have a household, redirect to household creation page
+        console.log('No household found, redirecting...')
+        router.replace('/household')
+        return
+      }
+    }
+
+    // At this point we've verified the user has a household
+    if (householdStore.currentHousehold && householdStore.currentHousehold.id) {
+      // User has a valid household, set household ID and fetch storage items
+      hasValidHousehold.value = true
       storageStore.setCurrentHouseholdId(householdStore.currentHousehold.id)
       await storageStore.fetchItems()
+    } else {
+      // Something is wrong - we have hasHousehold = true but no household data
+      console.error('Household flag is true but no valid household data found')
+      router.replace('/household-create')
     }
+  } catch (error) {
+    console.error('Error initializing storage dashboard:', error)
+    // Handle error case, redirect if no household is found
+    router.replace('/household-create')
+  } finally {
+    isLoading.value = false
   }
 })
 </script>
 
 <template>
-  <div class="w-full max-w-3xl mx-auto p-4 md:p-6">
+  <!-- Loading state -->
+  <div v-if="isLoading" class="w-full max-w-3xl mx-auto p-4 md:p-6 flex justify-center items-center min-h-[50vh]">
+    <div class="text-center">
+      <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+      <p class="text-lg">Laster inn...</p>
+    </div>
+  </div>
+
+  <!-- Only show dashboard if user has a valid household -->
+  <div v-if="!isLoading && hasValidHousehold" class="w-full max-w-3xl mx-auto p-4 md:p-6">
     <h1 class="text-2xl md:text-3xl font-bold mb-3 md:mb-4 text-center">Mitt lagerinnhold</h1>
 
     <div class="flex items-center justify-center mb-6 md:mb-8 gap-2">
