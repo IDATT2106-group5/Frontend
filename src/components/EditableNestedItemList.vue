@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed } from 'vue';
-import { Trash, Pencil, Save } from 'lucide-vue-next';
+import { computed, ref } from 'vue'
+import { Pencil, Save, Trash } from 'lucide-vue-next'
 
 const props = defineProps({
   items: {
@@ -9,125 +9,57 @@ const props = defineProps({
   },
   isEditing: {
     type: Boolean,
-    default: false
-  }
-});
+    default: false,
+  },
+})
 
-const emit = defineEmits(['update-item', 'delete-item']);
+const emit = defineEmits(['update-item', 'delete-item'])
 
-const openSubItems = ref([]);
-const editingItem = ref(null);
+const openSubItems = ref([])
+const editingItem = ref(null)
 const editingData = ref({
   expiryDate: '',
-  quantity: 0
-});
-
-
-/**
- * Parses a date string in Norwegian format (dd.mm.yyyy) to a Date object
- * Falls back to standard date parsing if not in Norwegian format
- *
- * @param {string} dateString - The date string to parse
- * @returns {Date} A JavaScript Date object
- */
-function parseNorwegianDate(dateString) {
-  if (!dateString) return new Date();
-
-  const parts = dateString.split('.');
-  if (parts.length === 3) {
-    const day = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed in JS Date
-    const year = parseInt(parts[2], 10);
-    return new Date(year, month, day);
-  }
-
-  return new Date(dateString);
-}
-
-/**
- * Formats a date string to Norwegian format (dd.mm.yyyy)
- * Handles both Norwegian format input and standard Date objects
- *
- * @param {string|Date} dateString - The date to format
- * @returns {string} Formatted date string in dd.mm.yyyy format, or 'N/A' if invalid
- */
-function formatDate(dateString) {
-  if (!dateString || dateString === 'N/A') return 'N/A';
-
-  try {
-    let date;
-
-    const parts = dateString.split('.');
-    if (parts.length === 3) {
-      const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed in JS
-      const year = parseInt(parts[2], 10);
-      date = new Date(year, month, day);
-    } else {
-      date = new Date(dateString);
-    }
-
-    if (isNaN(date.getTime())) {
-      console.error('Invalid date in formatDate:', dateString);
-      return dateString;
-    }
-
-    const day = date.getDate().toString().padStart(2, '0');
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear();
-
-    return `${day}.${month}.${year}`;
-  } catch (e) {
-    console.error('Error formatting date:', e);
-    return dateString;
-  }
-}
+  quantity: 0,
+})
 
 /**
  * Calculates the expiration status of an item based on its expiry date
  * Returns text description and whether the item is expired
  *
  * @param {string} expirationDate - The expiry date string
- * @param {Object} item - The item object containing the expiry date
  * @returns {Object} Object with text description and isExpired flag
  */
-function getExpirationStatus(expirationDate, item) {
-  if (!expirationDate || expirationDate === 'N/A') return { text: 'N/A', isExpired: false };
+function getExpirationStatus(expirationDate) {
+  if (!expirationDate || expirationDate === 'N/A') return { text: 'N/A', isExpired: false }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
 
-  let expiry;
+  // Parse the Norwegian date format (dd.mm.yyyy)
+  const parts = expirationDate.split('.')
+  if (parts.length !== 3) return { text: 'Invalid date', isExpired: false }
 
-  if (typeof item.expiryDate === 'string') {
-    // Parse using our utility function
-    expiry = parseNorwegianDate(item.expiryDate);
-  } else if (item.expiryDate instanceof Date) {
-    expiry = new Date(item.expiryDate);
-  } else {
-    console.error('Unsupported date format:', item.expiryDate);
-    return { text: 'Invalid date', isExpired: false };
-  }
-
-  expiry.setHours(0, 0, 0, 0);
+  const day = parseInt(parts[0], 10)
+  const month = parseInt(parts[1], 10) - 1 // Months are 0-indexed in JS Date
+  const year = parseInt(parts[2], 10)
+  const expiry = new Date(year, month, day)
+  expiry.setHours(0, 0, 0, 0)
 
   if (isNaN(expiry.getTime())) {
-    console.error('Invalid date after parsing:', item.expiryDate);
-    return { text: 'Invalid date', isExpired: false };
+    return { text: 'Invalid date', isExpired: false }
   }
 
-  const diffTime = expiry.getTime() - today.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  const diffTime = expiry.getTime() - today.getTime()
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
 
   if (diffDays < 0) {
-    return { text: 'Gått ut på dato', isExpired: true };
+    return { text: 'Gått ut på dato', isExpired: true }
   } else if (diffDays === 0) {
-    return { text: 'Utløper i dag', isExpired: false };
+    return { text: 'Utløper i dag', isExpired: false }
   } else {
-    return { text: `${diffDays} dag${diffDays !== 1 ? 'er' : ''}`, isExpired: false };
+    return { text: `${diffDays} dag${diffDays !== 1 ? 'er' : ''}`, isExpired: false }
   }
 }
-
 
 /**
  * Extracts the base name from a product name, removing any text in parentheses
@@ -136,10 +68,10 @@ function getExpirationStatus(expirationDate, item) {
  * @returns {string} The base name without parenthetical content
  */
 function getBaseName(fullName) {
-  if (!fullName) return 'Unknown';
+  if (!fullName) return 'Unknown'
 
-  const match = fullName.match(/^([^(]+)/);
-  return match ? match[1].trim() : fullName;
+  const match = fullName.match(/^([^(]+)/)
+  return match ? match[1].trim() : fullName
 }
 
 /**
@@ -148,13 +80,13 @@ function getBaseName(fullName) {
  * @returns {Object} An object with base names as keys and arrays of normalized items as values
  */
 const groupedSubItems = computed(() => {
-  const grouped = {};
+  const grouped = {}
 
   if (!props.items || !Array.isArray(props.items) || props.items.length === 0) {
-    return grouped;
+    return grouped
   }
 
-  props.items.forEach(storageItem => {
+  props.items.forEach((storageItem) => {
     const item = {
       id: storageItem.id,
       name: storageItem.name || storageItem.item?.name || 'Ukjent navn',
@@ -162,18 +94,17 @@ const groupedSubItems = computed(() => {
       quantity: storageItem.quantity ?? storageItem.amount ?? 0,
       unit: storageItem.unit || 'Stk',
       duration: storageItem.duration || null,
-    };
-
-    const baseName = getBaseName(item.name);
-    if (!grouped[baseName]) {
-      grouped[baseName] = [];
     }
 
-    grouped[baseName].push(item);
-  });
-  return grouped;
-});
+    const baseName = getBaseName(item.name)
+    if (!grouped[baseName]) {
+      grouped[baseName] = []
+    }
 
+    grouped[baseName].push(item)
+  })
+  return grouped
+})
 
 /**
  * Toggles the expansion/collapse state of a group in the accordion
@@ -184,9 +115,9 @@ const groupedSubItems = computed(() => {
 function toggleSubAccordion(groupName) {
   if (!props.isEditing || (props.isEditing && editingItem.value === null)) {
     if (openSubItems.value.includes(groupName)) {
-      openSubItems.value = openSubItems.value.filter(item => item !== groupName);
+      openSubItems.value = openSubItems.value.filter((item) => item !== groupName)
     } else {
-      openSubItems.value.push(groupName);
+      openSubItems.value.push(groupName)
     }
   }
 }
@@ -198,13 +129,14 @@ function toggleSubAccordion(groupName) {
  * @returns {string} The earliest expiry date string or 'N/A' if none
  */
 function getEarliestExpiryDate(group) {
-  const dates = group
-    .filter(item => item.expiryDate)
-    .map(item => item.expiryDate);
+  const validDates = group
+    .filter((item) => item.expiryDate && item.expiryDate !== 'N/A')
+    .map((item) => item.expiryDate)
 
-  if (dates.length === 0) return 'N/A';
+  if (validDates.length === 0) return 'N/A'
 
-  return dates.sort((a, b) => new Date(parseNorwegianDate(a)) - new Date(parseNorwegianDate(b)))[0];
+  // Sort dates using simple string comparison (works for dd.mm.yyyy format)
+  return validDates.sort()[0]
 }
 
 /**
@@ -214,7 +146,7 @@ function getEarliestExpiryDate(group) {
  * @returns {number} The total quantity
  */
 function getTotalQuantity(group) {
-  return group.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0);
+  return group.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0)
 }
 
 /**
@@ -225,23 +157,19 @@ function getTotalQuantity(group) {
  */
 function getEarliestItemExpirationStatus(group) {
   if (!group || group.length === 0) {
-    return { text: 'N/A', isExpired: false };
+    return { text: 'N/A', isExpired: false }
   }
 
-  const itemsWithDates = group.filter(item => item.expiryDate);
+  const itemsWithDates = group.filter((item) => item.expiryDate && item.expiryDate !== 'N/A')
   if (itemsWithDates.length === 0) {
-    return { text: 'N/A', isExpired: false };
+    return { text: 'N/A', isExpired: false }
   }
 
-  const sortedItems = [...itemsWithDates].sort((a, b) => {
-    const dateA = parseNorwegianDate(a.expiryDate);
-    const dateB = parseNorwegianDate(b.expiryDate);
-    return dateA - dateB;
-  });
+  // Sort dates using simple string comparison (works for dd.mm.yyyy format)
+  const sortedItems = [...itemsWithDates].sort((a, b) => a.expiryDate.localeCompare(b.expiryDate))
+  const earliestItem = sortedItems[0]
 
-  const earliestItem = sortedItems[0];
-
-  return getExpirationStatus(earliestItem.expiryDate, earliestItem);
+  return getExpirationStatus(earliestItem.expiryDate)
 }
 
 /**
@@ -252,19 +180,18 @@ function getEarliestItemExpirationStatus(group) {
  * @returns {Object} Object with expiry dates as keys and arrays of items as values
  */
 function groupItemsByExpiryDate(items) {
-  const grouped = {};
-  items.forEach(item => {
-    const date = item.expiryDate || 'N/A';
+  const grouped = {}
+  items.forEach((item) => {
+    const date = item.expiryDate || 'N/A'
     if (!grouped[date]) {
-      grouped[date] = [];
+      grouped[date] = []
     }
 
-    const status = getExpirationStatus(date, item);
-    item.expirationStatus = status;
+    item.expirationStatus = getExpirationStatus(date)
 
-    grouped[date].push(item);
-  });
-  return grouped;
+    grouped[date].push(item)
+  })
+  return grouped
 }
 
 /**
@@ -274,9 +201,8 @@ function groupItemsByExpiryDate(items) {
  * @returns {number} The total quantity
  */
 function getSubGroupTotalQuantity(subGroup) {
-  return subGroup.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0);
+  return subGroup.reduce((sum, item) => sum + parseFloat(item.quantity || 0), 0)
 }
-
 
 /**
  * Enters edit mode for a specific item
@@ -285,11 +211,11 @@ function getSubGroupTotalQuantity(subGroup) {
  * @param {Object} item - The item to edit
  */
 function startEditing(item) {
-  editingItem.value = item.id;
+  editingItem.value = item.id
   editingData.value = {
     expiryDate: item.expiryDate || '',
-    quantity: item.quantity || 0
-  };
+    quantity: item.quantity || 0,
+  }
 }
 
 /**
@@ -301,12 +227,12 @@ function startEditing(item) {
 function saveItemEdit(itemId) {
   const updatedData = {
     expiryDate: editingData.value.expiryDate,
-    quantity: parseFloat(editingData.value.quantity)
-  };
+    quantity: parseFloat(editingData.value.quantity),
+  }
 
-  emit('update-item', itemId, updatedData);
+  emit('update-item', itemId, updatedData)
 
-  editingItem.value = null;
+  editingItem.value = null
 }
 
 /**
@@ -316,13 +242,15 @@ function saveItemEdit(itemId) {
  * @param {string|number} itemId - The ID of the item to delete
  */
 function deleteItem(itemId) {
-  emit('delete-item', itemId);
+  emit('delete-item', itemId)
 }
 </script>
 
 <template>
   <div class="p-4 bg-white rounded">
-    <div class="grid grid-cols-5 items-center p-3 font-semibold text-gray-700 border-b border-gray-300">
+    <div
+      class="grid grid-cols-5 items-center p-3 font-semibold text-gray-700 border-b border-gray-300"
+    >
       <div class="font-medium pb-3">Navn:</div>
       <div class="font-medium pb-3">Utløps dato:</div>
       <div class="font-medium pb-3">Kvantitet:</div>
@@ -336,28 +264,44 @@ function deleteItem(itemId) {
           class="grid grid-cols-5 items-center p-2 cursor-pointer hover:bg-gray-50 border-b border-gray-200"
         >
           <div class="font-medium">{{ groupName }}</div>
-          <div>{{ formatDate(getEarliestExpiryDate(group)) }}</div>
+          <div>{{ getEarliestExpiryDate(group) }}</div>
           <div>{{ getTotalQuantity(group) }} {{ group[0]?.unit || 'stk' }}</div>
           <div>
-            <span v-if="getEarliestItemExpirationStatus(group).isExpired"
-                  class="text-red-600 font-medium">{{ getEarliestItemExpirationStatus(group).text }}</span>
+            <span
+              v-if="getEarliestItemExpirationStatus(group).isExpired"
+              class="text-red-600 font-medium"
+              >{{ getEarliestItemExpirationStatus(group).text }}</span
+            >
             <span v-else>{{ getEarliestItemExpirationStatus(group).text }}</span>
           </div>
           <div class="flex justify-end">
             <svg
               xmlns="http://www.w3.org/2000/svg"
-              :class="['h-5 w-5 transform transition-transform', openSubItems.includes(groupName) ? 'rotate-180' : '']"
+              :class="[
+                'h-5 w-5 transform transition-transform',
+                openSubItems.includes(groupName) ? 'rotate-180' : '',
+              ]"
               viewBox="0 0 20 20"
               fill="currentColor"
             >
-              <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+              <path
+                fill-rule="evenodd"
+                d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                clip-rule="evenodd"
+              />
             </svg>
           </div>
         </div>
 
-        <div v-if="openSubItems.includes(groupName) && isEditing" class="mt-1 border-l-2 border-gray-200">
-          <div v-for="item in group" :key="item.id"
-               class="grid grid-cols-5 items-center p-2 hover:bg-gray-50">
+        <div
+          v-if="openSubItems.includes(groupName) && isEditing"
+          class="mt-1 border-l-2 border-gray-200"
+        >
+          <div
+            v-for="item in group"
+            :key="item.id"
+            class="grid grid-cols-5 items-center p-2 hover:bg-gray-50"
+          >
             <div>
               <span>{{ item.name }}</span>
             </div>
@@ -368,7 +312,7 @@ function deleteItem(itemId) {
                 v-model="editingData.expiryDate"
                 class="w-full px-2 py-1 border rounded"
               />
-              <span v-else>{{ formatDate(item.expiryDate) || 'N/A' }}</span>
+              <span v-else>{{ item.expiryDate || 'N/A' }}</span>
             </div>
             <div>
               <div v-if="editingItem === item.id" class="flex items-center">
@@ -382,9 +326,12 @@ function deleteItem(itemId) {
               <span v-else>{{ item.quantity }} {{ item.unit || 'stk' }}</span>
             </div>
             <div>
-              <span v-if="getExpirationStatus(item.expiryDate, item).isExpired"
-                    class="text-red-600 font-medium">{{ getExpirationStatus(item.expiryDate, item).text }}</span>
-              <span v-else>{{ getExpirationStatus(item.expiryDate, item).text }}</span>
+              <span
+                v-if="getExpirationStatus(item.expiryDate).isExpired"
+                class="text-red-600 font-medium"
+                >{{ getExpirationStatus(item.expiryDate).text }}</span
+              >
+              <span v-else>{{ getExpirationStatus(item.expiryDate).text }}</span>
             </div>
             <div class="flex justify-end space-x-2">
               <div class="flex space-x-2">
@@ -408,15 +355,23 @@ function deleteItem(itemId) {
         </div>
 
         <div v-else-if="openSubItems.includes(groupName)" class="mt-1 border-l-2 border-gray-200">
-          <div v-for="(subGroup, expiryDate) in groupItemsByExpiryDate(group)" :key="expiryDate"
-               class="grid grid-cols-5 items-center p-2 hover:bg-gray-50">
+          <div
+            v-for="(subGroup, expiryDate) in groupItemsByExpiryDate(group)"
+            :key="expiryDate"
+            class="grid grid-cols-5 items-center p-2 hover:bg-gray-50"
+          >
             <div>{{ subGroup[0].name }}</div>
-            <div>{{ formatDate(expiryDate) }}</div>
+            <div>{{ expiryDate }}</div>
             <div>{{ getSubGroupTotalQuantity(subGroup) }} {{ subGroup[0].unit || 'stk' }}</div>
             <div>
-              <span v-if="subGroup[0].expirationStatus && subGroup[0].expirationStatus.isExpired"
-                    class="text-red-600 font-medium">{{ subGroup[0].expirationStatus.text }}</span>
-              <span v-else>{{ subGroup[0].expirationStatus ? subGroup[0].expirationStatus.text : '' }}</span>
+              <span
+                v-if="subGroup[0].expirationStatus && subGroup[0].expirationStatus.isExpired"
+                class="text-red-600 font-medium"
+                >{{ subGroup[0].expirationStatus.text }}</span
+              >
+              <span v-else>{{
+                subGroup[0].expirationStatus ? subGroup[0].expirationStatus.text : ''
+              }}</span>
             </div>
             <div></div>
           </div>
@@ -424,8 +379,6 @@ function deleteItem(itemId) {
       </div>
     </div>
 
-    <p v-else class="text-gray-500 italic text-center mt-4">
-      Ingen varer funnet.
-    </p>
+    <p v-else class="text-gray-500 italic text-center mt-4">Ingen varer funnet.</p>
   </div>
 </template>

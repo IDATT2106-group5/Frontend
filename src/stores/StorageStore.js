@@ -5,19 +5,38 @@ import StorageService from '@/service/storageService';
 import { ItemType } from '@/types/ItemType';
 
 // Helper function to format date for backend in ISO string format with time component
-function formatDateForBackend(dateString) {
-  if (!dateString) return null;
+function formatDate(dateString) {
+  if (!dateString || dateString === 'N/A') return 'N/A';
 
-  // Create a Date object from the date string (which is YYYY-MM-DD)
-  const date = new Date(dateString);
+  try {
+    let date;
 
-  // Format as ISO string that LocalDateTime.parse can handle
-  // Format: YYYY-MM-DDT00:00:00
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+    const parts = dateString.split('.');
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed in JS
+      const year = parseInt(parts[2], 10);
+      date = new Date(year, month, day);
+      date.setHours(12, 0, 0, 0);
+    } else {
+      date = new Date(dateString);
+      date.setHours(12, 0, 0, 0);
+    }
 
-  return `${year}-${month}-${day}T00:00:00`;
+    if (isNaN(date.getTime())) {
+      console.error('Invalid date in formatDate:', dateString);
+      return dateString;
+    }
+
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+
+    return `${day}.${month}.${year}`;
+  } catch (e) {
+    console.error('Error formatting date:', e);
+    return dateString;
+  }
 }
 
 export const useStorageStore = defineStore('storage', () => {
@@ -55,7 +74,7 @@ export const useStorageStore = defineStore('storage', () => {
         const transformedItem = {
           id: item.id,
           name: item.item.name,
-          expiryDate: item.expiration ? new Date(item.expiration).toISOString().split('T')[0] : null,
+          expiryDate: formatDate(item.expiration),
           quantity: item.amount,
           unit: item.unit,
           caloricAmount: item.item.caloricAmount || 0,
