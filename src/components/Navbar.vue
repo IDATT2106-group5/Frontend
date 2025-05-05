@@ -56,7 +56,7 @@ function updateUserPosition() {
   navigator.geolocation.getCurrentPosition(
     (position) => {
       const { latitude, longitude } = position.coords
-      const userId = userStore.userId || 29
+      const userId = userStore.user.id
       updatePosition(userId, longitude.toString(), latitude.toString())
       locationError.value = null
     },
@@ -79,10 +79,8 @@ function startPositionSharing() {
     return
   }
 
-  const householdId = userStore.householdId || 4
-  subscribeToPosition(householdId)
   updateUserPosition()
-  positionUpdateInterval = setInterval(updateUserPosition, 30000)
+  positionUpdateInterval = setInterval(updateUserPosition, 10000)
   isSharing.value = true
   localStorage.setItem('isSharing', true)
   console.log('Position sharing allowed:', localStorage.getItem('isSharing'))

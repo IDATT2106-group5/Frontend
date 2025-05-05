@@ -1,5 +1,6 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useUserStore } from '@/stores/UserStore.js'
+import { useHouseholdStore } from '@/stores/HouseholdStore.js'
 import WebSocketService from '@/service/websocketService.js'
 
 export default function useWebSocket() {
@@ -8,12 +9,14 @@ export default function useWebSocket() {
   const connected = ref(false)
 
   const userStore = useUserStore()
+  const householdStore = useHouseholdStore()
   const webSocketService = new WebSocketService()
 
   onMounted(() => {
     webSocketService.init({
-      userId: 36,
+      userId: 22,
       token: userStore.token,
+      householdId: householdStore.householdId,
       onConnected: () => {
         connected.value = true
         fetchNotifications()
@@ -34,12 +37,14 @@ export default function useWebSocket() {
     webSocketService.disconnect()
   })
 
-  async function subscribeToPosition(householdId) {
-    if (userStore.token && householdId) {
-      webSocketService.subscribeToPosition(householdId)
-      updatePosition(29, '10.0', '20.0')
-    }
+async function subscribeToPosition(householdId, callback) {
+  if (userStore.token && householdId) {
+    webSocketService.subscribeToPosition(householdId, (position) => {
+      console.log('Position update received:', position)
+      if (callback) callback(position)
+    })
   }
+}
 
   function updatePosition(userId, longitude, latitude) {
     webSocketService.updatePosition(userId, longitude, latitude)
@@ -90,6 +95,7 @@ export default function useWebSocket() {
   }
 
   async function fetchHouseholdPositions() {
+    console.log('Fetching household positions for user:', userStore.user.id)
     try {
       const response = await fetch(`http://localhost:8080/api/household/positions`, {
         method: 'GET',

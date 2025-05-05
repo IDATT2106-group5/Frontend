@@ -8,7 +8,7 @@ export default class WebSocketService {
       onConnected: () => {},
       onDisconnected: () => {},
       onNotification: () => {},
-      onPositionUpdate: () => {}
+      onPositionUpdate: () => {},
     }
     this.userId = null
     this.token = null
@@ -60,7 +60,6 @@ export default class WebSocketService {
       this.stompClient.subscribe(`/user/queue/notifications`, () => this.callbacks.onNotification())
       console.log(`Subscribed to /user/queue/notifications`)
     }
-    this.subscribeToPosition(4)
 
     this.callbacks.onConnected()
   }
@@ -77,12 +76,13 @@ export default class WebSocketService {
     }
   }
 
-  subscribeToPosition(householdId) {
+  subscribeToPosition(householdId, callback) {
     if (this.stompClient && this.connected && this.token && householdId) {
-      this.stompClient.subscribe(
-        `/topic/position/${householdId}`,
-        (message) => this.callbacks.onPositionUpdate(JSON.parse(message.body))
-      )
+      this.stompClient.subscribe(`/topic/position/${householdId}`, (message) => {
+        const positionData = JSON.parse(message.body)
+        this.callbacks.onPositionUpdate(positionData)
+        if (callback) callback(positionData)
+      })
       console.log(`Subscribed to /topic/position/${householdId}`)
       return true
     } else {

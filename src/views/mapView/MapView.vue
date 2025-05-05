@@ -1,4 +1,5 @@
 <template>
+  <!-- No changes to the template -->
   <div class="map-container">
     <div id="map" ref="mapContainer"></div>
 
@@ -12,11 +13,12 @@
     <div v-if="markersLoadError" class="map-error-message">
       {{ markersLoadError }}
       <Button @click="retryLoadMarkers" variant="primary" class="retry-button">
-        Prøv på nytt</Button>
+        Prøv på nytt
+      </Button>
     </div>
 
     <!-- Custom Layer Controls -->
-    <div class="layer-control-container" :class="{ 'collapsed': isLayerCollapsed }">
+    <div class="layer-control-container" :class="{ collapsed: isLayerCollapsed }">
       <Button
         v-if="isMobileView"
         @click="toggleLayerCollapse"
@@ -26,7 +28,7 @@
         <span v-if="isLayerCollapsed">Vis informasjonslag</span>
         <span v-else>Skjul informasjonslag</span>
       </Button>
-      <div :class="['layer-content', { 'hidden': isLayerCollapsed && isMobileView }]">
+      <div :class="['layer-content', { hidden: isLayerCollapsed && isMobileView }]">
         <div class="layer-controls">
           <button
             v-for="layer in layerOptions"
@@ -42,7 +44,7 @@
     </div>
 
     <!-- Marker Filter -->
-    <div class="marker-filter-container" :class="{ 'collapsed': isFilterCollapsed }">
+    <div class="marker-filter-container" :class="{ collapsed: isFilterCollapsed }">
       <Button
         v-if="isMobileView"
         @click="toggleFilterCollapse"
@@ -52,111 +54,242 @@
         <span v-if="isFilterCollapsed">Vis filter</span>
         <span v-else>Skjul filter</span>
       </Button>
-      <div :class="['filter-content', { 'hidden': isFilterCollapsed && isMobileView }]">
-        <MarkerFilter
-          v-if="!isLoadingMarkers && !markersLoadError"
-          :isMobileView="isMobileView"
-        />
+      <div :class="['filter-content', { hidden: isFilterCollapsed && isMobileView }]">
+        <MarkerFilter v-if="!isLoadingMarkers && !markersLoadError" :isMobileView="isMobileView" />
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { onMounted, ref, onUnmounted, computed } from 'vue';
-import { useMapStore } from '@/stores/map/mapStore';
-import { storeToRefs } from 'pinia';
-import MarkerFilter from '@/components/map/MarkerFilter.vue';
-import Button from '@/components/ui/button/Button.vue';
-import 'leaflet/dist/leaflet.css';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useMapStore } from '@/stores/map/mapStore'
+import { storeToRefs } from 'pinia'
+import MarkerFilter from '@/components/map/MarkerFilter.vue'
+import Button from '@/components/ui/button/Button.vue'
+import 'leaflet/dist/leaflet.css'
+import useWebSocket from '@/service/websocketComposable.js'
+import L from 'leaflet'
 
 export default {
   name: 'EmergencyMap',
   components: {
     MarkerFilter,
-    Button
+    Button,
   },
   setup() {
-    const mapContainer = ref(null);
-    const mapStore = useMapStore();
-    const windowWidth = ref(window.innerWidth);
-    const isFilterCollapsed = ref(false);
-    const isLayerCollapsed = ref(false);
+    const mapContainer = ref(null)
+    const mapStore = useMapStore()
+    const windowWidth = ref(window.innerWidth)
+    const isFilterCollapsed = ref(false)
+    const isLayerCollapsed = ref(false)
+    const userMarkers = ref(new Map())
+    const userPositions = ref(new Map())
+    const map = ref(null)
+    const mapInitialized = ref(false)
+    const { subscribeToPosition, fetchHouseholdPositions, connected } = useWebSocket()
 
     // Use storeToRefs for reactive properties
-    const {
-      layerOptions,
-      activeLayerId,
-      isLoadingMarkers,
-      markersLoadError
-    } = storeToRefs(mapStore);
+    const { layerOptions, activeLayerId, isLoadingMarkers, markersLoadError } =
+      storeToRefs(mapStore)
 
     // Determine if we're in mobile view
     const isMobileView = computed(() => {
-      return windowWidth.value < 768; // Common breakpoint for mobile
-    });
+      return windowWidth.value < 768 // Common breakpoint for mobile
+    })
 
-    // Set initial collapsed states based on screen size
     onMounted(() => {
-      isFilterCollapsed.value = isMobileView.value;
-      isLayerCollapsed.value = isMobileView.value;
-      mapStore.initMap(mapContainer.value);
+      isFilterCollapsed.value = isMobileView.value
+      isLayerCollapsed.value = isMobileView.value
+
+      // Initialize map
+      map.value = mapStore.initMap(mapContainer.value)
+
+      // Set flag when map is ready
+      if (map.value) {
+        mapInitialized.value = true
+        console.log('Map initialized successfully')
+
+        // Process any stored positions that came in before map initialization
+        userPositions.value.forEach((position, userId) => {
+          updateUserMarker(userId, position.longitude, position.latitude)
+        })
+      }
+
+      // Subscribe to position updates if connected
+      const householdId = 5
+      if (connected.value) {
+        console.log('Subscribing to household positions')
+        subscribeToPosition(householdId, handlePositionUpdate)
+      }
+
+      // Fetch initial positions
+      fetchHouseholdPositions()
+        .then((positions) => {
+          if (Array.isArray(positions)) {
+            console.log(`Received ${positions.length} initial positions`)
+            positions.forEach((pos) => handlePositionUpdate(pos))
+          } else {
+            console.warn('Expected positions array but received:', positions)
+          }
+        })
+        .catch((error) => {
+          console.error('Error fetching household positions:', error)
+        })
 
       // Add resize event listener
-      window.addEventListener('resize', handleResize);
-    });
+      window.addEventListener('resize', handleResize)
+    })
+
+    watch(connected, (isConnected) => {
+      if (isConnected) {
+        const householdId = 5
+        subscribeToPosition(householdId, handlePositionUpdate)
+      }
+    })
 
     onUnmounted(() => {
       // Clean up event listener
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('resize', handleResize)
+
+      // Remove all markers
+      userMarkers.value.forEach((marker) => {
+        if (map.value) {
+          map.value.removeLayer(marker)
+        }
+      })
 
       // Clean up map
-      mapStore.cleanupMap();
-    });
+      mapStore.cleanupMap()
+    })
+
+    const handlePositionUpdate = (positionData) => {
+      console.log('Handling position update:', positionData)
+
+      if (!positionData) {
+        console.warn('Received empty position data')
+        return
+      }
+
+      const { userId, longitude, latitude } = positionData
+
+      // Skip processing if this is the current user's position
+      if (userId === 36) {
+        console.log(`Skipping marker display for current user (ID: ${userId})`)
+        return
+      }
+
+      // Validate coordinates before processing
+      if (
+        !userId ||
+        longitude === null ||
+        latitude === null ||
+        isNaN(parseFloat(longitude)) ||
+        isNaN(parseFloat(latitude))
+      ) {
+        console.warn(`Invalid position data for user ${userId}: (${longitude}, ${latitude})`)
+        return // Skip this update
+      }
+
+      const parsedLong = parseFloat(longitude)
+      const parsedLat = parseFloat(latitude)
+
+      // Store the updated position
+      userPositions.value.set(userId, {
+        latitude: parsedLat,
+        longitude: parsedLong,
+      })
+
+      // If map is initialized, update marker immediately
+      if (mapInitialized.value && map.value) {
+        updateUserMarker(userId, parsedLong, parsedLat)
+      } else {
+        console.log(`Map not ready yet. Storing position for user ${userId} for later display`)
+      }
+    }
+
+    function updateUserMarker(userId, longitude, latitude) {
+      // Ensure map is initialized
+      if (!map.value || !mapInitialized.value) {
+        console.warn('Cannot update marker: Map not initialized')
+        return
+      }
+
+      console.log(`Updating marker for user ${userId} at position (${latitude}, ${longitude})`)
+
+      if (userMarkers.value.has(userId)) {
+        // Update existing marker
+        const marker = userMarkers.value.get(userId)
+        marker.setLatLng([latitude, longitude])
+        console.log(`Updated existing marker for user ${userId}`)
+      } else {
+        // Create new marker with a more visible style
+        try {
+          const markerIcon = L.divIcon({
+            className: 'user-position-marker',
+            html: `<div style="background-color: #ff4d4f; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">${userId}</div>`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+          })
+
+          const marker = L.marker([latitude, longitude], {
+            icon: markerIcon,
+          })
+
+          // Add to map first, then store in our collection
+          marker.addTo(map.value)
+          userMarkers.value.set(userId, marker)
+
+          console.log(`Created new marker for user ${userId}`)
+        } catch (error) {
+          console.error(`Error creating marker for user ${userId}:`, error)
+        }
+      }
+    }
 
     const handleResize = () => {
-      windowWidth.value = window.innerWidth;
-      mapStore.resizeMap();
+      windowWidth.value = window.innerWidth
+      mapStore.resizeMap()
 
       // Auto-collapse filter and layers on small screens when resizing
       if (isMobileView.value) {
         if (!isFilterCollapsed.value) {
-          isFilterCollapsed.value = true;
+          isFilterCollapsed.value = true
         }
         if (!isLayerCollapsed.value) {
-          isLayerCollapsed.value = true;
+          isLayerCollapsed.value = true
         }
       }
-    };
+    }
 
     const setActiveLayer = (layerId) => {
-      mapStore.setActiveLayer(layerId);
-    };
+      mapStore.setActiveLayer(layerId)
+    }
 
     const retryLoadMarkers = () => {
-      mapStore.initMarkers();
-    };
+      mapStore.initMarkers()
+    }
 
     const toggleFilterCollapse = () => {
-      isFilterCollapsed.value = !isFilterCollapsed.value;
+      isFilterCollapsed.value = !isFilterCollapsed.value
       // When expanding filter, we need to resize map after a small delay
       // to account for the new layout
       if (!isFilterCollapsed.value) {
         setTimeout(() => {
-          mapStore.resizeMap();
-        }, 300);
+          mapStore.resizeMap()
+        }, 300)
       }
-    };
+    }
 
     const toggleLayerCollapse = () => {
-      isLayerCollapsed.value = !isLayerCollapsed.value;
+      isLayerCollapsed.value = !isLayerCollapsed.value
       // When expanding layers, we need to resize map after a small delay
       if (!isLayerCollapsed.value) {
         setTimeout(() => {
-          mapStore.resizeMap();
-        }, 300);
+          mapStore.resizeMap()
+        }, 300)
       }
-    };
+    }
 
     return {
       mapContainer,
@@ -171,12 +304,16 @@ export default {
       toggleFilterCollapse,
       isLayerCollapsed,
       toggleLayerCollapse,
-    };
-  }
-};
+      map,
+      userMarkers,
+      userPositions,
+    }
+  },
+}
 </script>
 
 <style scoped>
+/* No changes to the styles */
 .map-container {
   width: 100%;
   height: calc(100vh - 60px);
@@ -322,7 +459,9 @@ export default {
 }
 
 .filter-content {
-  transition: max-height 0.3s ease, opacity 0.3s ease;
+  transition:
+    max-height 0.3s ease,
+    opacity 0.3s ease;
   max-height: 500px;
   opacity: 1;
 }
