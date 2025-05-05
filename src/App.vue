@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar.vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/UserStore'
 import { onBeforeMount } from 'vue'  
+import { Toaster } from '@/components/ui/toast'
 
 const userStore = useUserStore()
 const route = useRoute()
