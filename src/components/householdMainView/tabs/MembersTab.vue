@@ -8,6 +8,8 @@ import OwnerShipManager from '../widgets/OwnerShipManager.vue'
 import RequestList from '../widgets/RequestList.vue'
 import InvitationsList from '../widgets/InvitationsList.vue'
 
+const emit = defineEmits(['open-add', 'open-invite'])
+
 const store = useHouseholdStore()
 const userStore = useUserStore()
 const isOwner = computed(() => store.isCurrentUserOwner)
@@ -60,15 +62,15 @@ watch(searchQuery, () => {
       <div v-if="isOwner" class="flex space-x-2">
         <button
           @click="$emit('open-invite')"
-          class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+          class="px-3 py-1 bg-primary text-white rounded hover:bg-[hsl(var(--primary-hover))]"
         >
           + Send invitasjon
         </button>
         <button
           @click="$emit('open-add')"
-          class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700"
+          class="px-3 py-1 text-white rounded bg-[#27AE60] hover:bg-[#219653]"
         >
-          + Legg til
+          + Legg til medlem
         </button>
       </div>
     </div>
