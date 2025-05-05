@@ -15,7 +15,6 @@ import SearchBar from '@/components/SearchBar.vue';
 
 // Services and store
 import { useStorageStore } from '@/stores/StorageStore.js';
-import { ItemType } from '@/types/ItemType';
 import { useUserStore } from '@/stores/UserStore.js';
 import UserService from '@/service/userService';
 import AddStorageItem from '@/components/AddStorageItem.vue'
