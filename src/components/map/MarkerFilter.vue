@@ -49,7 +49,7 @@
       </div>
     </div>
     <div v-else class="empty-state">
-      No marker types available
+      Ingen markørtyper tilgjengelig
     </div>
   </div>
 </template>
