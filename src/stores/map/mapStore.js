@@ -2,181 +2,10 @@
 import { defineStore } from 'pinia';
 import MapService from '@/service/map/mapService';
 import MarkerService from '@/service/map/markerService';
+import MarkerConfigService from '@/service/map/markerConfigService';
 import IncidentMapService from '@/service/map/incidentMapService';
+import IncidentConfigService from '@/service/map/incidentConfigService';
 import L from 'leaflet';
-import {
-  Heart,
-  UtensilsCrossed,
-  Home,
-  Building,
-  Users
-} from 'lucide-vue-next';
-
-// Map Lucide icons to their SVG paths
-const getSVGPath = (iconType) => {
-  switch (iconType) {
-    case 'Heart':
-      return '<path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>';
-    case 'Stethoscope':
-      return '<path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3"></path><path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4"></path><circle cx="20" cy="10" r="2"></circle>';
-    case 'UtensilsCrossed':
-      return '<path d="m16 2-2.3 2.3a3 3 0 0 0 0 4.2l1.8 1.8a3 3 0 0 0 4.2 0L22 8"></path><path d="M15 15 3.3 3.3a4.2 4.2 0 0 0 0 6l7.3 7.3c.7.7 2 .7 2.8 0L15 15Zm0 0 7 7"></path><path d="m2.1 21.8 6.4-6.3"></path><path d="m19 5-7 7"></path>';
-    case 'Home':
-      return '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline>';
-    case 'Building':
-      return '<rect width="16" height="20" x="4" y="2" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path>';
-    case 'Users':
-      return '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path>';
-    default:
-      return '';
-  }
-};
-
-// Function to create Leaflet icon for markers
-const createLeafletIcon = (iconType, color) => {
-  // Create a custom divIcon for Leaflet
-  return L.divIcon({
-    html: `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide-icon">${getSVGPath(iconType)}</svg>`,
-    className: 'custom-div-icon',
-    iconSize: [30, 30],
-    iconAnchor: [15, 30],
-    popupAnchor: [0, -30]
-  });
-};
-
-// Map of icon configurations for each marker type
-const markerConfig = {
-  'HEARTSTARTER': {
-    iconType: 'Heart',
-    lucideIcon: Heart,
-    color: '#d81b60',
-    norwegianName: 'Hjertestarter'
-  },
-  'FOODSTATION': {
-    iconType: 'UtensilsCrossed',
-    lucideIcon: UtensilsCrossed,
-    color: '#7b1fa2',
-    norwegianName: 'Matstasjon'
-  },
-  'SHELTER': {
-    iconType: 'Home',
-    lucideIcon: Home,
-    color: '#1976d2',
-    norwegianName: 'Tilfluktsrom'
-  },
-  'HOSPITAL': {
-    iconType: 'Building',
-    lucideIcon: Building,
-    color: '#388e3c',
-    norwegianName: 'Sykehus'
-  },
-  'MEETINGPLACE': {
-    iconType: 'Users',
-    lucideIcon: Users,
-    color: '#f57c00',
-    norwegianName: 'Møteplass'
-  }
-};
-
-// Define incident severity visualization configuration
-const severityConfig = {
-  RED: {
-    id: 'RED',
-    name: 'Kritisk farenivå',
-    color: '#FF3D33', // Red
-    fillOpacity: 0.35,
-    strokeWidth: 2,
-    // Visual configuration for concentric circles
-    visual: {
-      // Each severity can have multiple circles with different radiusMultipliers
-      circles: [
-        { color: '#45D278', radiusMultiplier: 1.2, fillOpacity: 0.25, strokeWidth: 1 },  // Green (outermost)
-        { color: '#FFC700', radiusMultiplier: 1.1, fillOpacity: 0.3, strokeWidth: 1.5 }, // Yellow (middle)
-        { color: '#FF3D33', radiusMultiplier: 1.0, fillOpacity: 0.35, strokeWidth: 2 }   // Red (innermost)
-      ]
-    }
-  },
-  YELLOW: {
-    id: 'YELLOW',
-    name: 'Forhøyet farenivå',
-    color: '#FFC700', // Yellow
-    fillOpacity: 0.3,
-    strokeWidth: 1.5,
-    // Visual configuration for concentric circles
-    visual: {
-      circles: [
-        { color: '#45D278', radiusMultiplier: 1.1, fillOpacity: 0.25, strokeWidth: 1 },  // Green (outermost)
-        { color: '#FFC700', radiusMultiplier: 1.0, fillOpacity: 0.3, strokeWidth: 1.5 }  // Yellow (innermost)
-      ]
-    }
-  },
-  GREEN: {
-    id: 'GREEN',
-    name: 'Lavt farenivå',
-    color: '#45D278', // Green
-    fillOpacity: 0.25,
-    strokeWidth: 1,
-    // Visual configuration for concentric circles
-    visual: {
-      circles: [
-        { color: '#45D278', radiusMultiplier: 1.0, fillOpacity: 0.25, strokeWidth: 1 }  // Green (only circle)
-      ]
-    }
-  }
-};
-
-/**
- * Helper function to fetch and process marker types
- * @param {Function} formatTypeTitle - Function to format type titles
- * @param {Function} processMarkerTypes - Function to process marker types with icons
- * @param {Array|null} cachedTypes - Cached marker types if available
- * @param {Function} fetchMarkers - Function to fetch markers
- * @returns {Promise<Array>} Processed marker types
- */
-async function fetchAndProcessMarkerTypes(formatTypeTitle, processMarkerTypes, cachedTypes, fetchMarkers) {
-  // Use cached marker types if available
-  if (cachedTypes) {
-    return cachedTypes;
-  }
-
-  // Otherwise fetch and process marker types
-  try {
-    // Fetch all markers with null bounds to get available types
-    const allMarkers = await fetchMarkers(null);
-
-    // Extract unique types from markers
-    const typeSet = new Set();
-    Object.keys(allMarkers).forEach(typeId => {
-      typeSet.add(typeId);
-    });
-
-    // Convert to array of marker type objects
-    const types = Array.from(typeSet).map(typeId => ({
-      id: typeId,
-      title: formatTypeTitle(typeId),
-      visible: true
-    }));
-
-    // Add icon information to marker types
-    return processMarkerTypes(types);
-  } catch (error) {
-    console.error('Error fetching marker types:', error);
-    return [];
-  }
-}
-
-/**
- * Create layer groups for marker types
- * @param {Array} markerTypes - Array of marker types
- * @returns {Object} Object mapping type IDs to layer groups
- */
-function createMarkerLayerGroups(markerTypes) {
-  const markerLayers = {};
-  markerTypes.forEach(markerType => {
-    markerLayers[markerType.id] = L.layerGroup();
-  });
-  return markerLayers;
-}
 
 export const useMapStore = defineStore('map', {
   state: () => ({
@@ -278,14 +107,14 @@ export const useMapStore = defineStore('map', {
      * Get marker type configurations
      */
     markerConfigs() {
-      return markerConfig;
+      return MarkerConfigService.getMarkerConfigs();
     },
 
     /**
      * Get severity level definitions
      */
     severityLevels() {
-      return severityConfig;
+      return IncidentConfigService.getSeverityLevels();
     }
   },
 
@@ -339,54 +168,6 @@ export const useMapStore = defineStore('map', {
         },
         500 // debounce time in ms
       );
-    },
-
-    /**
-     * Format type ID into a readable title
-     * @param {string} typeId - Marker type ID
-     * @returns {string} Formatted title
-     */
-    formatTypeTitle(typeId) {
-      // If markerConfig has a Norwegian name for this type, use it
-      if (markerConfig[typeId]?.norwegianName) {
-        return markerConfig[typeId].norwegianName;
-      }
-
-      // For all-caps IDs, convert to Title Case as fallback
-      if (typeId === typeId.toUpperCase()) {
-        return typeId.charAt(0).toUpperCase() +
-          typeId.slice(1).toLowerCase().replace(/([A-Z])/g, ' $1').trim();
-      }
-
-      // For Norwegian terms, just capitalize first letter
-      return typeId.charAt(0).toUpperCase() + typeId.slice(1);
-    },
-
-    /**
-     * Process marker types with icon information
-     * @param {Array} types - Basic marker type information
-     * @returns {Array} Processed marker types with icons
-     */
-    processMarkerTypes(types) {
-      // First filter out types that don't have icon configurations
-      const validTypes = types.filter(type => {
-        if (!markerConfig[type.id]) {
-          console.warn(`Unknown marker type: ${type.id} - this marker type will be excluded.`);
-          return false;
-        }
-        return true;
-      });
-
-      // Then map the valid types to include their icon information
-      return validTypes.map(type => ({
-        ...type,
-        icon: createLeafletIcon(
-          markerConfig[type.id].iconType,
-          markerConfig[type.id].color
-        ),
-        lucideIcon: markerConfig[type.id].lucideIcon,
-        color: markerConfig[type.id].color
-      }));
     },
 
     /**
@@ -475,17 +256,11 @@ export const useMapStore = defineStore('map', {
      * @returns {L.Marker} Leaflet marker with popup
      */
     createMarkerWithPopup(markerData, markerType) {
+      const popupContent = MarkerConfigService.createMarkerPopupContent(markerData);
+
       return L.marker([markerData.lat, markerData.lng], {
         icon: markerType.icon
-      }).bindPopup(`
-        <div class="marker-popup">
-          <h3><strong>${markerData.name || ''}</strong></h3>
-          ${markerData.address ? `<p><strong>Adresse:</strong> ${markerData.address}</p>` : ''}
-          ${markerData.opening_hours ? `<p><strong>Åpningstider:</strong> ${markerData.opening_hours}</p>` : ''}
-          ${markerData.contact_info ? `<p><strong>Kontakt:</strong> ${markerData.contact_info}</p>` : ''}
-          ${markerData.description ? `<p><strong>Beskrivelse:</strong> ${markerData.description}</p>` : ''}
-        </div>
-      `);
+      }).bindPopup(popupContent);
     },
 
     /**
@@ -570,13 +345,8 @@ export const useMapStore = defineStore('map', {
      * Fetch and initialize marker types
      */
     async fetchAndInitializeMarkerTypes() {
-      // Use the helper function to fetch and process marker types
-      const types = await fetchAndProcessMarkerTypes(
-        this.formatTypeTitle,
-        this.processMarkerTypes,
-        this.cachedMarkerTypes,
-        MarkerService.fetchAllMarkers
-      );
+      // Use MarkerService to fetch and process marker types
+      const types = await MarkerService.fetchAndProcessMarkerTypes(this.cachedMarkerTypes);
 
       // Cache the processed marker types for future use
       this.cachedMarkerTypes = types;
@@ -585,7 +355,7 @@ export const useMapStore = defineStore('map', {
       this.markerTypes = types;
 
       // Create layer groups for each marker type
-      this.markerLayers = createMarkerLayerGroups(this.markerTypes);
+      this.markerLayers = MarkerConfigService.createMarkerLayerGroups(this.markerTypes);
     },
 
     /**
@@ -721,98 +491,6 @@ export const useMapStore = defineStore('map', {
     },
 
     /**
-     * Create a popup for an incident
-     * @param {Object} incident - Incident data
-     * @param {Object} config - Severity configuration
-     * @returns {string} HTML content for the popup
-     */
-    createIncidentPopupContent(incident, config) {
-      return `
-        <div class="incident-popup">
-          ${incident.name ? `<h3>${incident.name}</h3>` : ''}
-          ${incident.description ? `<p>${incident.description}</p>` : ''}
-          ${incident.startedAt ? `<p><strong>Startet:</strong> ${new Date(incident.startedAt).toLocaleString()}</p>` : ''}
-          ${incident.severity ? `<p><strong>Farenivå:</strong> ${config.name}</p>` : ''}
-        </div>
-      `;
-    },
-
-    /**
-     * Create a circle for an incident visualization
-     * @param {Object} incident - Incident data
-     * @param {Object} circleConfig - Circle configuration
-     * @param {number} baseRadius - Base radius in meters
-     * @param {L.Marker} centerMarker - Center marker for the popup
-     * @returns {L.Circle} Configured circle
-     */
-    createIncidentCircle(incident, circleConfig, baseRadius, centerMarker) {
-      const circle = L.circle([incident.latitude, incident.longitude], {
-        radius: baseRadius * circleConfig.radiusMultiplier,
-        color: circleConfig.color,
-        fillColor: circleConfig.color,
-        fillOpacity: circleConfig.fillOpacity,
-        weight: circleConfig.strokeWidth,
-        interactive: true
-      });
-
-      // Add click handler to open the popup on the center marker
-      circle.on('click', () => {
-        centerMarker.openPopup();
-      });
-
-      return circle;
-    },
-
-    /**
-     * Create concentric circles for an incident based on severity
-     * @param {Object} incident - Incident data
-     * @returns {L.LayerGroup} - Layer group containing the circles
-     */
-    createIncidentCircles(incident) {
-      if (!this.map) return null;
-
-      const severity = incident.severity || 'GREEN';
-      const baseRadius = incident.impactRadius * 1000; // Convert km to meters
-      const config = this.severityLevels[severity] || this.severityLevels.GREEN;
-
-      // Create a layer group to hold our circles
-      const layerGroup = L.layerGroup();
-
-      // Create a marker at the center for the popup
-      const popupContent = this.createIncidentPopupContent(incident, config);
-
-      // Create a central marker that will hold the popup
-      const centerMarker = L.marker([incident.latitude, incident.longitude], {
-        opacity: 0,  // Make the marker invisible
-        interactive: true // But keep it interactive
-      }).bindPopup(popupContent);
-
-      layerGroup.addLayer(centerMarker);
-
-      // If visual configuration exists, create circles according to it
-      if (config.visual && config.visual.circles) {
-        // Sort circles by radius multiplier in descending order
-        // to ensure proper z-index stacking (largest circles at the bottom)
-        const sortedCircles = [...config.visual.circles]
-          .sort((a, b) => b.radiusMultiplier - a.radiusMultiplier);
-
-        // Create each circle according to the configuration
-        sortedCircles.forEach(circleConfig => {
-          const circle = this.createIncidentCircle(
-            incident,
-            circleConfig,
-            baseRadius,
-            centerMarker
-          );
-
-          layerGroup.addLayer(circle);
-        });
-      }
-
-      return layerGroup;
-    },
-
-    /**
      * Update incidents on the map
      */
     updateIncidentsOnMap() {
@@ -823,8 +501,8 @@ export const useMapStore = defineStore('map', {
 
       // Add each incident to the map
       this.incidents.forEach(incident => {
-        // Use the store's method to create circles
-        const circleGroup = this.createIncidentCircles(incident);
+        // Use the IncidentConfigService to create circles
+        const circleGroup = IncidentConfigService.createIncidentCircles(incident, this.map);
         if (circleGroup) {
           this.incidentLayer.addLayer(circleGroup);
         }
