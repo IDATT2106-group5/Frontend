@@ -1,6 +1,6 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useUserStore } from '@/stores/UserStore.js'
-import WebSocketService from '@/service/webSocketService.js'
+import WebSocketService from '@/service/websocketService.js'
 
 export default function useWebSocket() {
   const notifications = ref([])
