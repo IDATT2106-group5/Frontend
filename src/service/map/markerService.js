@@ -148,7 +148,7 @@ class MarkerService extends BaseService {
         params.type = type;
       }
 
-      const response = await this.get('/closest', { params });
+      const response = await this.get('closest', { params });
 
       if (response) {
         // Get marker configurations to access Norwegian names
