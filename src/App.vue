@@ -1,6 +1,7 @@
 <script setup>
 import { RouterView } from 'vue-router'
 import Navbar from '@/components/Navbar.vue'
+import Footer from '@/components/Footer.vue'
 import { useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/UserStore'
 import { onBeforeMount } from 'vue'  
