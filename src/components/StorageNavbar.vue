@@ -3,12 +3,34 @@ import { inject, ref } from 'vue'
 import { useHouseholdStore } from '@/stores/HouseholdStore'
 import { ShoppingBasket, Apple, Droplet, Pill, Package, Hammer, UsersRound, Menu } from 'lucide-vue-next'
 
+/**
+ * Function injected from parent component to handle navigation item clicks
+ * @type {Function|undefined}
+ */
 const handleNavItemClick = inject('handleNavItemClick')
+
+/**
+ * Currently active category for filtering
+ * @default 'all'
+ */
 const activeCategory = ref('all')
+
+/**
+ * Controls the visibility of the mobile menu
+ * @default false
+ */
 const isMenuOpen = ref(false)
 
+/**
+ * Store for accessing household data and methods
+ */
 const householdStore = useHouseholdStore()
 
+/**
+ * Handles the click event on a navigation item
+ * @param {string} category - The category identifier that was clicked
+ * @returns {void}
+ */
 const onNavItemClick = (category) => {
   activeCategory.value = category
   if (handleNavItemClick) {

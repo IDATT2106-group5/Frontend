@@ -1,8 +1,6 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { Progress } from '@/components/ui/progress'
-import { Button } from '@/components/ui/button'
-import { Hourglass, Droplet, Package, Apple, Pill, Hammer } from 'lucide-vue-next'
+import { computed, onMounted, ref } from 'vue'
+import { Apple, Droplet, Hammer, Hourglass, Package, Pill } from 'lucide-vue-next'
 import { RouterLink, useRouter } from 'vue-router'
 import { useStorageStore } from '@/stores/StorageStore'
 import { useHouseholdStore } from '@/stores/HouseholdStore'
@@ -33,8 +31,6 @@ const DAILY_WATER_NEEDED = 3 // liters per day per person
  * Computed values based on household size
  */
 const householdSize = computed(() => householdStore.totalMemberCount || 1)
-const weeklyCaloriesNeeded = computed(() => DAILY_CALORIES_NEEDED * 7 * householdSize.value)
-const weeklyWaterNeeded = computed(() => DAILY_WATER_NEEDED * 7 * householdSize.value)
 
 /**
  * Calculate calories for a food item
@@ -48,7 +44,7 @@ function getCaloriesForFood(item) {
   }
   const calories = item.item.caloricAmount || 0
   const amount = item.amount || 0
-  return calories * amount / 100;
+  return (calories * amount) / 100
 }
 
 /**
@@ -57,7 +53,7 @@ function getCaloriesForFood(item) {
 const totalCalories = computed(() => {
   if (!storageStore.items || storageStore.items.length === 0) return 0
 
-  const calculatedCalories = storageStore.items.reduce((sum, item) => {
+  return storageStore.items.reduce((sum, item) => {
     if (item.item && item.item.itemType === 'FOOD') {
       const itemCalories = getCaloriesForFood(item)
       console.log(`Adding ${itemCalories} calories to total`)
@@ -65,8 +61,6 @@ const totalCalories = computed(() => {
     }
     return sum
   }, 0)
-
-  return calculatedCalories
 })
 
 /**
@@ -129,26 +123,24 @@ const progressColor = computed(() => {
  * @returns {string} - Formatted days until expiry or N/A
  */
 function getEarliestExpiry(itemType) {
-  const items = storageStore.getItemsByType(itemType)
-  if (!items || items.length === 0) return 'N/A'
+  const items = storageStore.getItemsByType(itemType);
+  if (!items || items.length === 0) return 'N/A';
 
-  const now = new Date()
-  let earliestDate = null
-  let daysUntilExpiry = Infinity
+  const now = new Date();
+  let daysUntilExpiry = null;
 
-  items.forEach(item => {
+  items.forEach((item) => {
     if (item.expiration) {
-      const expiryDate = new Date(item.expiration)
-      const daysDiff = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24))
+      const expiryDate = new Date(item.expiration);
+      const daysDiff = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
 
-      if (daysDiff < daysUntilExpiry && daysDiff > 0) {
-        daysUntilExpiry = daysDiff
-        earliestDate = expiryDate
+      if (daysDiff > 0 && daysDiff < daysUntilExpiry) {
+        daysUntilExpiry = daysDiff;
       }
     }
-  })
+  });
 
-  return daysUntilExpiry < Infinity ? `${daysUntilExpiry} dager` : 'N/A'
+  return daysUntilExpiry !== null ? `${daysUntilExpiry} dager` : 'N/A';
 }
 
 /**
@@ -160,36 +152,36 @@ const storageItems = computed(() => [
     name: 'Væske',
     selfSufficient: `${waterDays.value} dager`,
     expires: getEarliestExpiry('LIQUIDS'),
-    alert: waterDays.value < 7
+    alert: waterDays.value < 7,
   },
   {
     icon: Apple,
     name: 'Mat',
     selfSufficient: `${foodDays.value} dager`,
     expires: getEarliestExpiry('FOOD'),
-    alert: foodDays.value < 7
+    alert: foodDays.value < 7,
   },
   {
     icon: Pill,
     name: 'Medisiner',
     selfSufficient: 'N/A',
     expires: getEarliestExpiry('FIRST_AID'),
-    alert: false
+    alert: false,
   },
   {
     icon: Hammer,
     name: 'Redskap',
     selfSufficient: 'N/A',
     expires: getEarliestExpiry('TOOL'),
-    alert: false
+    alert: false,
   },
   {
     icon: Package,
     name: 'Diverse',
     selfSufficient: 'N/A',
     expires: getEarliestExpiry('OTHER'),
-    alert: false
-  }
+    alert: false,
+  },
 ])
 
 /**
@@ -199,34 +191,28 @@ onMounted(async () => {
   isLoading.value = true
 
   try {
-    // First check if the householdStore already has a value for hasHousehold
     if (!householdStore.hasHousehold) {
-      // If not, check if the user has a household
       const hasHousehold = await householdStore.checkCurrentHousehold()
 
       if (!hasHousehold) {
-        // User doesn't have a household, redirect to household creation page
         console.log('No household found, redirecting...')
-        router.replace('/household')
+        await router.replace('/household')
         return
       }
     }
 
-    // At this point we've verified the user has a household
     if (householdStore.currentHousehold && householdStore.currentHousehold.id) {
-      // User has a valid household, set household ID and fetch storage items
       hasValidHousehold.value = true
       storageStore.setCurrentHouseholdId(householdStore.currentHousehold.id)
       await storageStore.fetchItems()
     } else {
-      // Something is wrong - we have hasHousehold = true but no household data
       console.error('Household flag is true but no valid household data found')
-      router.replace('/household-create')
+      await router.replace('/')
     }
   } catch (error) {
     console.error('Error initializing storage dashboard:', error)
     // Handle error case, redirect if no household is found
-    router.replace('/household-create')
+    await router.replace('/household')
   } finally {
     isLoading.value = false
   }
@@ -234,15 +220,16 @@ onMounted(async () => {
 </script>
 
 <template>
-  <!-- Loading state -->
-  <div v-if="isLoading" class="w-full max-w-3xl mx-auto p-4 md:p-6 flex justify-center items-center min-h-[50vh]">
+  <div
+    v-if="isLoading"
+    class="w-full max-w-3xl mx-auto p-4 md:p-6 flex justify-center items-center min-h-[50vh]"
+  >
     <div class="text-center">
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
       <p class="text-lg">Laster inn...</p>
     </div>
   </div>
 
-  <!-- Only show dashboard if user has a valid household -->
   <div v-if="!isLoading && hasValidHousehold" class="w-full max-w-3xl mx-auto p-4 md:p-6">
     <h1 class="text-2xl md:text-3xl font-bold mb-3 md:mb-4 text-center">Mitt lagerinnhold</h1>
 
@@ -251,37 +238,40 @@ onMounted(async () => {
       <p class="text-base md:text-lg font-medium">Beredskap varer i: {{ remainingDays }} dager</p>
     </div>
 
-    <!-- Overall progress bar with dynamic color -->
     <div class="mb-8 md:mb-12">
       <div class="w-full bg-gray-200 rounded-full h-3 md:h-4 mb-1">
-        <div class="h-full rounded-full transition-all duration-500"
-             :class="progressColor"
-             :style="`width: ${overallProgress}%`"></div>
+        <div
+          class="h-full rounded-full transition-all duration-500"
+          :class="progressColor"
+          :style="`width: ${overallProgress}%`"
+        ></div>
       </div>
-      <span class="text-xs md:text-sm font-medium">{{ overallProgress }}% av anbefalt (7 dager)</span>
+      <span class="text-xs md:text-sm font-medium"
+        >{{ overallProgress }}% av anbefalt (7 dager)</span
+      >
     </div>
 
-    <!-- Storage content section -->
     <div class="border rounded-lg p-4 md:p-6 mb-6">
-      <h2 class="text-lg md:text-xl font-semibold mb-6 md:mb-8 border-b pb-2 text-left">Lager innhold</h2>
+      <h2 class="text-lg md:text-xl font-semibold mb-6 md:mb-8 border-b pb-2 text-left">
+        Lager innhold
+      </h2>
 
-      <!-- Table headers aligned with content cells -->
       <div class="hidden md:grid md:grid-cols-3 gap-4 mb-4 font-medium">
         <div class="text-left">Ressurs</div>
         <div class="text-left">Selvforsynt i:</div>
         <div class="text-left">Utløper om:</div>
       </div>
 
-      <!-- Table rows with improved alignment -->
-      <div v-for="(item, index) in storageItems" :key="index"
-           class="flex flex-col md:grid md:grid-cols-3 gap-2 md:gap-4 py-3 md:py-4 border-t">
-        <!-- Resource name and icon - always visible -->
+      <div
+        v-for="(item, index) in storageItems"
+        :key="index"
+        class="flex flex-col md:grid md:grid-cols-3 gap-2 md:gap-4 py-3 md:py-4 border-t"
+      >
         <div class="flex items-center gap-2 font-medium text-left">
           <component :is="item.icon" class="h-5 w-5 md:h-6 md:w-6" />
           <span>{{ item.name }}</span>
         </div>
 
-        <!-- Self-sufficient period with responsive labels -->
         <div class="flex items-center justify-between md:justify-start">
           <span class="md:hidden font-medium">Selvforsynt i:</span>
           <div class="flex items-center">
@@ -290,7 +280,6 @@ onMounted(async () => {
           </div>
         </div>
 
-        <!-- Expiration with responsive labels -->
         <div class="flex justify-between md:justify-start">
           <span class="md:hidden font-medium">Utløper om:</span>
           <span>{{ item.expires }}</span>
@@ -299,21 +288,23 @@ onMounted(async () => {
 
       <div class="mt-6 md:mt-8 flex justify-center md:justify-end">
         <RouterLink to="/storage-detail">
-          <div class="flex items-center gap-2 text-white bg-[#2c3e50] border border-white rounded-sm py-2 px-6 hover:bg-slate-700 transition-colors">
+          <div
+            class="flex items-center gap-2 text-white bg-[#2c3e50] border border-white rounded-sm py-2 px-6 hover:bg-slate-700 transition-colors"
+          >
             <span class="font-medium">Se detaljert lagerinnhold</span>
           </div>
         </RouterLink>
       </div>
     </div>
 
-    <!-- Additional section with preparedness advice -->
     <div class="border rounded-lg p-4 md:p-6">
       <h2 class="text-lg md:text-xl font-semibold mb-4 border-b pb-2 text-left">Beredskapsråd</h2>
       <p class="text-sm md:text-base text-left">
-        DSB anbefaler at alle husstander bør være selvforsynte i minst 7 dager.
-        Basert på ditt lager, har du beredskap for <strong>{{ remainingDays }} dager</strong>.
+        DSB anbefaler at alle husstander bør være selvforsynte i minst 7 dager. Basert på ditt
+        lager, har du beredskap for <strong>{{ remainingDays }} dager</strong>.
         <span v-if="remainingDays < 7" class="text-red-500">
-          Du bør vurdere å fylle på ditt lager av {{ foodDays.value <= waterDays.value ? 'mat' : 'vann' }}.
+          Du bør vurdere å fylle på ditt lager av
+          {{ foodDays.value <= waterDays.value ? 'mat' : 'vann' }}.
         </span>
       </p>
     </div>

@@ -1,9 +1,18 @@
 <script setup>
-import {ref, computed, watch, onMounted} from 'vue';
-import {useItemStore} from '@/stores/ItemStore';
+import { ref, computed, watch, onMounted } from 'vue';
+import { useItemStore } from '@/stores/ItemStore';
 import { PlusCircle, Undo, Search } from 'lucide-vue-next';
-import { Button } from '@/components/ui/button/index.js'
+import { Button } from '@/components/ui/button/index.js';
 
+/**
+ * Component props
+ * @typedef {Object} Props
+ * @property {string} category - The current category of items being added
+ */
+
+/**
+ * @type {Props}
+ */
 const props = defineProps({
   category: {
     type: String,
@@ -11,29 +20,48 @@ const props = defineProps({
   }
 });
 
+/**
+ * Events emitted by this component
+ * @typedef {Object} Emits
+ * @property {function(Object): void} add-item - Emitted when an item is added to storage
+ */
+
+/**
+ * @type {Emits}
+ */
 const emit = defineEmits(['add-item']);
 
+/**
+ * List of rows for adding items
+ */
 const addRows = ref([]);
+
+/**
+ * Search term for filtering items
+ */
 const searchTerm = ref('');
 
-// Access the item store
+/**
+ * Item store instance for accessing and manipulating items
+ */
 const itemStore = useItemStore();
 
-// Fetch items from the API when the component mounts
+/**
+ * Initializes the component by fetching items and adding an initial row
+ * @returns {Promise<void>}
+ */
 onMounted(async () => {
-  // Fetch all items first
   await itemStore.fetchItems();
   console.log("Items loaded in AddStorageItem:", itemStore.items);
-
-  // Add initial row
   addNewRow();
 });
 
-// Watch for item type changes to set appropriate unit
+/**
+ * Watches for category changes and updates unit defaults accordingly
+ */
 watch(() => props.category, (newCategory) => {
   console.log("Category changed to:", newCategory);
 
-  // Set default unit based on category
   addRows.value.forEach(row => {
     if (newCategory === 'Væske') {
       row.selectedUnit = "Liter";
@@ -43,9 +71,10 @@ watch(() => props.category, (newCategory) => {
   });
 });
 
-// Watch search term to keep dropdowns open
+/**
+ * Keeps dropdowns open when searching
+ */
 watch(() => searchTerm.value, () => {
-  // Keep dropdowns open when searching
   if (searchTerm.value) {
     addRows.value.forEach(row => {
       row.isDropdownOpen = true;
@@ -53,21 +82,27 @@ watch(() => searchTerm.value, () => {
   }
 });
 
-// Create a computed property that filters items based on category
+/**
+ * Maps frontend categories to backend enum values
+ * @type {Object.<string, string>}
+ */
+const categoryMapping = {
+  'Væske': 'LIQUIDS',
+  'Mat': 'FOOD',
+  'Medisiner': 'FIRST_AID',
+  'Redskap': 'TOOL',
+  'Diverse': 'OTHER'
+};
+
+/**
+ * Filters items based on the selected category
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const filteredByCategory = computed(() => {
   if (itemStore.isLoading || itemStore.error) {
     console.log("Still loading or error occurred");
     return [];
   }
-
-  // Map frontend categories to backend enum values
-  const categoryMapping = {
-    'Væske': 'LIQUIDS',
-    'Mat': 'FOOD',
-    'Medisiner': 'FIRST_AID',
-    'Redskap': 'TOOL',
-    'Diverse': 'OTHER'
-  };
 
   const itemType = categoryMapping[props.category];
   if (!itemType) {
@@ -75,11 +110,13 @@ const filteredByCategory = computed(() => {
     return [];
   }
 
-  // Filter items based on their itemType matching the current category
   return itemStore.items.filter(item => item.itemType === itemType);
 });
 
-// Filter items by search term
+/**
+ * Filters items by both category and search term
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const filteredItems = computed(() => {
   if (!searchTerm.value) {
     return filteredByCategory.value;
@@ -91,7 +128,36 @@ const filteredItems = computed(() => {
   );
 });
 
-// Add a new empty row
+/**
+ * Watches filtered items to load more when results are low
+ */
+watch(filteredItems, async (items) => {
+  if (items.length < 3 && itemStore.hasMoreItems && !itemStore.isLoading) {
+    console.log('Filtered items below 3, loading more items...');
+    await itemStore.loadMoreItems();
+    console.log(`Loaded more items, now have ${itemStore.items.length} total items`);
+  }
+});
+
+/**
+ * Gets the default unit based on the selected category
+ * @param {string} category - The current category
+ * @returns {string} The default unit for the category
+ */
+function getDefaultUnitForCategory(category) {
+  switch (category) {
+    case 'Væske':
+      return "Liter";
+    case 'Mat':
+      return "Gram";
+    default:
+      return "Stk";
+  }
+}
+
+/**
+ * Adds a new empty row to the addRows array
+ */
 function addNewRow() {
   const defaultUnit = getDefaultUnitForCategory(props.category);
 
@@ -100,80 +166,55 @@ function addNewRow() {
     selectedUnit: defaultUnit,
     itemQuantity: 1,
     itemDate: null,
-    isDropdownOpen: false // Add this property to track dropdown state
+    isDropdownOpen: false
   });
 }
 
-// Helper function to get default unit based on category
-function getDefaultUnitForCategory(category) {
-  if (category === 'Væske') {
-    return "Liter";
-  } else if (category === 'Mat') {
-    return "Gram";
-  } else {
-    return "Stk";
-  }
-}
-
-// Remove a row
+/**
+ * Removes a row at the specified index
+ * @param {number} index - The index of the row to remove
+ */
 function removeRow(index) {
   addRows.value.splice(index, 1);
 
-  // Add a row if there are none left
   if (addRows.value.length === 0) {
     addNewRow();
   }
 }
 
-// Save an item
+/**
+ * Saves an item to storage and manages UI state
+ * @param {Object} row - The row containing the item to save
+ */
 function saveItem(row) {
   if (!row.selectedItem) {
     console.log("No item selected, cannot save");
     return;
   }
 
-  console.log("Saving item:", row.selectedItem);
-
-  // Create the object in the format expected by your storage service
   const newItem = {
     unit: row.selectedUnit || "Stk",
     amount: parseInt(row.itemQuantity) || 1,
     expirationDate: row.itemDate ? new Date(row.itemDate) : null
   };
 
-  // Emit the event to add the item to storage
   emit('add-item', {
     itemId: row.selectedItem.id,
     data: newItem
   });
 
-  // Close the dropdown
   row.isDropdownOpen = false;
-
-  // Remove this row from the list
   const index = addRows.value.indexOf(row);
   if (index !== -1) {
     addRows.value.splice(index, 1);
   }
 
-  // Reset search term when saving
   searchTerm.value = '';
 
-  // Add a new empty row if there are no rows left
   if (addRows.value.length === 0) {
     addNewRow();
   }
 }
-
-// Move this watch AFTER the filteredItems computed property is defined
-watch(filteredItems, async (items) => {
-  // Check if filtered results are getting low and we need to load more
-  if (items.length < 3 && itemStore.hasMoreItems && !itemStore.isLoading) {
-    console.log('Filtered items below 5, loading more items...');
-    await itemStore.loadMoreItems();
-    console.log(`Loaded more items, now have ${itemStore.items.length} total items`);
-  }
-});
 </script>
 
 <template>
