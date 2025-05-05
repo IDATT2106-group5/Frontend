@@ -36,7 +36,8 @@ export const useStorageStore = defineStore('storage', () => {
     const groups = {
       'Væske': [],      // Liquids
       'Mat': [],        // Food
-      'Medisiner': [],  // Medicine
+      'Medisiner': [], // Medicine
+      'Redskap': [],   // Tools
       'Diverse': []     // Miscellaneous/Other
     };
 
@@ -63,17 +64,17 @@ export const useStorageStore = defineStore('storage', () => {
 
         switch(item.item.itemType) {
           case "LIQUIDS":
-          case "WATER":
             groups['Væske'].push(transformedItem);
             break;
           case "FOOD":
             groups['Mat'].push(transformedItem);
             break;
-          case "MEDICINE":
           case "FIRST_AID":
             groups['Medisiner'].push(transformedItem);
             break;
           case "TOOL":
+            groups['Redskap'].push(transformedItem);
+            break;
           case "OTHER":
           default:
             groups['Diverse'].push(transformedItem);
@@ -105,14 +106,9 @@ export const useStorageStore = defineStore('storage', () => {
     try {
       const response = await StorageService.getStorageItemsByHousehold(currentHouseholdId.value);
 
-      console.log("Storage response:", response);
-
-      // Ensure we're setting items.value to an array
       if (response && Array.isArray(response)) {
-        // Make sure each item has an 'id' property
         items.value = response.map(item => {
           if (!item.id && item.itemId) {
-            // If there's no id but itemId exists, use that
             return { ...item, id: item.itemId };
           } else if (!item.id) {
             // If there's no id at all, log a warning
@@ -121,13 +117,11 @@ export const useStorageStore = defineStore('storage', () => {
           return item;
         });
       } else {
-        console.warn('Response is not an array:', response);
         items.value = Array.isArray(response) ? response : [];
       }
 
       return items.value;
     } catch (err) {
-      console.error('Error fetching storage items:', err);
       error.value = err.message || 'Failed to fetch items';
       items.value = []; // Ensure items is always an array even on error
       return [];
@@ -151,7 +145,6 @@ export const useStorageStore = defineStore('storage', () => {
   // Get items expiring soon
   async function fetchExpiringItems(beforeDate) {
     if (!currentHouseholdId.value) {
-      console.error('No household ID set');
       return [];
     }
 
@@ -184,6 +177,7 @@ export const useStorageStore = defineStore('storage', () => {
       const response = await StorageService.addItemToStorage(currentHouseholdId.value, itemId, data);
       // Refresh the items list after adding
       await fetchItems();
+
       return response;
     } catch (err) {
       console.error('Error adding storage item:', err);
@@ -195,17 +189,11 @@ export const useStorageStore = defineStore('storage', () => {
   }
 
   // Update item - fixed to handle id parameter properly
-  // Update item - fixed to handle id parameter properly
-  // Update item - fixed to handle id parameter properly
   async function updateItem(itemId, data) {
     isLoading.value = true;
     error.value = null;
 
     try {
-      console.log("Updating item with ID:", itemId);
-      console.log("Current items:", items.value);
-      console.log("Update data:", data);
-
       let actualItemId;
 
       if (typeof itemId === 'object' && itemId !== null) {
@@ -221,7 +209,6 @@ export const useStorageStore = defineStore('storage', () => {
 
       // Find item by ID
       const itemIndex = items.value.findIndex(i => i.id === actualItemId);
-      console.log("Found item at index:", itemIndex);
 
       if (itemIndex === -1) {
         console.error("Item not found in items array. Available IDs:",

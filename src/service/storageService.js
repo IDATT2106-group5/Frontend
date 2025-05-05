@@ -43,11 +43,25 @@ class StorageService extends BaseService {
   // Add a new item to storage
   async addItemToStorage(householdId, itemId, data) {
     try {
-      const response = await this.post(`/household/${householdId}/item/${itemId}`, {
+      // Create a properly formatted date string that the backend can parse
+      let formattedDate = null;
+      if (data.expirationDate) {
+        const date = new Date(data.expirationDate);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        formattedDate = `${year}-${month}-${day}T00:00:00`;
+      }
+
+      const payload = {
         unit: data.unit,
         amount: data.amount,
-        expirationDate: data.expirationDate ? data.expirationDate.toISOString() : null
-      });
+        expirationDate: formattedDate
+      };
+
+      console.log('Sending formatted data to backend:', payload);
+
+      const response = await this.post(`/household/${householdId}/item/${itemId}`, payload);
       return response;
     } catch (error) {
       console.error("Error adding item to storage:", error);

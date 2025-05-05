@@ -21,9 +21,6 @@ function handleLogout() {
       </RouterLink>
     </div>
 
-    <!-- Routing push -->
-
-
     <!-- Navigation links -->
     <nav class="flex gap-8 items-center text-sm font-medium">
       <a href="#" class="flex items-center gap-2 hover:underline">
@@ -34,7 +31,11 @@ function handleLogout() {
         <Globe class="w-5 h-5 text-white" />
         Kart
       </RouterLink>
+<<<<<<< HEAD
       <Routerlink>
+=======
+      <RouterLink to="/storage">
+>>>>>>> 287849bd9533109522a4f0c58701e824ca0f8bdf
       <a href="#" class="flex items-center gap-2 hover:underline">
         <ShoppingCart class="w-5 h-5 text-white" />
         Min beholdning

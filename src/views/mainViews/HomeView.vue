@@ -10,9 +10,7 @@ onMounted(async () => {
     await userStore.fetchUser()
   }
 })
-
 </script>
-
 
 <template>
   <div class="min-h-screen bg-gray-100 font-sans">
