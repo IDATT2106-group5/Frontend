@@ -12,7 +12,14 @@ class MarkerService extends BaseService {
   defaultLng = 10.3951;
   defaultRadius = 10; // 10 km radius if no map bounds
 
-  // Calculate distance between two points in km (Haversine formula)
+  /**
+   * Calculate distance between two points using the Haversine formula
+   * @param {number} lat1 - First point latitude
+   * @param {number} lon1 - First point longitude
+   * @param {number} lat2 - Second point latitude
+   * @param {number} lon2 - Second point longitude
+   * @returns {number} Distance in kilometers
+   */
   calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371; // Radius of the earth in km
     const dLat = this.deg2rad(lat2 - lat1);
@@ -22,8 +29,7 @@ class MarkerService extends BaseService {
       Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) *
       Math.sin(dLon/2) * Math.sin(dLon/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const distance = R * c; // Distance in km
-    return distance;
+    return R * c; // Distance in km
   }
 
   deg2rad(deg) {
@@ -145,10 +151,14 @@ class MarkerService extends BaseService {
       const response = await this.get('/closest', { params });
 
       if (response) {
+        // Get marker configurations to access Norwegian names
+        const markerConfigService = await import('./markerConfigService').then(m => m.default);
+        const markerConfigs = markerConfigService.getMarkerConfigs();
+
         // Transform response to match marker format expected by the UI
         return {
           id: response.id,
-          name: iconConfig[response.type]?.norwegianName || '',
+          name: markerConfigs[response.type]?.norwegianName || response.type,
           address: response.address || '',
           lat: response.latitude,
           lng: response.longitude,

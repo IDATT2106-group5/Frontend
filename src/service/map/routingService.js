@@ -19,43 +19,48 @@ class RoutingService extends BaseService {
    * @returns {L.Routing.Control} The routing control instance
    */
   showRoute(map, startCoords, endCoords, options = {}) {
+    console.log("RoutingService.showRoute called with:", { startCoords, endCoords });
+
     // Remove any existing route
     this.clearRoute();
 
-    const defaultOptions = {
-      waypoints: [
-        L.latLng(startCoords[0], startCoords[1]),
-        L.latLng(endCoords[0], endCoords[1])
-      ],
-      routeWhileDragging: true,
-      showAlternatives: false,
-      fitSelectedRoutes: true,
-      lineOptions: {
-        styles: [
-          { color: 'black', opacity: 0.15, weight: 9 },
-          { color: '#2196F3', opacity: 0.8, weight: 6 },
-          { color: 'white', opacity: 0.3, weight: 4 }
-        ]
-      },
-      altLineOptions: {
-        styles: [
-          { color: 'black', opacity: 0.15, weight: 9 },
-          { color: '#4CAF50', opacity: 0.8, weight: 6 },
-          { color: 'white', opacity: 0.3, weight: 4 }
-        ]
-      },
-      createMarker: function() {
-        // Return null to hide the default markers since we already have our own
-        return null;
-      }
-    };
+    if (!map || !startCoords || !endCoords) {
+      console.error("Missing required parameters for routing");
+      return null;
+    }
 
-    const mergedOptions = { ...defaultOptions, ...options };
+    try {
+      const defaultOptions = {
+        waypoints: [
+          L.latLng(startCoords[0], startCoords[1]),
+          L.latLng(endCoords[0], endCoords[1])
+        ],
+        routeWhileDragging: false,
+        showAlternatives: false,
+        fitSelectedRoutes: true,
+        lineOptions: {
+          styles: [
+            { color: 'black', opacity: 0.15, weight: 9 },
+            { color: '#2196F3', opacity: 0.8, weight: 6 },
+            { color: 'white', opacity: 0.3, weight: 4 }
+          ]
+        },
+        createMarker: function() {
+          // Return null to hide the default markers since we already have our own
+          return null;
+        }
+      };
 
-    // Create and add the routing control
-    this.routingControl = L.Routing.control(mergedOptions).addTo(map);
+      const mergedOptions = { ...defaultOptions, ...options };
 
-    return this.routingControl;
+      // Create and add the routing control
+      this.routingControl = L.Routing.control(mergedOptions).addTo(map);
+
+      return this.routingControl;
+    } catch (error) {
+      console.error("Error creating routing control:", error);
+      return null;
+    }
   }
 
   /**
@@ -63,6 +68,7 @@ class RoutingService extends BaseService {
    */
   clearRoute() {
     if (this.routingControl) {
+      console.log("Clearing existing route");
       this.routingControl.remove();
       this.routingControl = null;
     }

@@ -599,33 +599,41 @@ export const useMapStore = defineStore('map', {
      * @param {Array} endCoords - Destination coordinates [lat, lng]
      */
     async generateRoute(startCoords, endCoords) {
-      if (!this.map || !startCoords || !endCoords) return;
+      if (!this.map || !startCoords || !endCoords) {
+        console.error("Cannot generate route: missing map or coordinates", {
+          map: !!this.map,
+          startCoords,
+          endCoords
+        });
+        this.routeError = "Kan ikke generere rute: mangler kart eller koordinater";
+        return;
+      }
 
       this.isGeneratingRoute = true;
       this.routeError = null;
 
       try {
+        console.log("Generating route from", startCoords, "to", endCoords);
+
         // Store the coordinates
         this.routeStart = startCoords;
         this.routeEnd = endCoords;
 
+        // Make sure RoutingService is imported
+        const RoutingService = await import('@/service/map/routingService').then(m => m.default);
+
         // Show the route
         this.activeRoute = RoutingService.showRoute(this.map, startCoords, endCoords);
 
-        // Add a popup to the destination marker if it exists
-        const destinationType = this.findMarkerTypeByCoords(endCoords[0], endCoords[1]);
-        if (destinationType) {
-          const typeData = this.markerTypes.find(type => type.id === destinationType);
-          L.popup()
-          .setLatLng([endCoords[0], endCoords[1]])
-          .setContent(`
-            <div class="route-destination-popup">
-              <h3>Destinasjon: ${typeData?.title || 'Ukjent'}</h3>
-              <p>Følg den blå ruten</p>
-            </div>
-          `)
-          .openOn(this.map);
-        }
+        // Center map to fit the route
+        const bounds = L.latLngBounds([
+          L.latLng(startCoords[0], startCoords[1]),
+          L.latLng(endCoords[0], endCoords[1])
+        ]).pad(0.3); // Add 30% padding around the route
+
+        this.map.fitBounds(bounds);
+
+        console.log("Route generated successfully");
       } catch (error) {
         console.error("Error generating route:", error);
         this.routeError = "Kunne ikke generere rute. Vennligst prøv igjen senere.";

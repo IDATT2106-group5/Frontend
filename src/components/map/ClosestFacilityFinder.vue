@@ -81,7 +81,6 @@ onUnmounted(() => {
   }
 });
 
-// Request user location
 const requestLocation = () => {
   locationError.value = null;
 
@@ -90,22 +89,70 @@ const requestLocation = () => {
     return;
   }
 
-  // Watch the user's position (continuous updates)
-  watchId.value = navigator.geolocation.watchPosition(
+  // First try to get a single position (faster response)
+  navigator.geolocation.getCurrentPosition(
     (position) => {
       userLocation.value = [position.coords.latitude, position.coords.longitude];
-      console.log("Updated user location:", userLocation.value);
+      console.log("Initial user location acquired:", userLocation.value);
+
+      // Then set up continuous watching with less strict parameters
+      watchId.value = navigator.geolocation.watchPosition(
+        (position) => {
+          userLocation.value = [position.coords.latitude, position.coords.longitude];
+          console.log("Updated user location:", userLocation.value);
+        },
+        (error) => {
+          // Only log watching errors, don't update the error display
+          // as we already have an initial position
+          console.warn("Geolocation watch error:", error);
+        },
+        {
+          enableHighAccuracy: false, // Less strict for continuous updates
+          timeout: 30000,
+          maximumAge: 120000  // 2 minutes
+        }
+      );
     },
     (error) => {
       console.error("Geolocation error:", error);
       locationError.value = getGeolocationErrorMessage(error);
+
+      // Fallback to IP-based geolocation if browser geolocation fails
+      fallbackToIPGeolocation();
     },
     {
       enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 60000  // 1 minute
+      timeout: 15000, // Longer timeout for initial position
+      maximumAge: 0    // Force fresh position
     }
   );
+};
+
+// Fallback to IP-based geolocation when browser geolocation fails
+const fallbackToIPGeolocation = async () => {
+  try {
+    isLoading.value = true;
+    console.log("Falling back to IP-based geolocation");
+
+    // Using a free IP geolocation service
+    const response = await fetch('https://ipapi.co/json/');
+    const data = await response.json();
+
+    if (data.latitude && data.longitude) {
+      userLocation.value = [data.latitude, data.longitude];
+      console.log("IP-based location:", userLocation.value);
+
+      // Show a notice that we're using approximate location
+      locationError.value = "Bruker omtrentlig posisjon basert på IP. For nøyaktig posisjon, gi tillatelse til stedsbestemmelse.";
+    } else {
+      throw new Error("Could not determine location from IP");
+    }
+  } catch (error) {
+    console.error("IP geolocation fallback failed:", error);
+    locationError.value = "Kunne ikke bestemme din posisjon. Vennligst aktiver stedstjenester i nettleseren.";
+  } finally {
+    isLoading.value = false;
+  }
 };
 
 // Helper function to get readable geolocation error messages
