@@ -42,7 +42,23 @@ const rules = computed(() => {
   return {
     password: {
       required: helpers.withMessage('Passord er påkrevd', required),
-      minLength: helpers.withMessage('Passordet må være minst 8 tegn', minLength(8))
+      minLength: helpers.withMessage('Passordet må være minst 8 tegn', minLength(8)),
+      containsUppercase: helpers.withMessage(
+        'Passordet må inneholde minst én stor bokstav',
+        helpers.regex(/[A-Z]/)
+      ),
+      containsLowercase: helpers.withMessage(
+        'Passordet må inneholde minst én liten bokstav',
+        helpers.regex(/[a-z]/)
+      ),
+      containsNumber: helpers.withMessage(
+        'Passordet må inneholde minst ett tall',
+        helpers.regex(/[0-9]/)
+      ),
+      containsSpecial: helpers.withMessage(
+        'Passordet må inneholde minst ett spesialtegn (f.eks. !@#$%^&*)',
+        helpers.regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/)
+      )
     },
     confirmPassword: {
       required: helpers.withMessage('Bekreft passord er påkrevd', required),
@@ -102,9 +118,8 @@ const onSubmit = async () => {
 
   try {
     const userData = {
-      email: props.email,
-      password: formData.password,
-      hCaptchaToken: formData.hCaptchaToken
+      token: props.token,
+      password: formData.password
     }
 
     const success = await userStore.registerAdmin(userData)
@@ -180,6 +195,16 @@ const onSubmit = async () => {
           </div>
           <div v-if="v$.password.$error" class="text-red-500 text-xs mt-1">
             {{ getErrorMessage(v$.password) }}
+          </div>
+          <div class="mt-2 text-xs text-gray-600">
+            <p class="font-medium">Passordet må inneholde:</p>
+            <ul class="list-disc pl-5 mt-1">
+              <li :class="{'text-black-600': !v$.password.$errors.some(e => e.$validator === 'minLength')}">Minst 8 tegn</li>
+              <li :class="{'text-black-600': !v$.password.$errors.some(e => e.$validator === 'containsUppercase')}">Minst én stor bokstav</li>
+              <li :class="{'text-black-600': !v$.password.$errors.some(e => e.$validator === 'containsLowercase')}">Minst én liten bokstav</li>
+              <li :class="{'text-black-600': !v$.password.$errors.some(e => e.$validator === 'containsNumber')}">Minst ett tall</li>
+              <li :class="{'text-black-600': !v$.password.$errors.some(e => e.$validator === 'containsSpecial')}">Minst ett spesialtegn (f.eks. !@#$%^&*)</li>
+            </ul>
           </div>
         </div>
 
