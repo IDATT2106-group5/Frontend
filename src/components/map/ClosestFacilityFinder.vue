@@ -52,7 +52,7 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useMapStore } from '@/stores/map/mapStore';
 import { storeToRefs } from 'pinia';
 import MarkerService from '@/service/map/markerService';
-import GeolocationService from '@/service/geolocationService';
+import GeolocationService from '@/service/map/geolocationService';
 
 
 // Component state
