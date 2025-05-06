@@ -39,7 +39,11 @@
 
     <!-- Bottom Black Bar -->
     <div class="bg-black text-white text-xs text-center py-4">
-      Om oss | Personvern | Vilkår
+      <div class="flex justify-center space-x-4">
+        <span class="hover:underline cursor-pointer">Om oss</span>
+        <span>|</span>
+        <router-link to="/personvern" class="hover:underline">Personvern</router-link>
+      </div>
     </div>
   </footer>
 </template>
