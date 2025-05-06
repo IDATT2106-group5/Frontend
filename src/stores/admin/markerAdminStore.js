@@ -60,17 +60,17 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
       try {
         const markers = await MarkerAdminService.fetchAllMarkersForAdmin();
         this.markers = markers.map(marker => ({
-          id: marker.id,
-          type: marker.type,
-          name: marker.name || '',
-          address: marker.address || '',
-          postalCode: marker.postalCode || '',
-          city: marker.city || '',
-          description: marker.description || '',
-          contactInfo: marker.contactInfo || '',
-          openingHours: marker.openingHours || '',
-          latitude: marker.latitude,
-          longitude: marker.longitude
+            id: marker.id,
+            type: marker.type,
+            name: marker.name || '',
+            address: marker.address || '',
+            postalCode: marker.postalCode || '',
+            city: marker.city || '',
+            description: marker.description || '',
+            contactInfo: marker.contactInfo || '',
+            openingHours: marker.openingHours || '',
+            latitude: marker.latitude,
+            longitude: marker.longitude
         }));
         this.applyFilters();
       } catch (error) {
@@ -151,7 +151,22 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
      * Load marker data into form for editing
      */
     editMarker(marker) {
-      this.markerFormData = { ...marker };
+      const [street, postal, city] = (marker.address || '').split(',').map(p => p.trim());
+
+      this.markerFormData = {
+        id: marker.id,
+        type: marker.type,
+        name: marker.name || '',
+        address: street || '',
+        postalCode: postal || '',
+        city: city || '',
+        description: marker.description || '',
+        contactInfo: marker.contactInfo || '',
+        openingHours: marker.openingHours || '',
+        latitude: marker.latitude,
+        longitude: marker.longitude
+      };
+
       this.isEditing = true;
       this.isCreating = false;
       this.error = null;
@@ -166,8 +181,18 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
       this.error = null;
 
       try {
-        // Remove id from the request payload since it's a new marker
-        const { id, ...requestData } = this.markerFormData;
+        const {
+          id,
+          address,
+          postalCode,
+          city,
+          ...rest
+        } = this.markerFormData;
+    
+        const requestData = {
+          ...rest,
+          address: `${address}, ${postalCode}, ${city}`
+        };
 
         // Call API to create the marker
         await MarkerAdminService.createMarker(requestData)
@@ -204,11 +229,20 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
       this.error = null;
 
       try {
-        // Call API to update the marker
-        await MarkerAdminService.updateMarker(
-          this.markerFormData.id,
-          this.markerFormData
-        )
+        const {
+          id,
+          address,
+          postalCode,
+          city,
+          ...rest
+        } = this.markerFormData;
+    
+        const requestData = {
+          ...rest,
+          address: `${address}, ${postalCode}, ${city}`
+        };
+    
+        await MarkerAdminService.updateMarker(id, requestData);
 
         // Assuming the API returns a success message
         this.success = 'Markør oppdatert.';
