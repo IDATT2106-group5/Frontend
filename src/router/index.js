@@ -32,7 +32,7 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
-      meta:{hideNavbar: true },
+      meta:{hideNavbar: true, hideFooter: true },
     },
     {
       path: '/request-reset',
@@ -50,7 +50,7 @@ const router = createRouter({
       path: '/register',
       name: 'register',
       component: RegisterView,
-      meta:{hideNavbar: true },
+      meta:{hideNavbar: true, hideFooter: true },
     },
     {
       path: '/storage-detail',
@@ -92,7 +92,7 @@ const router = createRouter({
       path: '/register-success',
       name: 'RegisterSuccess',
       component: RegisterSuccessView,
-      meta:{hideNavbar: true },
+      meta:{hideNavbar: true , hideFooter: true },
     },
     {
       path: '/register-failed',
