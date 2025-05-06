@@ -12,7 +12,7 @@ export default function useWebSocket() {
 
   onMounted(() => {
     webSocketService.init({
-      userId: 36,
+      userId: userStore.userId,
       token: userStore.token,
       onConnected: () => {
         connected.value = true
@@ -71,7 +71,7 @@ export default function useWebSocket() {
 
   async function fetchNotifications() {
     try {
-      const requestData = { userId: 36 }
+      const requestData = { userId: userStore.userId }
       const response = await fetch('http://localhost:8080/api/notifications/get', {
         method: 'POST',
         headers: {

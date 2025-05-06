@@ -306,7 +306,10 @@ const onSubmit = async () => {
               @change="v$.privacyPolicy.$touch()"
             />
             <label for="privacy" class="ml-2 text-sm text-gray-600">
-              Jeg har lest og godtar <a href="#" class="text-blue-600 hover:underline">personvernerklæringen</a>.
+              Jeg har lest og godtar 
+              <router-link to="/personvern" class="text-blue-600 hover:underline">
+                personvernerklæringen
+              </router-link>.
             </label>
           </div>
           <div v-if="v$.privacyPolicy.$error" class="text-red-500 text-xs">
