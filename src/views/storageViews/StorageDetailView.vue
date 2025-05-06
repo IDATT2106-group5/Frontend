@@ -62,7 +62,6 @@ const capitalizedCategory = computed(() => {
  * @param {string} category - The category that was clicked
  */
 const handleNavItemClick = (category) => {
-  console.log(`Nav item clicked: ${category}`);
   setActiveCategory(category);
 };
 
@@ -89,14 +88,10 @@ const toggleAccordion = (value) => {
  * @param {Object} data - The updated item data
  */
 const handleItemUpdate = async (id, data) => {
-  console.log("Parent received update-item event with ID:", id);
-  console.log("Data to update:", data);
   try {
     await storageStore.updateItem(id, data);
 
-    // Update search results if needed
     if (searchQuery.value) {
-      // Refresh search results to ensure consistency
       handleSearch(searchQuery.value);
     }
   } catch (e) {
@@ -112,9 +107,7 @@ const handleItemDelete = async (id) => {
   try {
     await storageStore.deleteItem(id);
 
-    // Update search results if needed
     if (searchQuery.value) {
-      // Refresh search results to ensure consistency
       handleSearch(searchQuery.value);
     }
   } catch (e) {
@@ -132,9 +125,7 @@ const handleItemAdd = async (item) => {
   try {
     await storageStore.addItem(item.itemId, item.data);
 
-    // Update search results if needed
     if (searchQuery.value) {
-      // Refresh search results to ensure consistency
       handleSearch(searchQuery.value);
     }
   } catch (e) {
@@ -154,10 +145,9 @@ const getItemsById = (category, itemIds) => {
   if (!storageStore.groupedItems[category]) return [];
 
   return itemIds.map(id => {
-    // Find the original item in the store
     const originalItem = storageStore.groupedItems[category].find(item => item.id === id);
     return originalItem || null;
-  }).filter(item => item !== null); // Remove any nulls (items not found)
+  }).filter(item => item !== null);
 };
 
 /**
@@ -179,7 +169,6 @@ const handleSearch = (query) => {
   Object.entries(storageStore.groupedItems).forEach(([category, items]) => {
     if (!items || !Array.isArray(items)) return;
 
-    // Store ONLY the IDs of matching items
     const matchedItemIds = items
       .filter(item => {
         const name = (item.name || '').toLowerCase();
@@ -192,7 +181,7 @@ const handleSearch = (query) => {
           quantity.includes(lowerQuery) ||
           unit.includes(lowerQuery);
       })
-      .map(item => item.id); // Extract just the IDs
+      .map(item => item.id);
 
     if (matchedItemIds.length > 0) {
       results[category] = matchedItemIds;
@@ -234,18 +223,14 @@ provide('handleNavItemClick', handleNavItemClick);
 <template>
   <div class="flex flex-col min-h-screen">
     <StorageNavbar />
-    <!-- Top section with search bar and edit button -->
     <div class="px-20 mt-6">
       <div class="grid grid-cols-3 items-center">
-        <!-- Empty column for spacing -->
         <div class="col-span-1"></div>
 
-        <!-- Center column with search bar -->
         <div class="col-span-1 flex justify-center">
           <SearchBar @search="handleSearch" class="w-full" />
         </div>
 
-        <!-- Right column with button -->
         <div class="col-span-1 flex justify-end">
           <Button
             @click="isEditing = !isEditing"
@@ -258,9 +243,7 @@ provide('handleNavItemClick', handleNavItemClick);
       </div>
     </div>
 
-    <!-- Main content area -->
     <div class="px-20 flex-grow">
-      <!-- Search Results Section -->
       <div v-if="searchQuery && searchResults" class="mb-6 mt-4">
         <h2 class="text-xl font-bold mb-3">Søkeresultater for "{{ searchQuery }}"</h2>
 
@@ -282,17 +265,14 @@ provide('handleNavItemClick', handleNavItemClick);
         </div>
       </div>
 
-      <!-- Loading indicator -->
       <div v-if="isLoading" class="flex justify-center items-center py-10">
         <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-[#2c3e50]"></div>
       </div>
 
-      <!-- Error message -->
       <div v-if="error" class="p-4 bg-red-100 text-red-700 rounded mb-4">
         {{ error }}
       </div>
 
-      <!-- Regular Content Section (Always visible) -->
       <div v-if="!isLoading" class="mb-4 mt-4">
         <h2 class="text-xl font-bold">
           {{ capitalizedCategory }}

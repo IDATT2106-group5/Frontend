@@ -17,6 +17,12 @@ const props = defineProps({
   }
 })
 
+/**
+ * Emits events to the parent component
+ * @typedef {Object} Emits
+ * @property {function(string, Object): void} update-item - Emitted when an item is updated
+ * @property {function(string): void} delete-item - Emitted when an item is deleted
+ */
 const emit = defineEmits(['update-item', 'delete-item'])
 
 const openSubItems = ref([])
@@ -43,7 +49,7 @@ function getExpirationStatus(expirationDate) {
   if (parts.length !== 3) return { text: 'Invalid date', isExpired: false }
 
   const day = parseInt(parts[0], 10)
-  const month = parseInt(parts[1], 10) - 1 // Months are 0-indexed in JS Date
+  const month = parseInt(parts[1], 10) - 1
   const year = parseInt(parts[2], 10)
   const expiry = new Date(year, month, day)
   expiry.setHours(0, 0, 0, 0)
@@ -138,7 +144,6 @@ function getEarliestExpiryDate(group) {
 
   if (validDates.length === 0) return 'N/A'
 
-  // Sort dates using simple string comparison (works for dd.mm.yyyy format)
   return validDates.sort()[0]
 }
 
@@ -168,7 +173,6 @@ function getEarliestItemExpirationStatus(group) {
     return { text: 'N/A', isExpired: false }
   }
 
-  // Sort dates using simple string comparison (works for dd.mm.yyyy format)
   const sortedItems = [...itemsWithDates].sort((a, b) => a.expiryDate.localeCompare(b.expiryDate))
   const earliestItem = sortedItems[0]
 
@@ -288,7 +292,6 @@ function deleteItem(itemId) {
 </script>
 
 <template>
-  <!-- Regular view (when no search query) -->
   <div v-if="!searchQuery" class="p-4 bg-white rounded">
     <div
       class="grid grid-cols-5 items-center p-3 font-semibold text-gray-700 border-b border-gray-300"
@@ -424,7 +427,6 @@ function deleteItem(itemId) {
     <p v-else class="text-gray-500 italic text-center mt-4">Ingen varer funnet.</p>
   </div>
 
-  <!-- Search results view -->
   <div v-else class="p-4 bg-white rounded">
     <div
       class="grid grid-cols-5 items-center p-3 font-semibold text-gray-700 border-b border-gray-300"

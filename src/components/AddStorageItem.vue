@@ -26,9 +26,6 @@ const props = defineProps({
  * @property {function(Object): void} add-item - Emitted when an item is added to storage
  */
 
-/**
- * @type {Emits}
- */
 const emit = defineEmits(['add-item']);
 
 /**
@@ -52,7 +49,6 @@ const itemStore = useItemStore();
  */
 onMounted(async () => {
   await itemStore.fetchItems();
-  console.log("Items loaded in AddStorageItem:", itemStore.items);
   addNewRow();
 });
 
@@ -60,7 +56,6 @@ onMounted(async () => {
  * Watches for category changes and updates unit defaults accordingly
  */
 watch(() => props.category, (newCategory) => {
-  console.log("Category changed to:", newCategory);
 
   addRows.value.forEach(row => {
     if (newCategory === 'Væske') {
@@ -100,13 +95,11 @@ const categoryMapping = {
  */
 const filteredByCategory = computed(() => {
   if (itemStore.isLoading || itemStore.error) {
-    console.log("Still loading or error occurred");
     return [];
   }
 
   const itemType = categoryMapping[props.category];
   if (!itemType) {
-    console.log("No matching item type for category:", props.category);
     return [];
   }
 
@@ -133,9 +126,7 @@ const filteredItems = computed(() => {
  */
 watch(filteredItems, async (items) => {
   if (items.length < 3 && itemStore.hasMoreItems && !itemStore.isLoading) {
-    console.log('Filtered items below 3, loading more items...');
     await itemStore.loadMoreItems();
-    console.log(`Loaded more items, now have ${itemStore.items.length} total items`);
   }
 });
 
@@ -198,7 +189,6 @@ function selectItem(row, item) {
  */
 function saveItem(row) {
   if (!row.selectedItem) {
-    console.log("No item selected, cannot save");
     return;
   }
 
@@ -229,13 +219,10 @@ function saveItem(row) {
 
 <template>
   <div class="mt-4">
-    <!-- Row for each item to add -->
     <div v-for="(row, index) in addRows" :key="index" class="flex flex-col gap-4 mb-6">
-      <!-- Search and item selection section -->
       <div class="flex flex-col">
         <label :for="`item-search-${index}`" class="mb-1 text-sm font-medium">Søk og velg vare</label>
 
-        <!-- Search input -->
         <div class="relative mb-2">
           <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <Search class="h-4 w-4 text-gray-400" />
@@ -250,7 +237,6 @@ function saveItem(row) {
           />
         </div>
 
-        <!-- Custom dropdown implementation that stays open while searching -->
         <div class="relative">
           <div
             @click="row.isDropdownOpen = !row.isDropdownOpen"
@@ -261,7 +247,6 @@ function saveItem(row) {
             <span class="ml-2">▼</span>
           </div>
 
-          <!-- Dropdown menu that stays open during search -->
           <div
             v-if="row.isDropdownOpen"
             class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
@@ -285,9 +270,7 @@ function saveItem(row) {
         </div>
       </div>
 
-      <!-- Item details section -->
       <div class="flex flex-wrap md:flex-nowrap items-end gap-4">
-        <!-- Date input -->
         <div class="flex-1 flex flex-col">
           <label :for="`date-${index}`" class="mb-1 text-sm font-medium">Utløpsdato</label>
           <input
@@ -298,7 +281,6 @@ function saveItem(row) {
           />
         </div>
 
-        <!-- Quantity input -->
         <div class="flex-1 flex flex-col">
           <label :for="`quantity-${index}`" class="mb-1 text-sm font-medium">Antall</label>
           <input
@@ -310,7 +292,6 @@ function saveItem(row) {
           />
         </div>
 
-        <!-- Unit input -->
         <div class="flex-1 flex flex-col">
           <label :for="`unit-${index}`" class="mb-1 text-sm font-medium">Enhet</label>
           <input
@@ -323,7 +304,6 @@ function saveItem(row) {
           />
         </div>
 
-        <!-- Action buttons -->
         <div class="flex items-center space-x-4 ml-2 h-10">
           <Button @click="saveItem(row)" class="hover:bg-blue-600 cursor-pointer">
             <PlusCircle

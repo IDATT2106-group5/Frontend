@@ -12,20 +12,18 @@ import { useHouseholdStore } from '@/stores/HouseholdStore'
  * showing available resources, self-sufficiency days, and expiration dates.
  */
 
-// Access stores
 const storageStore = useStorageStore()
 const householdStore = useHouseholdStore()
 const router = useRouter()
 
-// State to track loading state
 const isLoading = ref(true)
 const hasValidHousehold = ref(false)
 
 /**
  * Constants for daily needs per person according to emergency preparedness standards
  */
-const DAILY_CALORIES_NEEDED = 2000 // calories per day per person
-const DAILY_WATER_NEEDED = 3 // liters per day per person
+const DAILY_CALORIES_NEEDED = 2000
+const DAILY_WATER_NEEDED = 3
 
 /**
  * Computed values based on household size
@@ -103,7 +101,7 @@ const remainingDays = computed(() => Math.min(foodDays.value, waterDays.value))
  */
 const overallProgress = computed(() => {
   const progress = (remainingDays.value / 7) * 100
-  return Math.min(Math.round(progress), 100) // Cap at 100%
+  return Math.min(Math.round(progress), 100)
 })
 
 /**
@@ -112,7 +110,7 @@ const overallProgress = computed(() => {
 const progressColor = computed(() => {
   if (overallProgress.value >= 100) return 'bg-green-500'
   if (overallProgress.value >= 70) return 'bg-yellow-500'
-  return 'bg-primary' // Default color
+  return 'bg-primary'
 })
 
 /**
@@ -239,7 +237,6 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error('Error initializing storage dashboard:', error)
-    // Handle error case, redirect if no household is found
     await router.replace('/household')
   } finally {
     isLoading.value = false
