@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '@/stores/UserStore'
+
 import HomeView from '../views/mainViews/HomeView.vue'
 import LoginView from '../views/login/LoginView.vue'
 import RegisterView from '../views/mainViews/RegisterView.vue'
@@ -18,6 +20,8 @@ import AfterView from '@/views/informationViews/AfterView.vue'
 import MapView from '@/views/mapView/MapView.vue'
 import RequestPasswordView from '@/views/login/RequestResetView.vue'
 import ResetPasswordConfirmView from '@/views/login/ResetPasswordConfirmView.vue'
+import AdminDashboardView from '@/views/adminViews/AdminDashboardView.vue'
+import notAuthorizedView from '@/views/mainViews/notAuthorizedView.vue'
 import PersonVern from '@/views/mainViews/PersonVern.vue'
 
 const router = createRouter({
@@ -53,6 +57,17 @@ const router = createRouter({
       meta:{hideNavbar: true, hideFooter: true },
     },
     {
+      path: '/not-authorized',
+      name: 'not-authorized',
+      component: notAuthorizedView,
+    },
+    {
+      path: '/admin-dashboard',
+      name: 'admin-dashboard',
+      component: AdminDashboardView,
+      meta: { requiresAdmin: true },
+    },
+    {
       path: '/storage-detail',
       name: 'storage detail',
       component: StorageDetailView,
@@ -62,6 +77,7 @@ const router = createRouter({
       path: '/storage',
       name: 'storage',
       component: StorageView,
+      meta: { requiresAuth: true },
     },
     {
       path: '/household',
@@ -140,5 +156,34 @@ const router = createRouter({
     }
   ],
 })
+
+router.beforeEach(async (to, from, next) => {
+  const userStore = useUserStore()
+
+  if (!userStore.user && localStorage.getItem('jwt')) {
+    try {
+      await userStore.fetchUser()
+    } catch (error) {
+      console.error('Feil ved henting av brukerdata:', error)
+      userStore.logout() 
+      return next('/login')
+    }
+  }
+
+  if (to.meta.requiresAuth && !userStore.token) {
+    return next('/login')
+  }
+
+  if (to.meta.requiresAdmin && !userStore.isAdmin) {
+    return next('/not-authorized')
+  }
+
+  if ((to.path === '/login' || to.path === '/register') && userStore.user) {
+    return next('/')
+  }
+
+  return next()
+})
+
 
 export default router

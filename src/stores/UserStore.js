@@ -11,7 +11,17 @@ export const useUserStore = defineStore('user', {
     isLoading: false,
     error: null
   }),
+
+  getters: {
+    isAdmin: (state) => state.user?.role === 'ADMIN' || state.user?.role === 'SUPERADMIN',
+    isSuperAdmin: (state) => state.user?.role === 'SUPERADMIN'
+  },
+ 
   actions: {
+    
+    setUser(user) {
+      this.user = user
+    },
 
     /**
      * Registers a new user with the provided user data.
