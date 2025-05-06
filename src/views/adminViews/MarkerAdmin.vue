@@ -120,11 +120,6 @@
       <div v-else class="marker-form-panel">
         <h1>{{ isCreating ? 'Legg til ny markør' : 'Rediger markør' }}</h1>
 
-        <div class="info-box" v-if="showInfoBox">
-          <span class="info-icon">?</span>
-          <span>Hvordan lage ny markør på kartet</span>
-          <Button variant="ghost" size="icon" class="close-btn" @click="closeInfoBox">X</Button>
-        </div>
         <p class="click-info">Klikk på kartet for å endre markørens posisjon.</p>
 
         <form @submit.prevent="onSaveMarker">
