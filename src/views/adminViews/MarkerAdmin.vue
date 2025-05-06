@@ -27,10 +27,12 @@
         <!-- Search and Filter -->
         <div class="search-filter-container">
           <!-- Replaced with SearchBar component -->
-          <SearchBar
+          <input
+            type="text"
             v-model="searchTerm"
+            class="search-input"
             placeholder="Søk markører..."
-            @update:modelValue="onSearchChange"
+            @input="onSearchChange"
           />
 
           <div class="filter-dropdown">
@@ -708,6 +710,13 @@ textarea.form-control {
   flex-direction: column;
   gap: 8px;
   margin-bottom: 16px;
+}
+
+.search-input {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
 }
 
 .markers-container {
