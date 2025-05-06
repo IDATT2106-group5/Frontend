@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '@/stores/UserStore'
+
 import HomeView from '../views/mainViews/HomeView.vue'
 import LoginView from '../views/login/LoginView.vue'
 import RegisterView from '../views/mainViews/RegisterView.vue'
@@ -16,8 +18,12 @@ import BeforeView from '@/views/informationViews/BeforeView.vue'
 import UnderView from '@/views/informationViews/UnderView.vue'
 import AfterView from '@/views/informationViews/AfterView.vue'
 import MapView from '@/views/mapView/MapView.vue'
+import AdminRegisterView from '@/views/adminViews/AdminRegisterView.vue'
 import RequestPasswordView from '@/views/login/RequestResetView.vue'
 import ResetPasswordConfirmView from '@/views/login/ResetPasswordConfirmView.vue'
+import AdminDashboardView from '@/views/adminViews/AdminDashboardView.vue'
+import notAuthorizedView from '@/views/mainViews/notAuthorizedView.vue'
+import PersonVern from '@/views/mainViews/PersonVern.vue'
 import MarkerAdmin from '@/views/adminViews/MarkerAdmin.vue'
 
 const router = createRouter({
@@ -32,7 +38,7 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
-      meta:{hideNavbar: true },
+      meta:{hideNavbar: true, hideFooter: true },
     },
     {
       path: '/request-reset',
@@ -50,7 +56,18 @@ const router = createRouter({
       path: '/register',
       name: 'register',
       component: RegisterView,
-      meta:{hideNavbar: true },
+      meta:{hideNavbar: true, hideFooter: true },
+    },
+    {
+      path: '/not-authorized',
+      name: 'not-authorized',
+      component: notAuthorizedView,
+    },
+    {
+      path: '/admin-dashboard',
+      name: 'admin-dashboard',
+      component: AdminDashboardView,
+      meta: { requiresAdmin: true },
     },
     {
       path: '/storage-detail',
@@ -62,6 +79,7 @@ const router = createRouter({
       path: '/storage',
       name: 'storage',
       component: StorageView,
+      meta: { requiresAuth: true },
     },
     {
       path: '/household',
@@ -92,7 +110,7 @@ const router = createRouter({
       path: '/register-success',
       name: 'RegisterSuccess',
       component: RegisterSuccessView,
-      meta:{hideNavbar: true },
+      meta:{hideNavbar: true , hideFooter: true },
     },
     {
       path: '/register-failed',
@@ -116,6 +134,11 @@ const router = createRouter({
       component: AfterView,
     },
     {
+      path: '/personvern',
+      name: 'personvern',
+      component: PersonVern,
+    },
+    {
       path: '/2FA',
       name: '2FA',
       component: Admin2FAView,
@@ -125,13 +148,27 @@ const router = createRouter({
         }
         return { email: route.query.email };
       },
-      meta:{hideNavbar: true },
-
+      meta:{hideNavbar: true, hideFooter: true },
     },
     {
       path: '/map',
       name: 'map',
       component: MapView,
+    },
+    {
+      path: '/admin-registration',
+      name: 'admin-registration',
+      component: AdminRegisterView,
+      props: (route) => {
+        if (!route.query.email) {
+          return { emailMissing: true };
+        }
+        if (!route.query.token) {
+          return { tokenMissing: true }
+        }
+        return { email: route.query.email, token: route.query.token };
+      },
+      meta:{hideNavbar: true, hideFooter: true },
     },
     {
       path: '/admin/map-icons',
@@ -144,5 +181,34 @@ const router = createRouter({
     }
   ],
 })
+
+router.beforeEach(async (to, from, next) => {
+  const userStore = useUserStore()
+
+  if (!userStore.user && localStorage.getItem('jwt')) {
+    try {
+      await userStore.fetchUser()
+    } catch (error) {
+      console.error('Feil ved henting av brukerdata:', error)
+      userStore.logout()
+      return next('/login')
+    }
+  }
+
+  if (to.meta.requiresAuth && !userStore.token) {
+    return next('/login')
+  }
+
+  if (to.meta.requiresAdmin && !userStore.isAdmin) {
+    return next('/not-authorized')
+  }
+
+  if ((to.path === '/login' || to.path === '/register') && userStore.user) {
+    return next('/')
+  }
+
+  return next()
+})
+
 
 export default router

@@ -6,6 +6,9 @@ import { useVuelidate } from '@vuelidate/core'
 import { required, email, minLength, sameAs, helpers } from '@vuelidate/validators'
 import { Mail, KeySquare, Eye, EyeOff } from 'lucide-vue-next'
 import { useUserStore } from '@/stores/UserStore'
+import PersonVernPopUp from '@/views/mainViews/PersonVernPopUp.vue'
+
+const showPersonvern = ref(false)
 
 onMounted(() => {
   // Called when hCaptcha is completed successfully
@@ -148,7 +151,11 @@ const onSubmit = async () => {
 </script>
 
 <template>
-  <div class="flex justify-center items-center min-h-screen bg-white p-4">
+  <div class="flex justify-center items-center min-h-screen bg-white">
+    <PersonVernPopUp :visible="showPersonvern" @close="showPersonvern = false" />
+    <RouterLink to="/" class="absolute top-4 left-6">
+      <img src="/src/assets/icons/Krisefikser.png" alt="Krisefikser Logo" class="w-12 hover:opacity-80" />
+    </RouterLink>
     <div class="w-full max-w-2xl">
       <h1 class="text-4xl font-bold text-center mb-8">Opprett Bruker</h1>
 
@@ -306,7 +313,10 @@ const onSubmit = async () => {
               @change="v$.privacyPolicy.$touch()"
             />
             <label for="privacy" class="ml-2 text-sm text-gray-600">
-              Jeg har lest og godtar <a href="#" class="text-blue-600 hover:underline">personvernerklæringen</a>.
+              Jeg har lest og godtar 
+              <span @click="showPersonvern = true" class="text-blue-600 hover:underline cursor-pointer">
+                personvernerklæringen
+              </span>
             </label>
           </div>
           <div v-if="v$.privacyPolicy.$error" class="text-red-500 text-xs">
