@@ -138,15 +138,6 @@
           </div>
 
           <div class="form-group">
-            <label for="location">Lokasjon</label>
-            <Input
-              id="location"
-              v-model="locationName"
-              readonly
-            />
-          </div>
-
-          <div class="form-group">
             <label for="description" class="description-label">
               Beskrivelse
               <Button
@@ -356,7 +347,6 @@ export default {
     const incidentLayers = ref(null);
     const showFilterDropdown = ref(false);
     const showDescriptionTips = ref(false);
-    const locationName = ref('');
 
     // Map configuration
     const mapCenter = ref([63.4305, 10.3951]); // Trondheim
@@ -462,16 +452,6 @@ export default {
       // Update form data
       incidentAdminStore.updateIncidentCoordinates(lat, lng);
 
-      // Try to get location name from coordinates using reverse geocoding
-      try {
-        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`);
-        const data = await response.json();
-        locationName.value = data.display_name.split(',').slice(0, 2).join(', ');
-      } catch (error) {
-        console.error('Error with reverse geocoding:', error);
-        locationName.value = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-      }
-
       // Redraw incident visualization
       drawIncidentOnMap();
     };
@@ -529,16 +509,6 @@ export default {
       incidentAdminStore.editIncident(incident);
       updateDateTimeFields();
 
-      // Get location name
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${incident.latitude}&lon=${incident.longitude}&zoom=18&addressdetails=1`)
-        .then(response => response.json())
-        .then(data => {
-          locationName.value = data.display_name.split(',').slice(0, 2).join(', ');
-        })
-        .catch(error => {
-          console.error('Error with reverse geocoding:', error);
-          locationName.value = `${incident.latitude.toFixed(4)}, ${incident.longitude.toFixed(4)}`;
-        });
 
       // Center map at incident location
       if (map.value) {
@@ -642,7 +612,6 @@ export default {
       startTime,
       endDate,
       endTime,
-      locationName,
       onMapReady,
       onSearchChange,
       onFilterChange,
