@@ -267,11 +267,7 @@ const notificationIcons = {
     {{ isSharing ? 'Stop deling' : 'Del posisjon' }}
   </Button>
 
-  <!-- Notification panel -->
-  <div
-    v-if="showNotifications"
-    class="fixed right-4 top-16 w-72 bg-white shadow-lg rounded-md border border-gray-200 z-50"
-  ></div>
+  <!-- Notifications Panel -->
   <div
     v-if="showNotifications"
     class="fixed right-4 top-16 w-72 bg-white shadow-lg rounded-md border border-gray-200 z-50"
@@ -296,29 +292,16 @@ const notificationIcons = {
         @click="handleMarkAsRead(notification.id)"
       >
         <div class="flex">
-          <div class="mr-3 text-xl">
-            {{
-              notification.type === 'INVITATION'
-                ? '📩'
-                : notification.type === 'MEMBERSHIP_REQUEST'
-                  ? '👤'
-                  : notification.type === 'INCIDENT'
-                    ? '🚨'
-                    : notification.type === 'STOCK_CONTROL'
-                      ? '📦'
-                      : notification.type === 'HOUSEHOLD'
-                        ? '🏠'
-                        : notification.type === 'INFO'
-                          ? 'ℹ️'
-                          : '🔔'
-            }}
+          <div class="mr-3 text-gray-700">
+            <component
+              :is="notificationIcons[notification.type] || Bell"
+              class="w-5 h-5"
+            />
           </div>
           <div class="flex-1">
             <div class="flex justify-between items-start">
               <span class="font-medium">{{ notification.message }}</span>
-              <span class="text-xs text-gray-500">{{
-                formatTimestamp(notification.timestamp)
-              }}</span>
+              <span class="text-xs text-gray-500">{{ formatTimestamp(notification.timestamp) }}</span>
             </div>
           </div>
         </div>
