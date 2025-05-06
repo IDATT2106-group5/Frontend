@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useVuelidate } from '@vuelidate/core'
 import { required, minLength, sameAs, helpers } from '@vuelidate/validators'
-import { KeySquare, Eye, EyeOff, Check, X } from 'lucide-vue-next'
+import { KeySquare, Eye, EyeOff } from 'lucide-vue-next'
+import PasswordRequirementsList from "@/components/passwordRequirement/PasswordRequirementsList.vue"
 
 const props = defineProps({
   email: {
@@ -202,61 +203,10 @@ const onSubmit = async () => {
           <div v-if="v$.password.$error" class="text-red-500 text-xs mt-1">
             {{ getErrorMessage(v$.password) }}
           </div>
-          <div class="mt-3 mb-1">
-            <p class="text-sm font-medium text-gray-700 mb-2">Passordet må inneholde:</p>
-            <ul class="space-y-2 pl-1">
-              <li class="flex items-center text-sm" :class="{
-                'text-green-600': formData.password && !v$.password.$errors.some(e => e.$validator === 'minLength'),
-                'text-gray-600': !formData.password || v$.password.$errors.some(e => e.$validator === 'minLength')
-              }">
-                <span class="inline-block mr-2.5">
-                  <Check v-if="formData.password && !v$.password.$errors.some(e => e.$validator === 'minLength')" class="w-4 h-4 text-green-600" />
-                  <X v-else class="w-4 h-4 text-gray-400" />
-                </span>
-                Minst 8 tegn
-              </li>
-              <li class="flex items-center text-sm" :class="{
-                'text-green-600': formData.password && !v$.password.$errors.some(e => e.$validator === 'containsUppercase'),
-                'text-gray-600': !formData.password || v$.password.$errors.some(e => e.$validator === 'containsUppercase')
-              }">
-                <span class="inline-block mr-2.5">
-                  <Check v-if="formData.password && !v$.password.$errors.some(e => e.$validator === 'containsUppercase')" class="w-4 h-4 text-green-600" />
-                  <X v-else class="w-4 h-4 text-gray-400" />
-                </span>
-                Minst én stor bokstav
-              </li>
-              <li class="flex items-center text-sm" :class="{
-                'text-green-600': formData.password && !v$.password.$errors.some(e => e.$validator === 'containsLowercase'),
-                'text-gray-600': !formData.password || v$.password.$errors.some(e => e.$validator === 'containsLowercase')
-              }">
-                <span class="inline-block mr-2.5">
-                  <Check v-if="formData.password && !v$.password.$errors.some(e => e.$validator === 'containsLowercase')" class="w-4 h-4 text-green-600" />
-                  <X v-else class="w-4 h-4 text-gray-400" />
-                </span>
-                Minst én liten bokstav
-              </li>
-              <li class="flex items-center text-sm" :class="{
-                'text-green-600': formData.password && !v$.password.$errors.some(e => e.$validator === 'containsNumber'),
-                'text-gray-600': !formData.password || v$.password.$errors.some(e => e.$validator === 'containsNumber')
-              }">
-                <span class="inline-block mr-2.5">
-                  <Check v-if="formData.password && !v$.password.$errors.some(e => e.$validator === 'containsNumber')" class="w-4 h-4 text-green-600" />
-                  <X v-else class="w-4 h-4 text-gray-400" />
-                </span>
-                Minst ett tall
-              </li>
-              <li class="flex items-center text-sm" :class="{
-                'text-green-600': formData.password && !v$.password.$errors.some(e => e.$validator === 'containsSpecial'),
-                'text-gray-600': !formData.password || v$.password.$errors.some(e => e.$validator === 'containsSpecial')
-              }">
-                <span class="inline-block mr-2.5">
-                  <Check v-if="formData.password && !v$.password.$errors.some(e => e.$validator === 'containsSpecial')" class="w-4 h-4 text-green-600" />
-                  <X v-else class="w-4 h-4 text-gray-400" />
-                </span>
-                Minst ett spesialtegn (f.eks. !@#$%^&*)
-              </li>
-            </ul>
-          </div>
+          <PasswordRequirementsList
+          :password="formData.password"
+          :validator="v$.password"
+          />
         </div>
 
         <!-- Confirm Password Input -->
