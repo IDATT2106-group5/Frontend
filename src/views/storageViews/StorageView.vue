@@ -4,6 +4,7 @@ import { Apple, Droplet, Hammer, Hourglass, Package, Pill } from 'lucide-vue-nex
 import { RouterLink, useRouter } from 'vue-router'
 import { useStorageStore } from '@/stores/StorageStore'
 import { useHouseholdStore } from '@/stores/HouseholdStore'
+import StorageAdvice from '@/components/StorageAdvice.vue'
 
 /**
  * Storage Dashboard Component
@@ -325,13 +326,23 @@ onMounted(async () => {
     <div class="border rounded-lg p-4 md:p-6">
       <h2 class="text-lg md:text-xl font-semibold mb-4 border-b pb-2 text-left">Beredskapsråd</h2>
       <p class="text-sm md:text-base text-left">
-        DSB anbefaler at alle husstander bør være selvforsynte i minst 7 dager. Basert på ditt
-        lager, har du beredskap for <strong>{{ remainingDays }} dager</strong>.
-        <span v-if="remainingDays < 7" class="text-red-500">
-          Du bør vurdere å fylle på ditt lager av
-          {{ foodDays.value <= waterDays.value ? 'mat' : 'vann' }}.
+          DSB anbefaler at alle husstander bør være selvforsynte i minst 7 dager. Basert på ditt
+          lager, har du beredskap for <strong>{{ remainingDays }} dager</strong>.
+        <span v-if="foodDays < 7 || waterDays < 7" class="text-red-500 font-bold">
+          Du bør fylle på ditt lager av
+          {{
+            foodDays < 7 && waterDays < 7
+              ? 'vann og mat'
+              : foodDays < 7
+                ? 'mat'
+                : 'vann'
+          }}.
         </span>
       </p>
+      <h3 class="text-sm md:text-base font-medium text-left mt-8 mb-4">
+        DSB anbefaler at alle husstander bør ha følgende i sitt lager:
+      </h3>
+      <StorageAdvice />
     </div>
   </div>
 </template>
