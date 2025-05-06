@@ -25,7 +25,7 @@ class HouseholdService extends BaseService {
   }
   
 
-  // Add a member to the household
+  // Add a unregistered member to the household
   async addMember(householdId, data) {
     try {
       if (data.email) {
@@ -52,6 +52,19 @@ class HouseholdService extends BaseService {
       }
     } catch (error) {
       console.error("Error adding member:", error);
+      throw error;
+    }
+  }
+
+  // Add a registered user to the household
+  async addUserToHousehold(userId, householdId) {
+    try {
+      return await this.post('add-user', {
+        userId,
+        householdId
+      });
+    } catch (error) {
+      console.error("Error adding user to household:", error);
       throw error;
     }
   }

@@ -296,6 +296,7 @@ export const useHouseholdStore = defineStore('household', {
         this.ownershipRequests = Array.isArray(requests)
           ? requests.map(req => ({
               id: req.id,
+              userId: req.sender?.id,
               fullName: req.sender?.fullName || 'Ukjent',
               email: req.sender?.email || 'Ukjent',
               status: req.status || 'PENDING'
@@ -304,6 +305,28 @@ export const useHouseholdStore = defineStore('household', {
       } catch (err) {
         this.error = err.response?.data?.error || err.message || 'Kunne ikke hente forespørsler';
         this.ownershipRequests = [];
+      }
+    },
+
+    // Method to add a user to household
+    async addUserToHousehold(userId) {
+      if (!this.currentHousehold?.id) {
+        throw new Error('Ingen aktiv husholdning');
+      }
+
+      try {
+        this.isLoading = true;
+        this._verifyOwnership();
+
+        await HouseholdService.addUserToHousehold(userId, this.currentHousehold.id);
+        await this.checkCurrentHousehold();
+
+        return true;
+      } catch (err) {
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke legge til bruker i husstand';
+        throw err;
+      } finally {
+        this.isLoading = false;
       }
     },
 
