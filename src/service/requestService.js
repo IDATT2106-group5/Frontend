@@ -66,7 +66,7 @@ class RequestService extends BaseService {
       throw error;
     }
   }
-  
+
 
     // Method for getting all received invitations for a user
     async getReceivedInvitationsByUser(userId) {

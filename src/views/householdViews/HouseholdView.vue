@@ -47,20 +47,15 @@ onMounted(async () => {
   }
 })
 
-async function aksepterInvitasjon(invitationId) {
+async function acceptInvitation(invitationId) {
   try {
-    // Here you should add code to accept the invitation via your API
-    // This is just a placeholder - you'll need to implement this in your RequestService
-    // await RequestService.acceptInvitation(invitationId)
-    
+    await householdStore.acceptInvitation(invitationId)
+
     toast({
       title: 'Invitasjon akseptert',
       description: 'Du har blitt med i husstanden.',
       variant: 'success'
     })
-    
-    // Refresh household data after accepting
-    await householdStore.checkCurrentHousehold()
   } catch (err) {
     toast({
       title: 'Feil',
@@ -70,20 +65,15 @@ async function aksepterInvitasjon(invitationId) {
   }
 }
 
-async function avslåInvitasjon(invitationId) {
+async function declineInvitation(invitationId) {
   try {
-    // Here you should add code to decline the invitation via your API
-    // This is just a placeholder - you'll need to implement this in your RequestService
-    // await RequestService.declineInvitation(invitationId)
-    
+    await householdStore.declineInvitation(invitationId)
+
     toast({
       title: 'Invitasjon avslått',
       description: 'Du har avslått invitasjonen.',
       variant: 'default'
     })
-    
-    // Refresh invitations after declining
-    await householdStore.fetchReceivedInvitations()
   } catch (err) {
     toast({
       title: 'Feil',
@@ -200,13 +190,13 @@ const goJoin = () => router.push('/household/join')
             </div>
             <div class="flex gap-2 justify-end">
               <button
-                @click="aksepterInvitasjon(invitasjon.id)"
+                @click="acceptInvitation(invitasjon.id)"
                 class="px-4 py-1 rounded bg-primary text-white hover:opacity-90"
               >
                 Aksepter
               </button>
               <button
-                @click="avslåInvitasjon(invitasjon.id)"
+                @click="declineInvitation(invitasjon.id)"
                 class="px-4 py-1 rounded border border-gray-400 hover:bg-gray-100"
               >
                 Avslå
