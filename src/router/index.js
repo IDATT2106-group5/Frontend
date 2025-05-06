@@ -24,7 +24,7 @@ import ResetPasswordConfirmView from '@/views/login/ResetPasswordConfirmView.vue
 import AdminDashboardView from '@/views/adminViews/AdminDashboardView.vue'
 import notAuthorizedView from '@/views/mainViews/notAuthorizedView.vue'
 import PersonVern from '@/views/mainViews/PersonVern.vue'
-import AdminUserView from '@/views/adminViews/AdminUserView.vue'
+import AdminUserView from '@/views/adminViews/AdminUsersView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
