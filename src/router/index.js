@@ -18,6 +18,7 @@ import BeforeView from '@/views/informationViews/BeforeView.vue'
 import UnderView from '@/views/informationViews/UnderView.vue'
 import AfterView from '@/views/informationViews/AfterView.vue'
 import MapView from '@/views/mapView/MapView.vue'
+import AdminRegisterView from '@/views/adminViews/AdminRegisterView.vue'
 import RequestPasswordView from '@/views/login/RequestResetView.vue'
 import ResetPasswordConfirmView from '@/views/login/ResetPasswordConfirmView.vue'
 import AdminDashboardView from '@/views/adminViews/AdminDashboardView.vue'
@@ -146,14 +147,28 @@ const router = createRouter({
         }
         return { email: route.query.email };
       },
-      meta:{hideNavbar: true },
-
+      meta:{hideNavbar: true, hideFooter: true },
     },
     {
       path: '/map',
       name: 'map',
       component: MapView,
-    }
+    },
+    {
+      path: '/admin-registration',
+      name: 'admin-registration',
+      component: AdminRegisterView,
+      props: (route) => {
+        if (!route.query.email) {
+          return { emailMissing: true };
+        }
+        if (!route.query.token) {
+          return { tokenMissing: true }
+        }
+        return { email: route.query.email, token: route.query.token };
+      },
+      meta:{hideNavbar: true, hideFooter: true },
+    },
   ],
 })
 
