@@ -24,6 +24,7 @@ import ResetPasswordConfirmView from '@/views/login/ResetPasswordConfirmView.vue
 import AdminDashboardView from '@/views/adminViews/AdminDashboardView.vue'
 import notAuthorizedView from '@/views/mainViews/notAuthorizedView.vue'
 import PersonVern from '@/views/mainViews/PersonVern.vue'
+import AdminUserView from '@/views/adminViews/AdminUserView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -66,6 +67,12 @@ const router = createRouter({
       path: '/admin-dashboard',
       name: 'admin-dashboard',
       component: AdminDashboardView,
+      meta: { requiresAdmin: true },
+    },
+    {
+      path: '/admin-users',
+      name: 'admin-users',
+      component: AdminUserView,
       meta: { requiresAdmin: true },
     },
     {
@@ -180,7 +187,7 @@ router.beforeEach(async (to, from, next) => {
       await userStore.fetchUser()
     } catch (error) {
       console.error('Feil ved henting av brukerdata:', error)
-      userStore.logout() 
+      userStore.logout()
       return next('/login')
     }
   }
