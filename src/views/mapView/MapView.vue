@@ -2,16 +2,16 @@
   <div class="map-container">
     <div id="map" ref="mapContainer"></div>
 
-    <!-- Add notification display -->
+    <!-- Add notification display with proper v-if check -->
     <transition name="fade">
-      <div v-if="mapStore.notification" class="map-notification">
-        {{ mapStore.notification }}
+      <div v-if="notification" class="map-notification">
+        {{ notification }}
       </div>
     </transition>
 
-    <!-- Add the closest facility finder panel -->
-    <div class="closest-facility-container">
-      <ClosestFacilityFinder v-if="!isLoadingMarkers && !markersLoadError" />
+    <!-- Existing components with proper condition checks -->
+    <div class="closest-facility-container" v-if="!isLoadingMarkers && !markersLoadError">
+      <ClosestFacilityFinder />
     </div>
 
     <!-- Loading indicator -->
@@ -102,7 +102,8 @@ export default {
       layerOptions,
       activeLayerId,
       isLoadingMarkers,
-      markersLoadError
+      markersLoadError,
+      notification
     } = storeToRefs(mapStore);
 
     // Determine if we're in mobile view
@@ -185,6 +186,7 @@ export default {
       toggleFilterCollapse,
       isLayerCollapsed,
       toggleLayerCollapse,
+      notification
     };
   }
 };
