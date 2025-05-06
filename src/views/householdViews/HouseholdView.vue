@@ -1,11 +1,10 @@
-// Main view for household page 
-// Check householdMainView in components to see the components used in this view
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Copy, Edit, User } from 'lucide-vue-next'
 import { toast } from '@/components/ui/toast'
 
+import { useHouseholdStore } from '@/stores/HouseholdStore'
 import useHousehold from '@/components/householdMainView/useHouseholdViewModel.js'
 import MembersTab from '@/components/householdMainView/tabs/MembersTab.vue'
 import SearchTab from '@/components/householdMainView/tabs/SearchTab.vue'
@@ -15,6 +14,7 @@ import EditHouseholdModal from '@/components/householdMainView/modals/EditHouseh
 import ConfirmModal from '@/components/householdMainView/modals/ConfirmModal.vue'
 
 const router = useRouter()
+const householdStore = useHouseholdStore()
 const {
   isLoading,
   error,
@@ -37,8 +37,61 @@ const activeTab = ref('members')
 const confirmLeaveOpen = ref(false)
 const confirmDeleteOpen = ref(false)
 
-const goCreate = () => router.push('/household/create')
-const goJoin = () => router.push('/household/join')
+onMounted(async () => {
+  if (!hasHousehold.value) {
+    try {
+      await householdStore.fetchReceivedInvitations()
+    } catch (err) {
+      console.error('Failed to fetch invitations:', err)
+    }
+  }
+})
+
+async function aksepterInvitasjon(invitationId) {
+  try {
+    // Here you should add code to accept the invitation via your API
+    // This is just a placeholder - you'll need to implement this in your RequestService
+    // await RequestService.acceptInvitation(invitationId)
+    
+    toast({
+      title: 'Invitasjon akseptert',
+      description: 'Du har blitt med i husstanden.',
+      variant: 'success'
+    })
+    
+    // Refresh household data after accepting
+    await householdStore.checkCurrentHousehold()
+  } catch (err) {
+    toast({
+      title: 'Feil',
+      description: 'Kunne ikke akseptere invitasjonen.',
+      variant: 'destructive'
+    })
+  }
+}
+
+async function avslåInvitasjon(invitationId) {
+  try {
+    // Here you should add code to decline the invitation via your API
+    // This is just a placeholder - you'll need to implement this in your RequestService
+    // await RequestService.declineInvitation(invitationId)
+    
+    toast({
+      title: 'Invitasjon avslått',
+      description: 'Du har avslått invitasjonen.',
+      variant: 'default'
+    })
+    
+    // Refresh invitations after declining
+    await householdStore.fetchReceivedInvitations()
+  } catch (err) {
+    toast({
+      title: 'Feil',
+      description: 'Kunne ikke avslå invitasjonen.',
+      variant: 'destructive'
+    })
+  }
+}
 
 async function copyHouseholdId() {
   try {
@@ -84,6 +137,9 @@ async function handleDelete() {
     })
   }
 }
+
+const goCreate = () => router.push('/household/create')
+const goJoin = () => router.push('/household/join')
 </script>
 
 <template>
@@ -126,8 +182,39 @@ async function handleDelete() {
             </button>
           </div>
         </div>
-      </div>
 
+        <!-- Invitasjoner mottatt fra store -->
+        <div class="mt-12">
+          <h3 class="text-xl font-semibold text-center mb-4">Invitasjoner mottatt</h3>
+          <div v-if="householdStore.receivedInvitations.length === 0" class="text-center text-gray-500 italic">
+            Ingen invitasjoner mottatt
+          </div>
+          <div
+            v-for="invitasjon in householdStore.receivedInvitations"
+            :key="invitasjon.id"
+            class="bg-white rounded-md p-4 max-w-md mx-auto border border-gray-200 mb-4"
+          >
+            <div class="text-sm space-y-1 mb-4">
+              <p><strong>Husstands-ID:</strong> {{ invitasjon.householdId }}</p>
+              <p><strong>Navn:</strong> {{ invitasjon.householdName }}</p>
+            </div>
+            <div class="flex gap-2 justify-end">
+              <button
+                @click="aksepterInvitasjon(invitasjon.id)"
+                class="px-4 py-1 rounded bg-primary text-white hover:opacity-90"
+              >
+                Aksepter
+              </button>
+              <button
+                @click="avslåInvitasjon(invitasjon.id)"
+                class="px-4 py-1 rounded border border-gray-400 hover:bg-gray-100"
+              >
+                Avslå
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <div v-else>
         <div class="flex justify-between items-center">

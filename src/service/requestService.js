@@ -67,6 +67,29 @@ class RequestService extends BaseService {
     }
   }
   
+
+    // Method for getting all received invitations for a user
+    async getReceivedInvitationsByUser(userId) {
+      try {
+        console.log('[REQUEST] Getting received invitations for userId:', userId);
+        const response = await this.post('invitations/received', { userId });
+
+        if (Array.isArray(response)) {
+          return response;
+        }
+
+        if (response && response.data) {
+          return response.data;
+        }
+
+        console.warn('Could not find invitations array in response');
+        return [];
+      } catch (error) {
+        console.error('[ERROR] Fetching received invitations:', error);
+        throw error;
+      }
+    }
+
     // Method for sending a join request to a household
     async sendJoinRequest(requestData) {
       try {

@@ -13,6 +13,7 @@ export const useHouseholdStore = defineStore('household', {
     ownershipRequests: [],
     sentInvitations: [],
     sentJoinRequests: [],
+    receivedInvitations: [],
     error: null,
     isLoading: false,
     hasHousehold: false
@@ -305,6 +306,88 @@ export const useHouseholdStore = defineStore('household', {
       } catch (err) {
         this.error = err.response?.data?.error || err.message || 'Kunne ikke hente forespørsler';
         this.ownershipRequests = [];
+      }
+    },
+
+    async fetchReceivedInvitations() {
+      try {
+        this.isLoading = true;
+        const userStore = useUserStore();
+    
+        if (!userStore.user || !userStore.user.id) {
+          throw new Error('Bruker ikke funnet');
+        }
+    
+        const userId = userStore.user.id;
+        console.log('[FETCH INVITES] Sending userId:', userId);
+    
+        const response = await RequestService.getReceivedInvitationsByUser(userId);
+    
+        console.log('[FETCH INVITES] Raw response:', response);
+    
+        this.receivedInvitations = Array.isArray(response)
+          ? response.map(invite => {
+              const mapped = {
+                id: invite.id,
+                householdId: invite.householdId || 'Ukjent',
+                householdName: invite.householdName || 'Ukjent navn',
+                status: invite.status || 'PENDING'
+              };
+              console.log('[FETCH INVITES] Mapped invitation:', mapped);
+              return mapped;
+            })
+          : [];
+    
+      } catch (err) {
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke hente invitasjoner';
+        this.receivedInvitations = [];
+        console.error('[FETCH RECEIVED INVITES] Error:', this.error);
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    
+    async acceptInvitation(invitationId) {
+      try {
+        this.isLoading = true;
+    
+        await RequestService.acceptJoinRequest(invitationId); // same backend logic
+    
+        const invitation = this.receivedInvitations.find(inv => inv.id === invitationId);
+        if (invitation) {
+          invitation.status = 'ACCEPTED';
+        }
+    
+        // Optionally refresh household membership if needed
+        await this.checkCurrentHousehold();
+    
+        return true;
+      } catch (err) {
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke akseptere invitasjon';
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    async declineInvitation(invitationId) {
+      try {
+        this.isLoading = true;
+    
+        await RequestService.declineJoinRequest(invitationId);
+    
+        const invitation = this.receivedInvitations.find(inv => inv.id === invitationId);
+        if (invitation) {
+          invitation.status = 'REJECTED';
+        }
+    
+        return true;
+      } catch (err) {
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke avslå invitasjon';
+        throw err;
+      } finally {
+        this.isLoading = false;
       }
     },
 
