@@ -77,6 +77,7 @@ const router = createRouter({
       path: '/storage',
       name: 'storage',
       component: StorageView,
+      meta: { requiresAuth: true },
     },
     {
       path: '/household',
@@ -167,6 +168,10 @@ router.beforeEach(async (to, from, next) => {
     }
   }
 
+  if (to.meta.requiresAuth && !userStore.token) {
+    return next('/login')
+  }
+  
   if (to.meta.requiresAdmin && !userStore.isAdmin) {
     return next('/not-authorized')
   }
