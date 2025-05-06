@@ -60,6 +60,7 @@ export default class WebSocketService {
       this.stompClient.subscribe(`/user/queue/notifications`, () => this.callbacks.onNotification())
       console.log(`Subscribed to /user/queue/notifications`)
     }
+    this.subscribeToPosition(5)
 
     this.callbacks.onConnected()
   }
@@ -76,13 +77,12 @@ export default class WebSocketService {
     }
   }
 
-  subscribeToPosition(householdId, callback) {
+  subscribeToPosition(householdId) {
     if (this.stompClient && this.connected && this.token && householdId) {
-      this.stompClient.subscribe(`/topic/position/${householdId}`, (message) => {
-        const positionData = JSON.parse(message.body)
-        this.callbacks.onPositionUpdate(positionData)
-        if (callback) callback(positionData)
-      })
+      this.stompClient.subscribe(
+        `/topic/position/${householdId}`,
+        (message) => this.callbacks.onPositionUpdate(JSON.parse(message.body))
+      )
       console.log(`Subscribed to /topic/position/${householdId}`)
       return true
     } else {
