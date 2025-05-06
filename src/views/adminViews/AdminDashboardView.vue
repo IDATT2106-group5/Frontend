@@ -59,11 +59,11 @@ const adminButtons = computed(() => {
     Du har ikke tilgang til denne siden.
   </div>
 
-  <div v-else class="min-h-screen bg-gray-100 p-6 font-sans">
+  <div v-else class="min-h-screen p-6 font-sans bg-background">
     <h1 class="text-3xl font-bold text-blue-900 mb-8 text-center">Admin dashbord</h1>
 
     <!-- Button Grid -->
-    <div class="grid grid-cols-2 gap-4 max-w-4xl mx-auto">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-4xl mx-auto">
       <button
         v-for="btn in adminButtons"
         :key="btn.label"
@@ -80,7 +80,7 @@ const adminButtons = computed(() => {
     </div>
 
     <!-- Stats -->
-    <div class="grid grid-cols-3 gap-4 max-w-4xl mx-auto mt-10">
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-w-4xl mx-auto mt-10">
       <div class="bg-white border rounded p-4 text-center shadow-sm">
         <div class="text-gray-600 text-sm">Aktive kriser</div>
         <div class="text-2xl font-bold">{{ crisisCount }}</div>
