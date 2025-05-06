@@ -9,6 +9,18 @@ const router = useRouter()
 const adminStore = useAdminStore()
 const userStore = useUserStore()
 
+
+/**
+ * Navigates to the specified route within the application.
+ *
+ * @param {string} route - The name or path of the route to navigate to.
+ */
+function navigateToRoute(route) {
+  if (route) {
+    router.push(route)
+  }
+}
+
 onMounted(async () => {
   if (!userStore.user) {
     await userStore.fetchUser()
@@ -45,7 +57,7 @@ const adminButtons = computed(() => {
   ]
 
   if (userStore.isSuperAdmin) {
-    buttons.push({ label: 'Admin brukere' })
+    buttons.push({ label: 'Admin brukere', route: 'admin-users' })
   }
 
   return buttons
@@ -67,12 +79,14 @@ const adminButtons = computed(() => {
       <button
         v-for="btn in adminButtons"
         :key="btn.label"
-        :class="[ 
+        :class="[
           'w-full h-16 px-4 text-left font-bold border rounded flex justify-between items-center shadow-sm transition',
           btn.isPrimary
-            ? 'text-red-600 border-red-600 border-2 bg-white'
-            : 'text-gray-800 border bg-white'
+        ? 'text-red-600 border-red-600 border-2 bg-white'
+        : 'text-gray-800 border bg-white'
         ]"
+        :v-if="btn.label == 'Admin brukere'"
+        @click="btn.route ? navigateToRoute(btn.route) : null"
       >
         {{ btn.label }}
         <ArrowIcon class="w-5" />

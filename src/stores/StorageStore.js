@@ -1,10 +1,15 @@
-// storageStore.js
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import StorageService from '@/service/storageService';
 import { ItemType } from '@/types/ItemType';
 
-// Helper function to format date for backend in ISO string format with time component
+/**
+ * Helper function to format a date string to 'DD.MM.YYYY' format.
+ * If input is 'N/A', it is returned as is.
+ *
+ * @param {string} dateString The input date string.
+ * @returns {string} The formatted date string or 'N/A'.
+ */
 function formatDate(dateString) {
   if (!dateString || dateString === 'N/A') return 'N/A';
 
@@ -14,7 +19,7 @@ function formatDate(dateString) {
     const parts = dateString.split('.');
     if (parts.length === 3) {
       const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1; // Months are 0-indexed in JS
+      const month = parseInt(parts[1], 10) - 1; 
       const year = parseInt(parts[2], 10);
       date = new Date(year, month, day);
       date.setHours(12, 0, 0, 0);
@@ -39,38 +44,49 @@ function formatDate(dateString) {
   }
 }
 
+/**
+ * Store for managing household storage items.
+ */
 export const useStorageStore = defineStore('storage', () => {
+  /** @type {import('vue').Ref<Array<Object>>} */
   const items = ref([]);
+
+  /** @type {import('vue').Ref<boolean>} */
   const isLoading = ref(false);
+
+  /** @type {import('vue').Ref<string|null>} */
   const error = ref(null);
 
-  // Store the current household ID
+  /** @type {import('vue').Ref<string|null>} */
   const currentHouseholdId = ref(null);
 
-  // Computed property to check if items array is empty
+  /**
+   * Indicates if the storage list is empty.
+   * @type {import('vue').ComputedRef<boolean>}
+   */
   const isEmpty = computed(() => items.value.length === 0);
 
-  // Group items by category for UI display
+  /**
+   * Groups items by category (itemType) for UI display.
+   * @type {import('vue').ComputedRef<Object<string, Array<Object>>>}
+   */
   const groupedItems = computed(() => {
     const groups = {
-      'Væske': [],      // Liquids
-      'Mat': [],        // Food
-      'Medisiner': [], // Medicine
-      'Redskap': [],   // Tools
-      'Diverse': []     // Miscellaneous/Other
+      'Væske': [],      
+      'Mat': [],        
+      'Medisiner': [], 
+      'Redskap': [],   
+      'Diverse': []     
     };
 
-    // Make sure items.value is an array before calling forEach
     if (Array.isArray(items.value)) {
       items.value.forEach(item => {
         if (!item || !item.item || !item.item.itemType) {
-          // Skip invalid items
           console.warn('Skipping invalid item:', item);
           return;
         }
 
-        // Create a transformed item with structure expected by components
-        // Make sure id is set properly
+   
         const transformedItem = {
           id: item.id,
           name: item.item.name,
@@ -107,12 +123,18 @@ export const useStorageStore = defineStore('storage', () => {
     return groups;
   });
 
-  // Set current household ID
+  /**
+   * Sets the current household ID for storage operations.
+   * @param {string} id - Household ID.
+   */
   function setCurrentHouseholdId(id) {
     currentHouseholdId.value = id;
   }
 
-  // Fetch all items for the household
+  /**
+   * Fetches all items for the current household.
+   * @returns {Promise<Array<Object>>} A promise resolving to the item list.
+   */
   async function fetchItems() {
     if (!currentHouseholdId.value) {
       console.error('No household ID set');
@@ -130,7 +152,7 @@ export const useStorageStore = defineStore('storage', () => {
           if (!item.id && item.itemId) {
             return { ...item, id: item.itemId };
           } else if (!item.id) {
-            // If there's no id at all, log a warning
+     
             console.warn('Item missing ID:', item);
           }
           return item;
@@ -142,26 +164,38 @@ export const useStorageStore = defineStore('storage', () => {
       return items.value;
     } catch (err) {
       error.value = err.message || 'Failed to fetch items';
-      items.value = []; // Ensure items is always an array even on error
+      items.value = []; 
       return [];
     } finally {
       isLoading.value = false;
     }
   }
 
-  // Filter items by type (client-side filtering)
+  /**
+   * Filters items by item type.
+   * @param {ItemType} itemType  The item type to filter by.
+   * @returns {Array<Object>} Filtered items.
+   */
   function getItemsByType(itemType) {
     if (!itemType) return items.value;
 
     return items.value.filter(item => item.item && item.item.itemType === itemType);
   }
 
-  // Fetch items by type - a convenience method that matches what your component was using
+  /**
+   * Fetches items by type (same as getItemsByType).
+   * @param {ItemType} itemType  The item type to fetch.
+   * @returns {Array<Object>} Filtered items.
+   */
   function fetchItemsByType(itemType) {
     return getItemsByType(itemType);
   }
 
-  // Get items expiring soon
+   /**
+   * Fetches items expiring before a given date.
+   * @param {string} beforeDate  Date string in ISO format.
+   * @returns {Promise<Array<Object>>} Expiring items.
+   */
   async function fetchExpiringItems(beforeDate) {
     if (!currentHouseholdId.value) {
       return [];
@@ -182,7 +216,12 @@ export const useStorageStore = defineStore('storage', () => {
     }
   }
 
-  // Add item
+  /**
+   * Adds a new item to storage.
+   * @param {string} itemId  ID of the item.
+   * @param {Object} data  Item details.
+   * @returns {Promise<Object|null>} The response from API or null on failure.
+   */
   async function addItem(itemId, data) {
     if (!currentHouseholdId.value) {
       console.error('No household ID set');
@@ -194,7 +233,7 @@ export const useStorageStore = defineStore('storage', () => {
 
     try {
       const response = await StorageService.addItemToStorage(currentHouseholdId.value, itemId, data);
-      // Refresh the items list after adding
+    
       await fetchItems();
 
       return response;
@@ -207,7 +246,12 @@ export const useStorageStore = defineStore('storage', () => {
     }
   }
 
-  // Update item - fixed to handle id parameter properly
+  /**
+   * Updates an item in storage.
+   * @param {string|Object} itemId  ID of the item or item object with `id`.
+   * @param {Object} data Updated item data.
+   * @returns {Promise<Object>} Response from API.
+   */
   async function updateItem(itemId, data) {
     isLoading.value = true;
     error.value = null;
@@ -226,7 +270,7 @@ export const useStorageStore = defineStore('storage', () => {
         actualItemId = itemId;
       }
 
-      // Find item by ID
+    
       const itemIndex = items.value.findIndex(i => i.id === actualItemId);
 
       if (itemIndex === -1) {
@@ -235,17 +279,34 @@ export const useStorageStore = defineStore('storage', () => {
         throw new Error('Item not found');
       }
 
-      // Get the original item
+      
       const originalItem = items.value[itemIndex];
 
-      // Create payload in the format expected by the API
+    
+      const originalExpiration = originalItem.item.expiration;
+
+     
+      let formattedExpirationDate = null;
+
+      if (data.expiryDate) {
+      
+        if (data.expiryDate.includes('T')) {
+          formattedExpirationDate = data.expiryDate;
+        } else {
+          
+          const [day, month, year] = data.expiryDate.split('.');
+          if (day && month && year) {
+          
+            formattedExpirationDate = `${year}-${month}-${day}T00:00:00`;
+          }
+        }
+      }
+
       const payload = {
         unit: originalItem.unit,
         amount: data.quantity || originalItem.amount,
-        expirationDate: data.expiryDate ? new Date(data.expiryDate) : null
+        expirationDate: formattedExpirationDate
       };
-
-      console.log("Sending payload to API:", payload);
 
       if (data.name && data.name !== originalItem.item.name) {
         console.warn('Name updates are not supported by the backend API');
@@ -264,14 +325,18 @@ export const useStorageStore = defineStore('storage', () => {
     }
   }
 
-  // Delete item
+  /**
+   * Deletes an item from storage.
+   * @param {string} itemId  ID of the item to delete.
+   * @returns {Promise<Object>} Response from API.
+   */
   async function deleteItem(itemId) {
     isLoading.value = true;
     error.value = null;
 
     try {
       const response = await StorageService.removeItemFromStorage(itemId);
-      // Remove the item from the local array
+
       items.value = items.value.filter(i => i.id !== itemId);
       return response;
     } catch (err) {
