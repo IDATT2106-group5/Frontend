@@ -18,6 +18,7 @@ import AfterView from '@/views/informationViews/AfterView.vue'
 import MapView from '@/views/mapView/MapView.vue'
 import RequestPasswordView from '@/views/login/RequestResetView.vue'
 import ResetPasswordConfirmView from '@/views/login/ResetPasswordConfirmView.vue'
+import AdminDashboardView from '@/views/adminViews/AdminDashboardView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -50,6 +51,11 @@ const router = createRouter({
       name: 'register',
       component: RegisterView,
       meta:{hideNavbar: true },
+    },
+    {
+      path: '/admin-dashboard',
+      name: 'admin-dashboard',
+      component: AdminDashboardView,
     },
     {
       path: '/storage-detail',
