@@ -176,11 +176,11 @@
           </div>
 
           <div class="form-group">
-            <label for="description">
+            <label for="description" class="description-label">
               Beskrivelse
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 type="button"
                 class="info-btn"
                 @click="toggleDescriptionTips"
@@ -190,17 +190,18 @@
             </label>
 
             <div v-if="showDescriptionTips" class="tips-box">
-              <Button
-                variant="ghost"
-                size="icon"
+              <h4 class="tips-title">Tips for en god beskrivelse:</h4>
+
+              <button
                 type="button"
-                class="close-btn"
+                class="close-tips-btn"
                 @click="toggleDescriptionTips"
               >
-                X
-              </Button>
-              <h4>Tips for en god beskrivelse:</h4>
-              <ul>
+                x
+              </button>
+
+              <!-- Tips list -->
+              <ul class="tips-list">
                 <li>Vær konkret om hva som finnes på stedet</li>
                 <li>Nevn relevante detaljer som kan være viktige i en krisesituasjon</li>
                 <li>Inkluder informasjon om tilgjengelighet</li>
@@ -321,7 +322,6 @@ export default {
     const tempMarker = ref(null);
     const showFilterDropdown = ref(false);
     const showDescriptionTips = ref(false);
-    const showInfoBox = ref(true);
 
     // Map configuration
     const mapCenter = ref([63.4305, 10.3951]); // Trondheim
@@ -409,10 +409,6 @@ export default {
 
     const toggleDescriptionTips = () => {
       showDescriptionTips.value = !showDescriptionTips.value;
-    };
-
-    const closeInfoBox = () => {
-      showInfoBox.value = false;
     };
 
     const onAddNew = () => {
@@ -545,13 +541,11 @@ export default {
       filterType,
       showFilterDropdown,
       showDescriptionTips,
-      showInfoBox,
       onMapReady,
       onSearchChange,
       onFilterChange,
       toggleFilterDropdown,
       toggleDescriptionTips,
-      closeInfoBox,
       onAddNew,
       onEditMarker,
       onSaveMarker,
@@ -717,13 +711,6 @@ textarea.form-control {
   margin-bottom: 16px;
 }
 
-.search-input {
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
 .filter-dropdown {
   position: relative;
 }
@@ -805,57 +792,10 @@ textarea.form-control {
   border: 1px solid #eee;
 }
 
-/* Info boxes */
-.info-box {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background-color: #e3f2fd;
-  padding: 12px;
-  border-radius: 4px;
-  margin-bottom: 8px;
-}
-
-.info-icon {
-  background-color: #2196f3;
-  color: white;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-}
-
 .click-info {
   margin-bottom: 16px;
   font-size: 14px;
   color: #666;
-}
-
-.tips-box {
-  background-color: #f9f9f9;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 12px;
-  margin-bottom: 12px;
-  position: relative;
-}
-
-.tips-box h4 {
-  margin-top: 0;
-  margin-bottom: 8px;
-}
-
-.tips-box ul {
-  margin: 0;
-  padding-left: 20px;
-}
-
-.tips-box li {
-  margin-bottom: 4px;
-  font-size: 14px;
 }
 
 .trash-icon {
@@ -885,5 +825,76 @@ textarea.form-control {
   .markers-container {
     max-height: 300px;
   }
+}
+
+.description-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background-color: rgb(239, 246, 255);
+  color: rgb(59, 130, 246);
+  border-radius: 50%;
+  border: none;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.info-btn:hover {
+  background-color: rgb(219, 234, 254);
+}
+
+/* Tips box styling */
+.tips-box {
+  background-color: rgb(239, 246, 255);
+  color: rgb(59, 130, 246);
+  border-radius: 6px;
+  padding: 16px;
+  margin-bottom: 12px;
+  position: relative;
+}
+
+/* Close button - positioned in the corner */
+.close-tips-btn {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  color: rgb(59, 130, 246);
+  font-weight: bold;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.close-tips-btn:hover {
+  color: rgb(0, 0, 0);
+}
+
+/* Tips list */
+.tips-list {
+  list-style-type: disc;
+  padding-left: 20px;
+  margin: 0;
+}
+
+.tips-list li {
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: rgb(59, 130, 246);
+}
+
+.tips-list li:last-child {
+  margin-bottom: 0;
 }
 </style>
