@@ -4,7 +4,7 @@ import { Apple, Droplet, Hammer, Hourglass, Package, Pill, CircleAlert } from 'l
 import { RouterLink, useRouter } from 'vue-router'
 import { useStorageStore } from '@/stores/StorageStore'
 import { useHouseholdStore } from '@/stores/HouseholdStore'
-import StorageAdvice from '@/components/StorageAdvice.vue'
+import StorageAdvice from '@/components/storageComponents/StorageAdvice.vue'
 
 /**
  * Storage Dashboard Component
