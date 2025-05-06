@@ -743,7 +743,7 @@ textarea.form-control {
   flex-direction: column;
   gap: 12px;
   margin-bottom: 20px;
-  max-height: 400px;
+  max-height: 475px;
   overflow-y: auto;
 }
 
