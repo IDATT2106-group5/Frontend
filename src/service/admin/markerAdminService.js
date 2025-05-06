@@ -52,7 +52,26 @@ class MarkerAdminService extends BaseService {
    */
   async updateMarker(id, markerData) {
     try {
-      return await this.put(`/${id}`, markerData);
+      // Format the request based on API expectations
+      // Remove the id from the payload if it's included
+      const {  ...dataToUpdate } = markerData;
+
+      // Format the request matching the MapIconRequestDto on the backend
+      const requestData = {
+        type: dataToUpdate.type,
+        name: dataToUpdate.name,
+        address: dataToUpdate.address,
+        postalCode: dataToUpdate.postalCode,
+        city: dataToUpdate.city,
+        description: dataToUpdate.description,
+        contactInfo: dataToUpdate.contactInfo,
+        openingHours: dataToUpdate.openingHours,
+        latitude: dataToUpdate.latitude,
+        longitude: dataToUpdate.longitude
+      };
+
+      // Use the correct URL format without slash
+      return await this.put(`${id}`, requestData);
     } catch (error) {
       console.error(`Error updating marker ${id}:`, error);
       throw error;
