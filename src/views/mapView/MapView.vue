@@ -112,45 +112,48 @@ export default {
       return windowWidth.value < 768 // Common breakpoint for mobile
     })
 
-    // Set initial collapsed states based on screen size
-    onMounted(() => {
+    onMounted(async () => {
       isFilterCollapsed.value = isMobileView.value
       isLayerCollapsed.value = isMobileView.value
 
-      // Initialize map
-      map.value = mapStore.initMap(mapContainer.value)
+      try {
+        // Wait for map initialization to complete
+        map.value = await mapStore.initMap(mapContainer.value)
 
-      // Set flag when map is ready
-      if (map.value) {
-        mapInitialized.value = true
-        console.log('Map initialized successfully')
+        // Only set flag and process positions when map is fully initialized
+        if (map.value) {
+          console.log('Map initialized successfully')
+          mapInitialized.value = true
 
-        // Process any stored positions that came in before map initialization
-        userPositions.value.forEach((position, userId) => {
-          updateUserMarker(userId, position.longitude, position.latitude)
-        })
-      }
+          // Process any stored positions that came in before map initialization
+          userPositions.value.forEach((position, userId) => {
+            const isCurrentUser = userId === 29
+            updateUserMarker(userId, position.longitude, position.latitude, isCurrentUser)
+          })
 
-      // Subscribe to position updates if connected
-      const householdId = 5
-      if (connected.value) {
-        console.log('Subscribing to household positions')
-        subscribeToPosition(householdId, handlePositionUpdate)
-      }
-
-      // Fetch initial positions
-      fetchHouseholdPositions()
-        .then((positions) => {
-          if (Array.isArray(positions)) {
-            console.log(`Received ${positions.length} initial positions`)
-            positions.forEach((pos) => handlePositionUpdate(pos))
-          } else {
-            console.warn('Expected positions array but received:', positions)
+          // Only subscribe and fetch positions after map is ready
+          const householdId = 5
+          if (connected.value) {
+            console.log('Subscribing to household positions')
+            subscribeToPosition(householdId, handlePositionUpdate)
           }
-        })
-        .catch((error) => {
-          console.error('Error fetching household positions:', error)
-        })
+
+          // Fetch initial positions after map is ready
+          try {
+            const positions = await fetchHouseholdPositions()
+            if (Array.isArray(positions)) {
+              console.log(`Received ${positions.length} initial positions`)
+              positions.forEach((pos) => handlePositionUpdate(pos))
+            } else {
+              console.warn('Expected positions array but received:', positions)
+            }
+          } catch (error) {
+            console.error('Error fetching household positions:', error)
+          }
+        }
+      } catch (error) {
+        console.error('Map initialization failed:', error)
+      }
 
       // Add resize event listener
       window.addEventListener('resize', handleResize)
@@ -170,7 +173,7 @@ export default {
       // Remove all markers
       userMarkers.value.forEach((marker) => {
         if (map.value) {
-          map.value.removeLayer(marker)
+          map.removeLayer(marker)
         }
       })
 
@@ -219,59 +222,60 @@ export default {
     }
 
     function updateUserMarker(userId, longitude, latitude, isCurrentUser = false) {
-      // Ensure map is initialized
-      if (!map.value || !mapInitialized.value) {
-        console.warn('Cannot update marker: Map not initialized')
-        return
-      }
-
-      console.log(`Updating marker for user ${userId} at position (${latitude}, ${longitude})`)
-
+      // First check if marker already exists
       if (userMarkers.value.has(userId)) {
-        // Update existing marker
         const marker = userMarkers.value.get(userId)
         marker.setLatLng([latitude, longitude])
         console.log(`Updated existing marker for user ${userId}`)
-      } else {
-        try {
-          let markerIcon
+        return
+      }
 
-          if (isCurrentUser) {
-            markerIcon = L.divIcon({
-              className: 'user-position-marker current-user-marker',
-              html: `
-                <div class="pulse-container">
-                  <div class="marker-pulse"></div>
-                  <div class="marker-core" style="background-color: #2196F3;">
-                    <span>ME</span>
-                  </div>
+      // If no marker exists, create a new one
+      try {
+        let markerIcon
+
+        if (isCurrentUser) {
+          markerIcon = L.divIcon({
+            className: 'user-position-marker current-user-marker',
+            html: `<div style="position: relative; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center;">
+                <style>
+                  @keyframes pulsate {
+                    0% { transform: scale(0.8); opacity: 0.8; }
+                    100% { transform: scale(2); opacity: 0; }
+                  }
+                </style>
+                <div style="position: absolute; top: 5px; left: 5px; width: 30px; height: 30px; background-color: rgba(0,196,255,0.55); border-radius: 50%; animation: pulsate 1.5s ease-out infinite;"></div>
+                <div style="position: relative; background-color: #009dff; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
+                  Me
                 </div>
-              `,
-              iconSize: [40, 40],
-              iconAnchor: [20, 20],
-            })
-          } else {
-            // Red marker for other users
-            markerIcon = L.divIcon({
-              className: 'user-position-marker',
-              html: `<div style="background-color: #ff4d4f; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">${userId}</div>`,
-              iconSize: [30, 30],
-              iconAnchor: [15, 15],
-            })
-          }
-
-          const marker = L.marker([latitude, longitude], {
-            icon: markerIcon,
+              </div>`,
+            iconSize: [40, 40],
+            iconAnchor: [20, 20],
           })
-
-          // Add to map first, then store in our collection
-          marker.addTo(map.value)
-          userMarkers.value.set(userId, marker)
-
-          console.log(`Created new marker for user ${userId}`)
-        } catch (error) {
-          console.error(`Error creating marker for user ${userId}:`, error)
+        } else {
+          markerIcon = L.divIcon({
+            className: 'user-position-marker',
+            html: `<div style="background-color: #ff4d4f; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">${userId}</div>`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15],
+          })
         }
+
+        const newMarker = L.marker([latitude, longitude], {
+          icon: markerIcon,
+        })
+
+        // Check if map is properly initialized before adding
+        if (map.value && typeof map.value.addLayer === 'function') {
+          newMarker.addTo(map.value)
+          userMarkers.value.set(userId, newMarker)
+          console.log(`Created new marker for user ${userId}`)
+        } else {
+          console.error(`Cannot add marker: map instance is not properly initialized`, map.value)
+          userMarkers.value.set(userId, newMarker)
+        }
+      } catch (error) {
+        console.error(`Error creating marker for user ${userId}:`, error)
       }
     }
 
@@ -342,55 +346,6 @@ export default {
 </script>
 
 <style scoped>
-.pulse-container {
-  position: relative;
-  width: 40px;
-  height: 40px;
-}
-
-.marker-core {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 26px;
-  height: 26px;
-  background-color: #2196f3;
-  border-radius: 50%;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: bold;
-  font-size: 12px;
-  z-index: 2;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-}
-
-.marker-pulse {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 40px;
-  height: 40px;
-  background-color: rgba(33, 150, 243, 0.4);
-  border-radius: 50%;
-  z-index: 1;
-  animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-  0% {
-    transform: translate(-50%, -50%) scale(0.5);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(1.5);
-    opacity: 0;
-  }
-}
-
 /* No changes to the styles */
 .map-container {
   width: 100%;
