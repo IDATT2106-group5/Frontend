@@ -1,8 +1,7 @@
 <script setup>
-import { defineProps } from 'vue';
 import PasswordRequirementCheck from './PasswordRequirementCheck.vue';
 
-defineProps({
+const props = defineProps({
   password: {
     type: String,
     required: true
@@ -22,6 +21,14 @@ defineProps({
     ]
   }
 });
+
+const checkRequirement = (requirement) => {
+  if (!props.password || props.password.length === 0) {
+    return false;
+  }
+
+  return !props.validator.$errors.some(e => e.$validator === requirement.validator) || false;
+};
 </script>
 
 <template>
@@ -31,7 +38,7 @@ defineProps({
       <PasswordRequirementCheck
         v-for="(requirement, index) in requirements"
         :key="index"
-        :isPassing="password && !validator.$errors.some(e => e.$validator === requirement.validator)"
+        :isPassing="checkRequirement(requirement)"
         :text="requirement.text"
       />
     </ul>
