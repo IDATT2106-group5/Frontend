@@ -187,7 +187,7 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
           city,
           ...rest
         } = this.markerFormData;
-    
+
         const requestData = {
           ...rest,
           address: `${address}, ${postalCode}, ${city}`
@@ -235,12 +235,12 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
           city,
           ...rest
         } = this.markerFormData;
-    
+
         const requestData = {
           ...rest,
           address: `${address}, ${postalCode}, ${city}`
         };
-    
+
         await MarkerAdminService.updateMarker(id, requestData);
 
         // Assuming the API returns a success message

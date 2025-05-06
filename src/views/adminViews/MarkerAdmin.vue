@@ -270,7 +270,7 @@
               type="button"
               @click="onDeleteMarker"
             >
-              <span class="trash-icon">🗑️</span> Slett
+              Slett
             </Button>
 
             <Button
@@ -771,11 +771,6 @@ textarea.form-control {
   font-size: 14px;
   color: #666;
 }
-
-.trash-icon {
-  margin-right: 4px;
-}
-
 /* Responsive styles */
 @media (max-width: 768px) {
   .marker-admin-container {
