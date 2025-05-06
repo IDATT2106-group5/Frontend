@@ -5,6 +5,10 @@ import MarkerService from '@/service/map/markerService';
 import MarkerConfigService from '@/service/map/markerConfigService';
 import IncidentMapService from '@/service/map/incidentMapService';
 import IncidentConfigService from '@/service/map/incidentConfigService';
+import RoutingService from '@/service/map/routingService';
+import GeolocationService from '@/service/map/geoLocationService.js';
+
+
 import L from 'leaflet';
 
 export const useMapStore = defineStore('map', {
@@ -12,12 +16,19 @@ export const useMapStore = defineStore('map', {
     // Core map state
     map: null,
     activeLayerId: 'standard',
+    initialLat: 60.39299,
+    initialLng: 5.32415,
+    initialZoom: 13,
 
     // Marker state
     markerTypes: [],
     markerLayers: {},
     markerData: {},
     cachedMarkerTypes: null,
+
+    // Notifications
+    notification: null,
+    notificationTimeout: null,
 
     // Incident state
     incidents: [],
@@ -32,7 +43,14 @@ export const useMapStore = defineStore('map', {
     silentLoading: false,
 
     // Cleanup reference
-    mapMoveCleanup: null
+    mapMoveCleanup: null,
+
+    // Map Routing
+    activeRoute: null,
+    routeStart: null,
+    routeEnd: null,
+    isGeneratingRoute: false,
+    routeError: null
   }),
 
   getters: {
@@ -124,25 +142,52 @@ export const useMapStore = defineStore('map', {
      * @param {HTMLElement} container - DOM element to contain the map
      * @returns {L.Map} The created map instance
      */
-    initMap(container) {
-      // Create the map using service
-      this.map = MapService.createMap(container);
+    async initMap(container) {
+      if (!container) return null;
 
-      // Set the initial active layer
-      this.setActiveLayer(this.activeLayerId);
+      try {
+        // Create the map with initial values from state
+        this.map = L.map(container, {
+          center: [this.initialLat, this.initialLng],
+          zoom: this.initialZoom,
+          layers: []
+        });
 
-      // Initialize markers
-      this.initMarkers();
+        // Set the initial active layer
+        this.setActiveLayer(this.activeLayerId);
 
-      // Initialize incidents
-      this.initIncidents();
+        // Make route function available globally for popup click handlers
+        window.createRouteToMarker = (markerData) => {
+          this.createRouteToMarker(markerData);
+        };
 
-      // Force a resize after initialization to handle container sizing issues
-      setTimeout(() => {
-        MapService.invalidateMapSize(this.map);
-      }, 300);
+        // Try to get user location and center map there
+        try {
+          const userCoords = await GeolocationService.getUserLocation();
+          if (userCoords && userCoords.length === 2) {
+            this.map.setView([userCoords[0], userCoords[1]], this.initialZoom);
+          }
+        } catch (locationError) {
+          console.warn("Could not get user location for initial map centering:", locationError);
+          // Continue with default coordinates
+        }
 
-      return this.map;
+        // Initialize markers
+        this.initMarkers();
+
+        // Initialize incidents
+        this.initIncidents();
+
+        // Force a resize after initialization
+        setTimeout(() => {
+          MapService.invalidateMapSize(this.map);
+        }, 300);
+
+        return this.map;
+      } catch (error) {
+        console.error("Error initializing map:", error);
+        return null;
+      }
     },
 
     /**
@@ -250,17 +295,94 @@ export const useMapStore = defineStore('map', {
     },
 
     /**
-     * Create marker with popup for display on map
+     * Create a marker with popup for the map
      * @param {Object} markerData - Data for the marker
      * @param {Object} markerType - Type configuration for the marker
-     * @returns {L.Marker} Leaflet marker with popup
+     * @returns {L.Marker|null} - The created Leaflet marker or null
      */
     createMarkerWithPopup(markerData, markerType) {
-      const popupContent = MarkerConfigService.createMarkerPopupContent(markerData);
+      if (!markerData || !markerType) return null;
 
-      return L.marker([markerData.lat, markerData.lng], {
+      const marker = L.marker([markerData.lat, markerData.lng], {
         icon: markerType.icon
-      }).bindPopup(popupContent);
+      });
+
+      const popupContent = MarkerConfigService.createMarkerPopupContent(markerData);
+      marker.bindPopup(popupContent);
+
+      return marker;
+    },
+
+    /**
+     * Create a route from user's location to a selected map marker
+     * @param {Object} markerData - The marker to route to
+     */
+    async createRouteToMarker(markerData) {
+      if (!markerData || !markerData.lat || !markerData.lng) {
+        console.error("Invalid marker data for routing:", markerData);
+        this.routeError = "Ugyldig markørdata for ruteberegning.";
+        return;
+      }
+
+      try {
+        this.showNotification("Henter din posisjon...");
+
+        let startCoords;
+
+        try {
+          startCoords = await GeolocationService.getBrowserLocationOnly({
+            enableHighAccuracy: true,
+            timeout: 10000
+          }).then(pos => [pos.coords.latitude, pos.coords.longitude]);
+        } catch (geolocationError) {
+          console.error("Browser geolocation failed:", geolocationError);
+          this.showNotification("Kunne ikke hente din posisjon. Gi tillatelse til stedstjenester i nettleseren.");
+          this.routeError = "Kunne ikke hente din posisjon: " + GeolocationService.getErrorMessage(geolocationError);
+          return;
+        }
+
+        const endCoords = [markerData.lat, markerData.lng];
+
+        await this.generateRoute(startCoords, endCoords);
+
+        this.showNotification(`Rute til ${markerData.name || 'markør'} generert`);
+      } catch (error) {
+        console.error("Error creating route to marker:", error);
+        this.routeError = "Kunne ikke generere rute. " + (error.message || "");
+        this.showNotification("Kunne ikke generere rute.");
+      }
+    },
+
+    /**
+     * Get user's current position as a promise
+     * @returns {Promise<Array>} User position as [lat, lng]
+     */
+    async getUserPosition() {
+      try {
+        return await GeolocationService.getUserLocation();
+      } catch (error) {
+        console.error("Error getting user position:", error);
+        this.routeError = "Kunne ikke hente din posisjon: " + GeolocationService.getErrorMessage(error);
+        return null;
+      }
+    },
+
+    /**
+     * Show a temporary notification message
+     * @param {string} message - Message to display
+     */
+    showNotification(message) {
+      this.notification = message;
+
+      // Clear previous timeout if exists
+      if (this.notificationTimeout) {
+        clearTimeout(this.notificationTimeout);
+      }
+
+      // Auto-dismiss after 3 seconds
+      this.notificationTimeout = setTimeout(() => {
+        this.notification = null;
+      }, 3000);
     },
 
     /**
@@ -534,6 +656,7 @@ export const useMapStore = defineStore('map', {
      * Clean up resources when component is unmounted
      */
     cleanupMap() {
+      this.clearRoute();
       this.cleanupEventListeners();
       this.cleanupMapLayers();
       this.resetState();
@@ -580,6 +703,88 @@ export const useMapStore = defineStore('map', {
       this.markerTypes = [];
       this.incidents = [];
       this.initialMarkersLoaded = false;
-    }
+    },
+
+    /**
+     * Generate and display a route on the map
+     *
+     * @param {Array} startCoords - Starting coordinates [lat, lng]
+     * @param {Array} endCoords - Destination coordinates [lat, lng]
+     */
+    async generateRoute(startCoords, endCoords) {
+      if (!this.map || !startCoords || !endCoords) {
+        console.error("Cannot generate route: missing map or coordinates", {
+          map: !!this.map,
+          startCoords,
+          endCoords
+        });
+        this.routeError = "Kan ikke generere rute: mangler kart eller koordinater";
+        return;
+      }
+
+      this.isGeneratingRoute = true;
+      this.routeError = null;
+
+      try {
+        console.log("Generating route from", startCoords, "to", endCoords);
+
+        // Store the coordinates
+        this.routeStart = startCoords;
+        this.routeEnd = endCoords;
+
+        // Make sure RoutingService is imported
+        const RoutingService = await import('@/service/map/routingService').then(m => m.default);
+
+        // Show the route
+        this.activeRoute = RoutingService.showRoute(this.map, startCoords, endCoords);
+
+        // Center map to fit the route
+        const bounds = L.latLngBounds([
+          L.latLng(startCoords[0], startCoords[1]),
+          L.latLng(endCoords[0], endCoords[1])
+        ]).pad(0.3); // Add 30% padding around the route
+
+        this.map.fitBounds(bounds);
+
+        console.log("Route generated successfully");
+      } catch (error) {
+        console.error("Error generating route:", error);
+        this.routeError = "Kunne ikke generere rute. Vennligst prøv igjen senere.";
+      } finally {
+        this.isGeneratingRoute = false;
+      }
+    },
+
+    /**
+     * Clear the current route
+     */
+    clearRoute() {
+      RoutingService.clearRoute();
+      this.activeRoute = null;
+      this.routeStart = null;
+      this.routeEnd = null;
+      this.routeError = null;
+    },
+
+    /**
+     * Find marker type by coordinates
+     */
+    findMarkerTypeByCoords(lat, lng) {
+      // Set a small threshold for coordinate comparison (to handle floating point precision)
+      const threshold = 0.0001;
+
+      // Check all marker types and their markers
+      for (const [typeId, markers] of Object.entries(this.markerData)) {
+        for (const marker of markers) {
+          if (
+            Math.abs(marker.lat - lat) < threshold &&
+            Math.abs(marker.lng - lng) < threshold
+          ) {
+            return typeId;
+          }
+        }
+      }
+      return null;
+    },
   }
 });

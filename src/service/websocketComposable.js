@@ -14,7 +14,7 @@ export default function useWebSocket() {
 
   onMounted(() => {
     webSocketService.init({
-      userId: 22,
+      userId: userStore.userId,
       token: userStore.token,
       householdId: householdStore.householdId,
       onConnected: () => {
@@ -76,7 +76,7 @@ async function subscribeToPosition(householdId, callback) {
 
   async function fetchNotifications() {
     try {
-      const requestData = { userId: 36 }
+      const requestData = { userId: userStore.user.id }
       const response = await fetch('http://localhost:8080/api/notifications/get', {
         method: 'POST',
         headers: {

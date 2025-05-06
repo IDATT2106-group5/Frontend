@@ -1,4 +1,4 @@
-import apiClient from '@/service/apiClient';
+import BaseService from '../baseService';
 
 /**
  * Service for handling Two-Factor Authentication (2FA) operations for admin users.
@@ -7,7 +7,10 @@ import apiClient from '@/service/apiClient';
  *
  * @class TwoFactorAuthService
  */
-class TwoFactorAuthService {
+class TwoFactorAuthService extends BaseService {
+  constructor() {
+    super('/admin/login/2fa');
+  }
 
   /**
    * Generates a Two-Factor Authentication (2FA) code for the given email.
@@ -18,7 +21,7 @@ class TwoFactorAuthService {
    * @returns {Promise<Object>} A promise that resolves to the server's response.
    */
   async generate2FA(email) {
-    return apiClient.post("/admin/login/2fa/generate", { email });
+    return await this.post("generate", { email });
   }
 
   /**
@@ -30,7 +33,7 @@ class TwoFactorAuthService {
    * @returns {Promise<Object>} A promise that resolves to the server's response.
    */
   async verify2FA(credentials) {
-    return apiClient.post("/admin/login/2fa/verify", credentials);
+    return await this.post("verify", credentials);
   }
 
 }

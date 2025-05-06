@@ -1,7 +1,18 @@
 <template>
-  <!-- No changes to the template -->
   <div class="map-container">
     <div id="map" ref="mapContainer"></div>
+
+    <!-- Add notification display with proper v-if check -->
+    <transition name="fade">
+      <div v-if="notification" class="map-notification">
+        {{ notification }}
+      </div>
+    </transition>
+
+    <!-- Existing components with proper condition checks -->
+    <div class="closest-facility-container" v-if="!isLoadingMarkers && !markersLoadError">
+      <ClosestFacilityFinder />
+    </div>
 
     <!-- Loading indicator -->
     <div v-if="isLoadingMarkers" class="map-loading-overlay">
@@ -70,10 +81,12 @@ import Button from '@/components/ui/button/Button.vue'
 import 'leaflet/dist/leaflet.css'
 import useWebSocket from '@/service/websocketComposable.js'
 import L from 'leaflet'
+import ClosestFacilityFinder from '@/components/map/ClosestFacilityFinder.vue'
 
 export default {
   name: 'EmergencyMap',
   components: {
+    ClosestFacilityFinder,
     MarkerFilter,
     Button,
   },
@@ -87,10 +100,11 @@ export default {
     const userPositions = ref(new Map())
     const map = ref(null)
     const mapInitialized = ref(false)
+
     const { subscribeToPosition, fetchHouseholdPositions, connected } = useWebSocket()
 
     // Use storeToRefs for reactive properties
-    const { layerOptions, activeLayerId, isLoadingMarkers, markersLoadError } =
+    const { layerOptions, activeLayerId, isLoadingMarkers, markersLoadError, notification } =
       storeToRefs(mapStore)
 
     // Determine if we're in mobile view
@@ -98,6 +112,7 @@ export default {
       return windowWidth.value < 768 // Common breakpoint for mobile
     })
 
+    // Set initial collapsed states based on screen size
     onMounted(() => {
       isFilterCollapsed.value = isMobileView.value
       isLayerCollapsed.value = isMobileView.value
@@ -196,7 +211,7 @@ export default {
 
       // If map is initialized, update marker immediately
       if (mapInitialized.value && map.value) {
-        const isCurrentUser = userId === 29;
+        const isCurrentUser = userId === 29
         updateUserMarker(userId, parsedLong, parsedLat, isCurrentUser)
       } else {
         console.log(`Map not ready yet. Storing position for user ${userId} for later display`)
@@ -218,12 +233,10 @@ export default {
         marker.setLatLng([latitude, longitude])
         console.log(`Updated existing marker for user ${userId}`)
       } else {
-        // Create new marker with style based on whether it's current user or not
         try {
-          let markerIcon;
+          let markerIcon
 
           if (isCurrentUser) {
-            // Blue marker with pulse effect for current user
             markerIcon = L.divIcon({
               className: 'user-position-marker current-user-marker',
               html: `
@@ -319,6 +332,7 @@ export default {
       toggleFilterCollapse,
       isLayerCollapsed,
       toggleLayerCollapse,
+      notification,
       map,
       userMarkers,
       userPositions,
@@ -341,7 +355,7 @@ export default {
   transform: translate(-50%, -50%);
   width: 26px;
   height: 26px;
-  background-color: #2196F3;
+  background-color: #2196f3;
   border-radius: 50%;
   color: white;
   display: flex;
@@ -350,7 +364,7 @@ export default {
   font-weight: bold;
   font-size: 12px;
   z-index: 2;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
 .marker-pulse {
@@ -376,6 +390,7 @@ export default {
     opacity: 0;
   }
 }
+
 /* No changes to the styles */
 .map-container {
   width: 100%;
@@ -384,9 +399,110 @@ export default {
   overflow: hidden;
 }
 
+.closest-facility-container {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+}
+
+@media (max-width: 767px) {
+  .closest-facility-container {
+    top: auto;
+    bottom: 16px;
+    right: 16px;
+  }
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
 #map {
   width: 100%;
   height: 100%;
+}
+
+/* Custom Marker Popup Styles */
+.marker-popup-container {
+  padding: 4px;
+}
+
+.marker-info-content {
+  margin-bottom: 12px;
+}
+
+.marker-popup {
+  min-width: 200px;
+}
+
+.marker-popup h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.marker-popup p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.marker-popup-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+  border-top: 1px solid #eee;
+  padding-top: 8px;
+}
+
+.marker-route-button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.marker-route-button:hover {
+  background-color: #388e3c;
+}
+
+/* Map Notification */
+.map-notification {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  z-index: 1000;
+  font-size: 14px;
+}
+
+@keyframes fade-in-out {
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 /* Layer Control Container */

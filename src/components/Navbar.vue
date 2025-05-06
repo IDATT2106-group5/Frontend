@@ -1,10 +1,25 @@
 <script setup xmlns="http://www.w3.org/1999/html">
-import { Bell, Globe, Map, Menu, Newspaper, ShoppingCart, User } from 'lucide-vue-next'
+import {
+  AlarmCheck,
+  Bell,
+  Globe,
+  Home,
+  Info,
+  Lock,
+  Mail,
+  Map,
+  Menu,
+  Newspaper,
+  Package,
+  ShoppingCart,
+  User,
+} from 'lucide-vue-next'
+
+import { onBeforeUnmount, ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/UserStore'
 import useWebSocket from '@/service/websocketComposable.js'
-import { onBeforeUnmount, ref } from 'vue'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -56,7 +71,7 @@ function updateUserPosition() {
   navigator.geolocation.getCurrentPosition(
     (position) => {
       const { latitude, longitude } = position.coords
-      const userId = userStore.user.id
+      const userId = userStore.userId || 44
       console.log('User ID:', userId)
       updatePosition(userId, longitude.toString(), latitude.toString())
       locationError.value = null
@@ -109,6 +124,15 @@ function togglePositionSharing() {
 onBeforeUnmount(() => {
   stopPositionSharing()
 })
+
+const notificationIcons = {
+  INVITATION: Mail,
+  MEMBERSHIP_REQUEST: User,
+  INCIDENT: AlarmCheck,
+  STOCK_CONTROL: Package,
+  HOUSEHOLD: Home,
+  INFO: Info,
+}
 </script>
 
 <template>
@@ -123,6 +147,7 @@ onBeforeUnmount(() => {
         <span class="text-xl font-semibold hidden sm:inline">Krisefikser</span>
       </RouterLink>
 
+      <!-- Desktop Navigation -->
       <nav class="hidden md:flex gap-8 items-center text-sm font-medium">
         <a href="#" class="flex items-center gap-2 hover:underline">
           <Newspaper class="w-5 h-5 text-white" />
@@ -132,31 +157,42 @@ onBeforeUnmount(() => {
           <Globe class="w-5 h-5 text-white" />
           Kart
         </RouterLink>
-        <a href="#" class="flex items-center gap-2 hover:underline">
+        <RouterLink
+          v-if="userStore.token"
+          to="/storage"
+          class="flex items-center gap-2 hover:underline"
+        >
           <ShoppingCart class="w-5 h-5 text-white" />
           Min beholdning
-        </a>
+        </RouterLink>
         <RouterLink to="/household" class="flex items-center gap-2 hover:underline">
           <User class="w-5 h-5 text-white" />
           Min husstand
         </RouterLink>
+        <RouterLink
+          v-if="userStore.isAdmin"
+          to="/admin-dashboard"
+          class="flex items-center gap-2 hover:underline"
+        >
+          <Lock class="w-5 h-5 text-white" />
+          Admin
+        </RouterLink>
       </nav>
 
+      <!-- Right Side -->
       <div class="flex gap-4 items-center">
-        <Button
+        <div
           @click="toggleNotifications"
-          variant="outline"
-          class="text-white border-white bg-[#2c3e50] hover:bg-blue-600 relative"
+          class="relative cursor-pointer hover:bg-blue-600 p-2 rounded transition-colors"
         >
-          <Bell class="w-4 h-4 mr-2" />
-          Varsler
+          <Bell class="w-5 h-5 text-white fill-white" />
           <span
             v-if="notificationCount > 0"
-            class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
+            class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
           >
             {{ notificationCount }}
           </span>
-        </Button>
+        </div>
 
         <template v-if="userStore.token">
           <Button
@@ -179,11 +215,13 @@ onBeforeUnmount(() => {
         </template>
       </div>
 
+      <!-- Hamburger for mobile -->
       <button class="md:hidden" @click="mobileMenuOpen = !mobileMenuOpen">
         <Menu class="w-6 h-6 text-white" />
       </button>
     </div>
 
+    <!-- Mobile Navigation -->
     <div v-if="mobileMenuOpen" class="md:hidden mt-4 flex flex-col gap-4 text-sm font-medium">
       <a href="#" class="flex items-center gap-2 hover:underline">
         <Newspaper class="w-5 h-5 text-white" />
@@ -193,13 +231,25 @@ onBeforeUnmount(() => {
         <Globe class="w-5 h-5 text-white" />
         Kart
       </RouterLink>
-      <a href="#" class="flex items-center gap-2 hover:underline">
+      <RouterLink
+        v-if="userStore.token"
+        to="/storage"
+        class="flex items-center gap-2 hover:underline"
+      >
         <ShoppingCart class="w-5 h-5 text-white" />
         Min beholdning
-      </a>
+      </RouterLink>
       <RouterLink to="/household" class="flex items-center gap-2 hover:underline">
         <User class="w-5 h-5 text-white" />
         Min husstand
+      </RouterLink>
+      <RouterLink
+        v-if="userStore.isAdmin"
+        to="/admin-dashboard"
+        class="flex items-center gap-2 hover:underline"
+      >
+        <Lock class="w-5 h-5 text-white" />
+        Admin
       </RouterLink>
     </div>
   </header>
