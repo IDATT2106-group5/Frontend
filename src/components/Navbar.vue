@@ -57,6 +57,7 @@ function updateUserPosition() {
     (position) => {
       const { latitude, longitude } = position.coords
       const userId = userStore.user.id
+      console.log('User ID:', userId)
       updatePosition(userId, longitude.toString(), latitude.toString())
       locationError.value = null
     },
