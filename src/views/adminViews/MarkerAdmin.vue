@@ -151,15 +151,6 @@
           </div>
 
           <div class="form-group">
-            <label for="name">Tittel</label>
-            <Input
-              id="name"
-              v-model="markerFormData.name"
-              required
-            />
-          </div>
-
-          <div class="form-group">
             <label for="address">Adresse</label>
             <Input
               id="address"

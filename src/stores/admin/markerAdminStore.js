@@ -15,7 +15,6 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
     markerFormData: {
       id: null,
       type: 'HEARTSTARTER',
-      name: '',
       address: '',
       postalCode: '',
       city: '',
