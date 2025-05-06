@@ -5,7 +5,7 @@
 </template>
 
 <script>
-import { onMounted, ref, onUnmounted, computed, defineProps, defineEmits } from 'vue';
+import { onMounted, ref, onUnmounted, computed } from 'vue';
 import 'leaflet/dist/leaflet.css';
 import MapService from '@/service/map/mapService';
 
@@ -50,11 +50,15 @@ export default {
     const initMap = () => {
       if (!mapContainer.value) return;
 
-      // Create the map using the MapService
       map.value = MapService.createMap(mapContainer.value, {
         center: props.center,
-        zoom: props.zoom
+        zoom: props.zoom,
+        zoomControl: false
       });
+
+      L.control.zoom({
+        position: 'bottomright'
+      }).addTo(map.value);
 
       // Set the initial active layer
       setActiveLayer(activeLayerId.value);
@@ -122,7 +126,7 @@ export default {
 /* Custom Zoom Controls */
 :deep(.leaflet-control-zoom) {
   position: absolute !important;
-  top: 16px !important;
+  bottom: 16px !important;
   right: 16px !important;
   margin: 0 !important;
   border: none;
@@ -169,7 +173,7 @@ export default {
 /* Mobile-specific styles */
 @media (max-width: 767px) {
   :deep(.leaflet-control-zoom) {
-    top: 16px !important;
+    bottom: 16px !important;
   }
 
   :deep(.leaflet-control-zoom-in),

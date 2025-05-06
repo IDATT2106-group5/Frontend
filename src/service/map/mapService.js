@@ -1,4 +1,4 @@
-import L from 'leaflet';
+import L from 'leaflet'
 
 /**
  * Service that handles Leaflet map operations
@@ -21,14 +21,7 @@ class MapService {
       zoomControl: false
     };
 
-    const map = L.map(container, { ...defaultOptions, ...options });
-
-    // Add zoom control in top right
-    L.control.zoom({
-      position: 'topright'
-    }).addTo(map);
-
-    return map;
+    return L.map(container, { ...defaultOptions, ...options });
   }
 
   /**
