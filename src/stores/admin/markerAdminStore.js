@@ -18,7 +18,7 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
       name: '',
       address: '',
       postalCode: '',
-      city: 'Trondheim',
+      city: '',
       description: '',
       contactInfo: '',
       openingHours: '',
@@ -65,7 +65,7 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
           name: marker.name || '',
           address: marker.address || '',
           postalCode: marker.postalCode || '',
-          city: marker.city || 'Trondheim',
+          city: marker.city || '',
           description: marker.description || '',
           contactInfo: marker.contactInfo || '',
           openingHours: marker.openingHours || '',
@@ -90,7 +90,15 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
         const matchesSearch =
           this.searchTerm === '' ||
           (marker.name && marker.name.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
-          (marker.address && marker.address.toLowerCase().includes(this.searchTerm.toLowerCase()));
+          (marker.address && marker.address.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+          (marker.postalCode && marker.postalCode.toString().includes(this.searchTerm)) ||
+          (marker.city && marker.city.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+          (marker.description && marker.description.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+          (marker.contactInfo && marker.contactInfo.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+          (marker.openingHours && marker.openingHours.toLowerCase().includes(this.searchTerm.toLowerCase()));
+          (marker.type && marker.type.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+          (marker.latitude && marker.latitude.toString().includes(this.searchTerm)) ||
+          (marker.longitude && marker.longitude.toString().includes(this.searchTerm));
 
         const matchesType =
           this.filterType === '' ||
@@ -126,7 +134,7 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
         name: '',
         address: '',
         postalCode: '',
-        city: 'Trondheim',
+        city: '',
         description: '',
         contactInfo: '',
         openingHours: '',
