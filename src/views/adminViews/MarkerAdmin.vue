@@ -4,12 +4,12 @@
     <!-- Alert messages -->
     <div v-if="success" class="alert alert-success">
       {{ success }}
-      <button class="close-btn" @click="clearSuccess">×</button>
+      <Button variant="ghost" size="icon" class="close-btn" @click="clearSuccess">×</Button>
     </div>
 
     <div v-if="error" class="alert alert-error">
       {{ error }}
-      <button class="close-btn" @click="clearError">×</button>
+      <Button variant="ghost" size="icon" class="close-btn" @click="clearError">×</Button>
     </div>
 
     <!-- Loading overlay -->
@@ -35,12 +35,13 @@
           />
 
           <div class="filter-dropdown">
-            <button
+            <Button
+              variant="outline"
               class="filter-button"
               @click="toggleFilterDropdown"
             >
               Filtrer etter ikoner <span class="dropdown-arrow">▼</span>
-            </button>
+            </Button>
 
             <div v-if="showFilterDropdown" class="filter-options">
               <div class="filter-option">
@@ -92,12 +93,14 @@
               <h3>{{ marker.name }}</h3>
               <p>{{ marker.address }}, {{ marker.city }}</p>
             </div>
-            <button
+            <Button
+              variant="outline"
+              size="sm"
               class="edit-btn"
               @click="onEditMarker(marker)"
             >
               Rediger
-            </button>
+            </Button>
           </div>
 
           <div v-if="filteredMarkers.length === 0" class="empty-markers">
@@ -105,12 +108,13 @@
           </div>
         </div>
 
-        <button
+        <Button
+          variant="default"
           class="add-new-btn"
           @click="onAddNew"
         >
           + Legg til ny
-        </button>
+        </Button>
       </div>
 
       <!-- Marker Form (Edit/Create) -->
@@ -120,7 +124,7 @@
         <div class="info-box" v-if="showInfoBox">
           <span class="info-icon">?</span>
           <span>Hvordan lage ny markør på kartet</span>
-          <button class="close-btn" @click="closeInfoBox">X</button>
+          <Button variant="ghost" size="icon" class="close-btn" @click="closeInfoBox">X</Button>
         </div>
         <p class="click-info">Klikk på kartet for å endre markørens posisjon.</p>
 
@@ -188,23 +192,27 @@
           <div class="form-group">
             <label for="description">
               Beskrivelse
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 type="button"
                 class="info-btn"
                 @click="toggleDescriptionTips"
               >
                 ?
-              </button>
+              </Button>
             </label>
 
             <div v-if="showDescriptionTips" class="tips-box">
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 type="button"
                 class="close-btn"
                 @click="toggleDescriptionTips"
               >
                 X
-              </button>
+              </Button>
               <h4>Tips for en god beskrivelse:</h4>
               <ul>
                 <li>Vær konkret om hva som finnes på stedet</li>
@@ -266,29 +274,30 @@
           </div>
 
           <div class="button-row">
-            <button
+            <Button
+              variant="outline"
               type="button"
-              class="btn btn-secondary"
               @click="onCancelEdit"
             >
               Avbryt
-            </button>
+            </Button>
 
-            <button
+            <Button
               v-if="isEditing"
+              variant="destructive"
               type="button"
-              class="btn btn-danger"
               @click="onDeleteMarker"
             >
               <span class="trash-icon">🗑️</span> Slett
-            </button>
+            </Button>
 
-            <button
+            <Button
+              variant="default"
               type="submit"
-              class="btn btn-primary"
+              class="ml-auto"
             >
               Lagre
-            </button>
+            </Button>
           </div>
         </form>
       </div>
@@ -312,12 +321,14 @@ import { useMarkerAdminStore } from '@/stores/admin/markerAdminStore';
 import { storeToRefs } from 'pinia';
 import MarkerConfigService from '@/service/map/markerConfigService';
 import BaseMap from '@/components/map/BaseMap.vue'; // Import BaseMap component
+import Button from '@/components/ui/button/Button.vue'; // Import Button component
 import L from 'leaflet';
 
 export default {
   name: 'markerAdmin',
   components: {
-    BaseMap // Register BaseMap component
+    BaseMap,
+    Button
   },
 
   setup() {
@@ -636,11 +647,12 @@ export default {
   border: 1px solid #f5c6cb;
 }
 
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 16px;
-  cursor: pointer;
+.filter-button {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .left-panel {
@@ -709,41 +721,8 @@ textarea.form-control {
   margin-top: 24px;
 }
 
-.btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background-color 0.3s;
-}
-
-.btn-primary {
-  background-color: #27ae60;
-  color: white;
+.ml-auto {
   margin-left: auto;
-}
-
-.btn-primary:hover {
-  background-color: #219653;
-}
-
-.btn-secondary {
-  background-color: #f1f1f1;
-  color: #333;
-}
-
-.btn-secondary:hover {
-  background-color: #e0e0e0;
-}
-
-.btn-danger {
-  background-color: #e74c3c;
-  color: white;
-}
-
-.btn-danger:hover {
-  background-color: #c0392b;
 }
 
 /* Markers list styles */
@@ -763,19 +742,6 @@ textarea.form-control {
 
 .filter-dropdown {
   position: relative;
-}
-
-.filter-button {
-  width: 100%;
-  padding: 10px;
-  background-color: #f1f1f1;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  text-align: left;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
 }
 
 .filter-options {
@@ -842,31 +808,8 @@ textarea.form-control {
   font-size: 14px;
 }
 
-.edit-btn {
-  padding: 6px 12px;
-  background-color: #f1f1f1;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.edit-btn:hover {
-  background-color: #e0e0e0;
-}
-
 .add-new-btn {
   width: 100%;
-  padding: 12px;
-  background-color: #27ae60;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.add-new-btn:hover {
-  background-color: #219653;
 }
 
 .empty-markers {
@@ -905,19 +848,6 @@ textarea.form-control {
   margin-bottom: 16px;
   font-size: 14px;
   color: #666;
-}
-
-.info-btn {
-  background-color: #f1f1f1;
-  border: 1px solid #ddd;
-  border-radius: 50%;
-  width: 20px;
-  height: 20px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  margin-left: 8px;
-  cursor: pointer;
 }
 
 .tips-box {
