@@ -44,7 +44,6 @@ class IncidentAdminService extends BaseService {
    */
   async updateIncident(id, incidentData) {
     try {
-      // Format the request matching the IncidentRequestDto on the backend
       return await this.put(`${id}`, incidentData);
     } catch (error) {
       console.error(`Error updating incident ${id}:`, error);

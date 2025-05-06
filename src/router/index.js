@@ -26,6 +26,7 @@ import notAuthorizedView from '@/views/mainViews/notAuthorizedView.vue'
 import PersonVern from '@/views/mainViews/PersonVern.vue'
 import AdminUserView from '@/views/adminViews/AdminUsersView.vue'
 import MarkerAdmin from '@/views/adminViews/MarkerAdmin.vue'
+import IncidentAdmin from '@/views/adminViews/IncidentAdmin.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -185,6 +186,11 @@ const router = createRouter({
         requiresAuth: true,
         requiresAdmin: true
       }
+    },
+    {
+      path: '/admin/incidents',
+      name: 'IncidentAdmin',
+      component: IncidentAdmin,
     }
   ],
 })
