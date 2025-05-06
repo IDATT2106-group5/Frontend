@@ -150,8 +150,14 @@ export const useMapStore = defineStore('map', {
         this.map = L.map(container, {
           center: [this.initialLat, this.initialLng],
           zoom: this.initialZoom,
-          layers: []
+          layers: [],
+          zoomControl: false // Disable default zoom control
         });
+
+        // Add zoom control in the bottom right corner
+        L.control.zoom({
+          position: 'bottomright'
+        }).addTo(this.map);
 
         // Set the initial active layer
         this.setActiveLayer(this.activeLayerId);

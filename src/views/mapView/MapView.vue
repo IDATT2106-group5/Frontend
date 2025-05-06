@@ -447,9 +447,9 @@ export default {
 /* Custom Zoom Controls */
 :deep(.leaflet-control-zoom) {
   position: absolute !important;
-  top: 70px !important;
-  right: 16px !important;
-  margin: 0 !important;
+  bottom: 16px !important;
+  right: 10px !important;
+  margin: 20px !important;
   border: none;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
@@ -582,7 +582,7 @@ export default {
   }
 
   :deep(.leaflet-control-zoom) {
-    top: 66px !important;
+    bottom: 16px !important;
   }
 
   :deep(.leaflet-control-zoom-in),
