@@ -26,12 +26,11 @@
 
         <!-- Search and Filter -->
         <div class="search-filter-container">
-          <input
-            type="text"
+          <!-- Replaced with SearchBar component -->
+          <SearchBar
             v-model="searchTerm"
-            class="search-input"
             placeholder="Søk markører..."
-            @input="onSearchChange"
+            @update:modelValue="onSearchChange"
           />
 
           <div class="filter-dropdown">
@@ -148,43 +147,35 @@
 
           <div class="form-group">
             <label for="name">Tittel</label>
-            <input
+            <Input
               id="name"
-              type="text"
               v-model="markerFormData.name"
-              class="form-control"
               required
             />
           </div>
 
           <div class="form-group">
             <label for="address">Adresse</label>
-            <input
+            <Input
               id="address"
-              type="text"
               v-model="markerFormData.address"
-              class="form-control"
             />
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label for="postalCode">Postkode</label>
-              <input
+              <Input
                 id="postalCode"
-                type="text"
                 v-model="markerFormData.postalCode"
-                class="form-control"
               />
             </div>
 
             <div class="form-group">
               <label for="city">Sted</label>
-              <input
+              <Input
                 id="city"
-                type="text"
                 v-model="markerFormData.city"
-                class="form-control"
               />
             </div>
           </div>
@@ -232,21 +223,17 @@
 
           <div class="form-group">
             <label for="contactInfo">Kontaktinformasjon</label>
-            <input
+            <Input
               id="contactInfo"
-              type="text"
               v-model="markerFormData.contactInfo"
-              class="form-control"
             />
           </div>
 
           <div class="form-group">
             <label for="openingHours">Åpningstider</label>
-            <input
+            <Input
               id="openingHours"
-              type="text"
               v-model="markerFormData.openingHours"
-              class="form-control"
             />
           </div>
 
@@ -254,20 +241,18 @@
             <label>Koordinater</label>
             <div class="form-row">
               <div class="form-group">
-                <input
-                  type="text"
+                <Input
                   v-model="markerFormData.latitude"
-                  class="form-control coordinate-input"
                   placeholder="Breddgrad °N"
+                  class="coordinate-input"
                 />
               </div>
 
               <div class="form-group">
-                <input
-                  type="text"
+                <Input
                   v-model="markerFormData.longitude"
-                  class="form-control coordinate-input"
                   placeholder="Lengdegrad °E"
+                  class="coordinate-input"
                 />
               </div>
             </div>
@@ -320,15 +305,19 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useMarkerAdminStore } from '@/stores/admin/markerAdminStore';
 import { storeToRefs } from 'pinia';
 import MarkerConfigService from '@/service/map/markerConfigService';
-import BaseMap from '@/components/map/BaseMap.vue'; // Import BaseMap component
-import Button from '@/components/ui/button/Button.vue'; // Import Button component
+import BaseMap from '@/components/map/BaseMap.vue';
+import Button from '@/components/ui/button/Button.vue';
+import Input from '@/components/ui/input/Input.vue'; // Import Input component
+import SearchBar from '@/components/SearchBar.vue'; // Import SearchBar component
 import L from 'leaflet';
 
 export default {
   name: 'markerAdmin',
   components: {
     BaseMap,
-    Button
+    Button,
+    Input,
+    SearchBar
   },
 
   setup() {
@@ -657,7 +646,7 @@ export default {
 
 .left-panel {
   flex: 1;
-  background-color: #f9f9f9;
+  background-color: #ffffff;
   border-radius: 8px;
   padding: 16px;
   overflow-y: auto;
