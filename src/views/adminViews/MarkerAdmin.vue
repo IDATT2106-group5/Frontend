@@ -52,7 +52,7 @@
                   v-model="filterType"
                   @change="onFilterChange"
                 />
-                <label for="all-types">Alle typer</label>
+                <label for="all-types" class="filter-label">Alle typer</label>
               </div>
 
               <div
@@ -68,7 +68,17 @@
                   v-model="filterType"
                   @change="onFilterChange"
                 />
-                <label :for="type.id">{{ type.name }}</label>
+                <div class="filter-label-with-icon">
+                  <!-- Add the marker icon here -->
+                  <div class="filter-icon">
+                    <component
+                      :is="getMarkerIcon(type.id)"
+                      :color="getMarkerColor(type.id)"
+                      size="16"
+                    />
+                  </div>
+                  <label :for="type.id" class="filter-label">{{ type.name }}</label>
+                </div>
               </div>
             </div>
           </div>
@@ -711,33 +721,6 @@ textarea.form-control {
   margin-bottom: 16px;
 }
 
-.filter-dropdown {
-  position: relative;
-}
-
-.filter-options {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  z-index: 10;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.filter-option {
-  padding: 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.filter-option:hover {
-  background-color: #f1f1f1;
-}
-
 .markers-container {
   display: flex;
   flex-direction: column;
@@ -896,5 +879,57 @@ textarea.form-control {
 
 .tips-list li:last-child {
   margin-bottom: 0;
+}
+
+.filter-dropdown {
+  position: relative;
+}
+
+.filter-option {
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.filter-option:hover {
+  background-color: #f1f1f1;
+}
+
+.filter-label-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  cursor: pointer;
+}
+
+.filter-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.filter-label {
+  cursor: pointer;
+}
+
+/* Make the dropdown a bit wider to accommodate the icons */
+.filter-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  z-index: 10;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  max-height: 300px;
+  overflow-y: auto;
 }
 </style>
