@@ -14,9 +14,10 @@ export default class WebSocketService {
     this.token = null
   }
 
-  init({ userId, token, onConnected, onDisconnected, onNotification, onPositionUpdate }) {
+  init({ userId, householdId, token, onConnected, onDisconnected, onNotification, onPositionUpdate }) {
     this.userId = userId
     this.token = token
+    this.householdId = householdId
 
     if (onConnected) this.callbacks.onConnected = onConnected
     if (onDisconnected) this.callbacks.onDisconnected = onDisconnected
@@ -60,7 +61,7 @@ export default class WebSocketService {
       this.stompClient.subscribe(`/user/queue/notifications`, () => this.callbacks.onNotification())
       console.log(`Subscribed to /user/queue/notifications`)
     }
-    this.subscribeToPosition(5)
+    this.subscribeToPosition(this.householdId)
 
     this.callbacks.onConnected()
   }

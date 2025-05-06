@@ -82,6 +82,7 @@ import 'leaflet/dist/leaflet.css'
 import useWebSocket from '@/service/websocketComposable.js'
 import L from 'leaflet'
 import ClosestFacilityFinder from '@/components/map/ClosestFacilityFinder.vue'
+import { useUserStore } from '@/stores/UserStore.js'
 
 export default {
   name: 'EmergencyMap',
@@ -100,6 +101,7 @@ export default {
     const userPositions = ref(new Map())
     const map = ref(null)
     const mapInitialized = ref(false)
+    const userStore = useUserStore()
 
     const { subscribeToPosition, fetchHouseholdPositions, connected } = useWebSocket()
 
@@ -214,7 +216,7 @@ export default {
 
       // If map is initialized, update marker immediately
       if (mapInitialized.value && map.value) {
-        const isCurrentUser = userId === 29
+        const isCurrentUser = userId === userStore.user.id
         updateUserMarker(userId, parsedLong, parsedLat, isCurrentUser)
       } else {
         console.log(`Map not ready yet. Storing position for user ${userId} for later display`)
