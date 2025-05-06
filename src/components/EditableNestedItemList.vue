@@ -208,6 +208,44 @@ function getSubGroupTotalQuantity(subGroup) {
 }
 
 /**
+ * Converts a date string in format DD.MM.YYYY to YYYY-MM-DD for use with HTML date input
+ *
+ * @param {string} dateString - Date string in DD.MM.YYYY format
+ * @returns {string} Date string in YYYY-MM-DD format or empty string if invalid
+ */
+function formatDateForInput(dateString) {
+  if (!dateString || dateString === 'N/A') return ''
+
+  const parts = dateString.split('.')
+  if (parts.length !== 3) return ''
+
+  const day = parts[0].padStart(2, '0')
+  const month = parts[1].padStart(2, '0')
+  const year = parts[2]
+
+  return `${year}-${month}-${day}`
+}
+
+/**
+ * Converts a date string from YYYY-MM-DD format to DD.MM.YYYY
+ *
+ * @param {string} dateString - Date string in YYYY-MM-DD format
+ * @returns {string} Date string in DD.MM.YYYY format or empty string if invalid
+ */
+function formatDateForDisplay(dateString) {
+  if (!dateString) return ''
+
+  const parts = dateString.split('-')
+  if (parts.length !== 3) return ''
+
+  const year = parts[0]
+  const month = parts[1]
+  const day = parts[2]
+
+  return `${day}.${month}.${year}`
+}
+
+/**
  * Enters edit mode for a specific item
  * Sets the current editing item ID and initializes the edit form with item data
  *
@@ -216,7 +254,7 @@ function getSubGroupTotalQuantity(subGroup) {
 function startEditing(item) {
   editingItem.value = item.id
   editingData.value = {
-    expiryDate: item.expiryDate || '',
+    expiryDate: formatDateForInput(item.expiryDate) || '',
     quantity: item.quantity || 0,
   }
 }
@@ -229,7 +267,7 @@ function startEditing(item) {
  */
 function saveItemEdit(itemId) {
   const updatedData = {
-    expiryDate: editingData.value.expiryDate,
+    expiryDate: formatDateForDisplay(editingData.value.expiryDate),
     quantity: parseFloat(editingData.value.quantity),
   }
 
