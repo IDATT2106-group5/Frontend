@@ -6,6 +6,8 @@ import MarkerConfigService from '@/service/map/markerConfigService';
 import IncidentMapService from '@/service/map/incidentMapService';
 import IncidentConfigService from '@/service/map/incidentConfigService';
 import RoutingService from '@/service/map/routingService';
+import GeolocationService from '@/service/geolocationService';
+
 
 import L from 'leaflet';
 
@@ -14,6 +16,9 @@ export const useMapStore = defineStore('map', {
     // Core map state
     map: null,
     activeLayerId: 'standard',
+    initialLat: 60.39299,
+    initialLng: 5.32415,
+    initialZoom: 13,
 
     // Marker state
     markerTypes: [],
@@ -137,25 +142,52 @@ export const useMapStore = defineStore('map', {
      * @param {HTMLElement} container - DOM element to contain the map
      * @returns {L.Map} The created map instance
      */
-    initMap(container) {
-      // Create the map using service
-      this.map = MapService.createMap(container);
+    async initMap(container) {
+      if (!container) return null;
 
-      // Set the initial active layer
-      this.setActiveLayer(this.activeLayerId);
+      try {
+        // Create the map with initial values from state
+        this.map = L.map(container, {
+          center: [this.initialLat, this.initialLng],
+          zoom: this.initialZoom,
+          layers: []
+        });
 
-      // Initialize markers
-      this.initMarkers();
+        // Set the initial active layer
+        this.setActiveLayer(this.activeLayerId);
 
-      // Initialize incidents
-      this.initIncidents();
+        // Make route function available globally for popup click handlers
+        window.createRouteToMarker = (markerData) => {
+          this.createRouteToMarker(markerData);
+        };
 
-      // Force a resize after initialization to handle container sizing issues
-      setTimeout(() => {
-        MapService.invalidateMapSize(this.map);
-      }, 300);
+        // Try to get user location and center map there
+        try {
+          const userCoords = await GeolocationService.getUserLocation();
+          if (userCoords && userCoords.length === 2) {
+            this.map.setView([userCoords[0], userCoords[1]], this.initialZoom);
+          }
+        } catch (locationError) {
+          console.warn("Could not get user location for initial map centering:", locationError);
+          // Continue with default coordinates
+        }
 
-      return this.map;
+        // Initialize markers
+        this.initMarkers();
+
+        // Initialize incidents
+        this.initIncidents();
+
+        // Force a resize after initialization
+        setTimeout(() => {
+          MapService.invalidateMapSize(this.map);
+        }, 300);
+
+        return this.map;
+      } catch (error) {
+        console.error("Error initializing map:", error);
+        return null;
+      }
     },
 
     /**
@@ -263,10 +295,10 @@ export const useMapStore = defineStore('map', {
     },
 
     /**
-     * Create marker with popup for display on map
+     * Create a marker with popup for the map
      * @param {Object} markerData - Data for the marker
      * @param {Object} markerType - Type configuration for the marker
-     * @returns {L.Marker} Leaflet marker with popup
+     * @returns {L.Marker|null} - The created Leaflet marker or null
      */
     createMarkerWithPopup(markerData, markerType) {
       if (!markerData || !markerType) return null;
@@ -275,54 +307,28 @@ export const useMapStore = defineStore('map', {
         icon: markerType.icon
       });
 
-      // Create popup content with route button
-      const popupContent = document.createElement('div');
-      popupContent.className = 'marker-popup-container';
-
-      // Add the standard popup info
-      const infoContent = document.createElement('div');
-      infoContent.className = 'marker-info-content';
-      infoContent.innerHTML = MarkerConfigService.createMarkerPopupContent(markerData);
-      popupContent.appendChild(infoContent);
-
-      // Add action buttons container
-      const actionsContainer = document.createElement('div');
-      actionsContainer.className = 'marker-popup-actions';
-
-      // Add route button
-      const routeButton = document.createElement('button');
-      routeButton.className = 'marker-route-button';
-      routeButton.textContent = 'Vis rute hit';
-      routeButton.onclick = (e) => {
-        e.stopPropagation();
-        this.createRouteToMarker(markerData);
-        marker.closePopup();
-      };
-      actionsContainer.appendChild(routeButton);
-      popupContent.appendChild(actionsContainer);
-
-      // Bind the popup with our custom content
+      const popupContent = MarkerConfigService.createMarkerPopupContent(markerData);
       marker.bindPopup(popupContent);
 
       return marker;
     },
-
-    // Add this new method
 
     /**
      * Create a route from user's location to a selected map marker
      * @param {Object} markerData - The marker to route to
      */
     async createRouteToMarker(markerData) {
-      try {
-        // Get user's current position
-        const position = await this.getUserPosition();
-        if (!position) {
-          this.routeError = "Kunne ikke finne din posisjon. Vennligst gi tillatelse til stedsbestemmelse.";
-          return;
-        }
+      if (!markerData || !markerData.lat || !markerData.lng) {
+        console.error("Invalid marker data for routing:", markerData);
+        this.routeError = "Ugyldig markørdata for ruteberegning.";
+        return;
+      }
 
-        const startCoords = [position.coords.latitude, position.coords.longitude];
+      try {
+        this.showNotification("Henter din posisjon...");
+
+        // Get user's location with fallback mechanisms
+        const startCoords = await GeolocationService.getUserLocation();
         const endCoords = [markerData.lat, markerData.lng];
 
         // Use existing route generation
@@ -332,27 +338,23 @@ export const useMapStore = defineStore('map', {
         this.showNotification(`Rute til ${markerData.name || 'markør'} generert`);
       } catch (error) {
         console.error("Error creating route to marker:", error);
-        this.routeError = "Kunne ikke generere rute. Vennligst prøv igjen senere.";
+        this.routeError = "Kunne ikke generere rute. " + (error.message || "");
+        this.showNotification("Kunne ikke generere rute.");
       }
     },
 
     /**
      * Get user's current position as a promise
-     * @returns {Promise<GeolocationPosition>} User's position
+     * @returns {Promise<Array>} User position as [lat, lng]
      */
-    getUserPosition() {
-      return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-          reject(new Error('Geolocation is not supported by your browser'));
-          return;
-        }
-
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 60000
-        });
-      });
+    async getUserPosition() {
+      try {
+        return await GeolocationService.getUserLocation();
+      } catch (error) {
+        console.error("Error getting user position:", error);
+        this.routeError = "Kunne ikke hente din posisjon: " + GeolocationService.getErrorMessage(error);
+        return null;
+      }
     },
 
     /**

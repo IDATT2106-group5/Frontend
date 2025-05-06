@@ -236,10 +236,25 @@ export default {
   margin-bottom: 12px;
 }
 
+.marker-popup {
+  min-width: 200px;
+}
+
+.marker-popup h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.marker-popup p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
 .marker-popup-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 8px;
+  margin-top: 12px;
   border-top: 1px solid #eee;
   padding-top: 8px;
 }
@@ -271,7 +286,6 @@ export default {
   border-radius: 4px;
   z-index: 1000;
   font-size: 14px;
-  animation: fade-in-out 3s ease-in-out;
 }
 
 @keyframes fade-in-out {

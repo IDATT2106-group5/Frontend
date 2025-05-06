@@ -52,6 +52,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useMapStore } from '@/stores/map/mapStore';
 import { storeToRefs } from 'pinia';
 import MarkerService from '@/service/map/markerService';
+import GeolocationService from '@/service/geolocationService';
+
 
 // Component state
 const selectedType = ref('SHELTER'); // Default to shelters
@@ -81,95 +83,41 @@ onUnmounted(() => {
   }
 });
 
-const requestLocation = () => {
+const requestLocation = async () => {
   locationError.value = null;
+  isLoading.value = true;
 
-  if (!navigator.geolocation) {
-    locationError.value = "Geolokasjon støttes ikke av din nettleser.";
-    return;
-  }
+  try {
+    userLocation.value = await GeolocationService.getUserLocation();
+    console.log("User location acquired:", userLocation.value);
 
-  // First try to get a single position (faster response)
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      userLocation.value = [position.coords.latitude, position.coords.longitude];
-      console.log("Initial user location acquired:", userLocation.value);
-
-      // Then set up continuous watching with less strict parameters
+    // Set up continuous watching with less strict parameters
+    if (navigator.geolocation) {
       watchId.value = navigator.geolocation.watchPosition(
         (position) => {
           userLocation.value = [position.coords.latitude, position.coords.longitude];
           console.log("Updated user location:", userLocation.value);
         },
         (error) => {
-          // Only log watching errors, don't update the error display
-          // as we already have an initial position
+          // Only log watching errors, don't update error display
           console.warn("Geolocation watch error:", error);
         },
         {
-          enableHighAccuracy: false, // Less strict for continuous updates
+          enableHighAccuracy: false,
           timeout: 30000,
-          maximumAge: 120000  // 2 minutes
+          maximumAge: 120000
         }
       );
-    },
-    (error) => {
-      console.error("Geolocation error:", error);
-      locationError.value = getGeolocationErrorMessage(error);
-
-      // Fallback to IP-based geolocation if browser geolocation fails
-      fallbackToIPGeolocation();
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 15000, // Longer timeout for initial position
-      maximumAge: 0    // Force fresh position
-    }
-  );
-};
-
-// Fallback to IP-based geolocation when browser geolocation fails
-const fallbackToIPGeolocation = async () => {
-  try {
-    isLoading.value = true;
-    console.log("Falling back to IP-based geolocation");
-
-    // Using a free IP geolocation service
-    const response = await fetch('https://ipapi.co/json/');
-    const data = await response.json();
-
-    if (data.latitude && data.longitude) {
-      userLocation.value = [data.latitude, data.longitude];
-      console.log("IP-based location:", userLocation.value);
-
-      // Show a notice that we're using approximate location
-      locationError.value = "Bruker omtrentlig posisjon basert på IP. For nøyaktig posisjon, gi tillatelse til stedsbestemmelse.";
-    } else {
-      throw new Error("Could not determine location from IP");
     }
   } catch (error) {
-    console.error("IP geolocation fallback failed:", error);
-    locationError.value = "Kunne ikke bestemme din posisjon. Vennligst aktiver stedstjenester i nettleseren.";
+    console.error("Error getting location:", error);
+    locationError.value = error.message || "Could not determine your location.";
   } finally {
     isLoading.value = false;
   }
 };
 
-// Helper function to get readable geolocation error messages
-const getGeolocationErrorMessage = (error) => {
-  switch(error.code) {
-    case error.PERMISSION_DENIED:
-      return "Du må gi tillatelse til å dele din posisjon.";
-    case error.POSITION_UNAVAILABLE:
-      return "Posisjonen din er ikke tilgjengelig.";
-    case error.TIMEOUT:
-      return "Det tok for lang tid å hente posisjonen din.";
-    default:
-      return "Det oppstod en feil ved henting av posisjon.";
-  }
-};
-
-// Find closest facility
+// Find the closest facility
 const findClosestFacility = async () => {
   if (!userLocation.value) {
     locationError.value = "Din posisjon er ikke tilgjengelig ennå.";
