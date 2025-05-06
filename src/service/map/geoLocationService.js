@@ -50,6 +50,16 @@ class GeolocationService {
   }
 
   /**
+   * Get user location using browser's geolocation API without IP fallback
+   * @param {Object} options - Geolocation options
+   * @returns {Promise<Array>} - [latitude, longitude] coordinates
+   */
+  async getBrowserLocationOnly(options = {}) {
+    const position = await this.getBrowserLocation(options);
+    return [position.coords.latitude, position.coords.longitude];
+  }
+
+  /**
    * Get user location based on IP address
    * @returns {Promise<Array>} - [latitude, longitude] coordinates
    */

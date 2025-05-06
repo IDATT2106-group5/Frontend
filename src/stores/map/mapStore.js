@@ -327,14 +327,24 @@ export const useMapStore = defineStore('map', {
       try {
         this.showNotification("Henter din posisjon...");
 
-        // Get user's location with fallback mechanisms
-        const startCoords = await GeolocationService.getUserLocation();
+        let startCoords;
+
+        try {
+          startCoords = await GeolocationService.getBrowserLocationOnly({
+            enableHighAccuracy: true,
+            timeout: 10000
+          }).then(pos => [pos.coords.latitude, pos.coords.longitude]);
+        } catch (geolocationError) {
+          console.error("Browser geolocation failed:", geolocationError);
+          this.showNotification("Kunne ikke hente din posisjon. Gi tillatelse til stedstjenester i nettleseren.");
+          this.routeError = "Kunne ikke hente din posisjon: " + GeolocationService.getErrorMessage(geolocationError);
+          return;
+        }
+
         const endCoords = [markerData.lat, markerData.lng];
 
-        // Use existing route generation
         await this.generateRoute(startCoords, endCoords);
 
-        // Add a notification that the route was created
         this.showNotification(`Rute til ${markerData.name || 'markør'} generert`);
       } catch (error) {
         console.error("Error creating route to marker:", error);
