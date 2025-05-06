@@ -6,7 +6,7 @@ import MarkerConfigService from '@/service/map/markerConfigService';
 import IncidentMapService from '@/service/map/incidentMapService';
 import IncidentConfigService from '@/service/map/incidentConfigService';
 import RoutingService from '@/service/map/routingService';
-import GeolocationService from '@/service/map/geolocationService';
+import GeolocationService from '@/service/map/geoLocationService.js';
 
 
 import L from 'leaflet';
