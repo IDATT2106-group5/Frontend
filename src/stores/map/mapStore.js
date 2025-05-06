@@ -16,8 +16,8 @@ export const useMapStore = defineStore('map', {
     // Core map state
     map: null,
     activeLayerId: 'standard',
-    initialLat: 60.39299,
-    initialLng: 5.32415,
+    initialLat: 63.43,
+    initialLng: 10.39,
     initialZoom: 13,
 
     // Marker state
