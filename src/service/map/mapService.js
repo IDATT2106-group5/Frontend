@@ -21,7 +21,13 @@ class MapService {
       zoomControl: false
     };
 
-    return L.map(container, { ...defaultOptions, ...options });
+    const map = L.map(container, { ...defaultOptions, ...options });
+
+    L.control.zoom({
+      position: 'bottomright'
+    }).addTo(map.value);
+
+    return map;
   }
 
   /**
