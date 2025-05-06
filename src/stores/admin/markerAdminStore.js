@@ -130,7 +130,6 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
       this.markerFormData = {
         id: null,
         type: 'HEARTSTARTER',
-        name: '',
         address: '',
         postalCode: '',
         city: '',
@@ -155,7 +154,6 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
       this.markerFormData = {
         id: marker.id,
         type: marker.type,
-        name: marker.name || '',
         address: street || '',
         postalCode: postal || '',
         city: city || '',
@@ -187,7 +185,7 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
           city,
           ...rest
         } = this.markerFormData;
-
+    
         const requestData = {
           ...rest,
           address: `${address}, ${postalCode}, ${city}`
@@ -235,12 +233,12 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
           city,
           ...rest
         } = this.markerFormData;
-
+    
         const requestData = {
           ...rest,
           address: `${address}, ${postalCode}, ${city}`
         };
-
+    
         await MarkerAdminService.updateMarker(id, requestData);
 
         // Assuming the API returns a success message
