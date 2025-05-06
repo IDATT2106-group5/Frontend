@@ -1,91 +1,132 @@
-import { defineStore } from 'pinia';
-import { ref,  computed } from 'vue';
-import ItemService from '@/service/itemService';
-import { ItemType } from '@/types/ItemType';
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
+import ItemService from '@/service/itemService'
 
 export const useItemStore = defineStore('item', () => {
-  const items = ref([]);
-  const isLoading = ref(false);
-  const error = ref(null);
+  const items = ref([])
+  const isLoading = ref(false)
+  const error = ref(null)
+  const currentPage = ref(0)
+  const hasMoreItems = ref(true)
+  const pageSize = ref(5)
+  const searchQuery = ref('')
 
-  async function fetchItems() {
-    isLoading.value = true;
-    error.value = null;
+  async function fetchItems(reset = true) {
+    if (reset) {
+      currentPage.value = 0
+      hasMoreItems.value = true
+    }
+
+    if (!hasMoreItems.value) return items.value
+
+    isLoading.value = true
+    error.value = null
 
     try {
-      const response = await ItemService.getAllItems();
+      const response = await ItemService.getPaginatedItems(
+        currentPage.value,
+        pageSize.value,
+        searchQuery.value,
+      )
 
-      // Log the raw response
-      console.log("Raw response from ItemService.getAllItems:", response);
+      if (response.isEmpty) {
+        hasMoreItems.value = false
+        return items.value
+      }
 
-      // Ensure we have an array, even if empty
-      items.value = Array.isArray(response) ? response : [];
+      const responseItems = response.items || []
 
-      console.log("Items array in store after fetch:", items.value);
-      return items.value;
+      if (reset) {
+        items.value = responseItems
+      } else {
+        items.value = [...items.value, ...responseItems]
+      }
+
+      hasMoreItems.value = response.currentPage < response.totalPages - 1
+
+      if (!reset) {
+        currentPage.value++
+      }
+
+      return items.value
     } catch (err) {
-      console.error("Error fetching items:", err);
-      error.value = err.message || 'Failed to load items';
-      items.value = [];
-      return [];
+      console.error('Error fetching items:', err)
+      error.value = err.message || 'Failed to load items'
+      hasMoreItems.value = false
+      return items.value
     } finally {
-      isLoading.value = false;
+      isLoading.value = false
     }
+  }
+
+  async function loadMoreItems() {
+    if (hasMoreItems.value && !isLoading.value) {
+      currentPage.value++
+      return fetchItems(false)
+    }
+    return items.value
+  }
+
+  async function searchItems(term) {
+    searchQuery.value = term
+    return fetchItems(true)
   }
 
   async function fetchItemsByType(type) {
-    isLoading.value = true;
-    error.value = null;
+    isLoading.value = true
+    error.value = null
 
     try {
-      const response = await ItemService.getItemsByType(type);
-      console.log(`Fetched items by type ${type}:`, response);
-      return response || [];
+      const response = await ItemService.getItemsByType(type)
+      console.log(`Fetched items by type ${type}:`, response)
+      return response || []
     } catch (err) {
-      console.error(`Error fetching items by type ${type}:`, err);
-      error.value = err.message || `Failed to load ${type} items`;
-      return [];
+      console.error(`Error fetching items by type ${type}:`, err)
+      error.value = err.message || `Failed to load ${type} items`
+      return []
     } finally {
-      isLoading.value = false;
+      isLoading.value = false
     }
   }
 
-  // Filter items by category (client-side)
   function getItemsByCategory(category) {
-    console.log("Getting items by category:", category);
-    console.log("Current items in store:", items.value);
+    console.log('Getting items by category:', category)
+    console.log('Current items in store:', items.value)
 
     const categoryMapping = {
-      'Væske': 'LIQUIDS',
-      'Mat': 'FOOD',
-      'Medisiner': 'FIRST_AID',
-      'Redskap': 'TOOL',
-      'Diverse': 'OTHER'
-    };
-
-    const itemType = categoryMapping[category];
-    if (!itemType) {
-      console.log("No matching item type for category:", category);
-      return [];
+      Væske: 'LIQUIDS',
+      Mat: 'FOOD',
+      Medisiner: 'FIRST_AID',
+      Redskap: 'TOOL',
+      Diverse: 'OTHER',
     }
 
-    console.log("Looking for item type:", itemType);
+    const itemType = categoryMapping[category]
+    if (!itemType) {
+      console.log('No matching item type for category:', category)
+      return []
+    }
 
-    const filteredItems = items.value.filter(item => {
-      console.log("Checking item:", item.name, "Type:", item.itemType);
-      return item.itemType === itemType;
-    });
+    console.log('Looking for item type:', itemType)
 
-    console.log("Filtered items:", filteredItems);
-    return filteredItems;
+    const filteredItems = items.value.filter((item) => {
+      console.log('Checking item:', item.name, 'Type:', item.itemType)
+      return item.itemType === itemType
+    })
+
+    console.log('Filtered items:', filteredItems)
+    return filteredItems
   }
 
   return {
     items,
     isLoading,
     error,
+    hasMoreItems,
     fetchItems,
+    loadMoreItems,
+    searchItems,
     fetchItemsByType,
-    getItemsByCategory
-  };
-});
+    getItemsByCategory,
+  }
+})

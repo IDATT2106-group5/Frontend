@@ -12,7 +12,17 @@ export const useUserStore = defineStore('user', {
     isLoading: false,
     error: null
   }),
+
+  getters: {
+    isAdmin: (state) => state.user?.role === 'ADMIN' || state.user?.role === 'SUPERADMIN',
+    isSuperAdmin: (state) => state.user?.role === 'SUPERADMIN'
+  },
+ 
   actions: {
+    
+    setUser(user) {
+      this.user = user
+    },
 
     /**
      * Registers a new user with the provided user data.
@@ -94,6 +104,7 @@ export const useUserStore = defineStore('user', {
       try {
         const response = await apiClient.get('user/me')
         console.log("Fetch user called - implement UserService");
+        this.user = response.data 
       } catch (err) {
         console.error("Error fetching user:", err);
         this.logout()
@@ -200,12 +211,92 @@ export const useUserStore = defineStore('user', {
      * appropriate authorization header. Fetches the user data after setting the token.
      */
     autoLogin() {
-      const token = localStorage.getItem('jwt');
+      const token = localStorage.getItem('jwt')
       if (token) {
-        this.token = token;
-        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        this.fetchUser();
+        this.token = token
+        apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
+        
+        // Only fetch user if you're not on a public route
+        const publicRoutes = ['/login', '/register', '/reset-password']
+        const currentPath = window.location.pathname
+        if (!publicRoutes.includes(currentPath)) {
+          this.fetchUser()
+        }
+      }
+    },
+    
+    /**
+     * Sends a password reset request to the backend for the provided email address.
+     *
+     * @param {string} email - The email address of the user requesting a password reset.
+     * @returns {Promise<{ success: boolean, message?: string }>} Result of the request.
+     *          Returns success `true` and a message if the request was successful.
+     *          Returns success `false` and sets the `error` state on failure.
+     */
+    async requestPasswordReset(email) {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        const response = await AuthService.requestPasswordReset(email);
+        console.log('Password reset response:', response);
+        return { success: true, message: response.data.message };
+      } catch (err) {
+        this.error = err.response?.data?.error || "Feil ved tilbakestilling av passord.";
+        console.error('Error during password reset request:', err);
+        return { success: false };
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    
+    /**
+     * Sends a request to reset the user's password using a valid token and the new password.
+     *
+     * @param {string} token - The reset token sent to the user's email.
+     * @param {string} newPassword - The new password to set.
+     * @returns {Promise<{ success: boolean, message?: string }>} Result of the password reset.
+     *          Returns success `true` if the password was reset.
+     *          Returns success `false` and sets the `error` state on failure.
+     */
+    async resetPassword(token, newPassword) {
+      this.isLoading = true;
+      this.error = null;
+      try {
+        const res = await AuthService.resetPassword(token, newPassword);
+        return { success: true, message: res.data.message };
+      } catch (err) {
+        this.error = err.response?.data?.error || "Kunne ikke tilbakestille passord.";
+        return { success: false };
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+
+    /**
+     * Validates whether the given reset token is still valid and not expired.
+     *
+     * @param {string} token - The reset token to validate.
+     * @returns {Promise<{ success: boolean, message?: string }>} Result of the token validation.
+     *          Returns success `true` if the token is valid.
+     *          Returns success `false` and sets the `error` state if the token is invalid or expired.
+     */
+    async validateResetToken(token) {
+      this.isLoading = true;
+      this.error = null;
+    
+      try {
+        const response = await AuthService.validateResetToken(token);
+        return { success: true, message: response.data.message };
+      } catch (err) {
+        this.error = err.response?.data?.error || 'Ugyldig eller utløpt lenke.';
+        return { success: false };
+      } finally {
+        this.isLoading = false;
       }
     }
+    
+    
+    
   }
 });

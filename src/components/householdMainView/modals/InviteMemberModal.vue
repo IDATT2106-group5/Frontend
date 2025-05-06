@@ -75,7 +75,7 @@ function validateEmail(email) {
         <button
           @click="invite"
           :disabled="loading"
-          class="px-4 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+          class="px-4 py-1 bg-primary text-white rounded hover:bg-[hsl(var(--primary-hover))] disabled:opacity-50"
         >
           {{ loading ? 'Sender…' : 'Send invitasjon' }}
         </button>
