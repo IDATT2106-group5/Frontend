@@ -1,12 +1,28 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAdminStore } from '@/stores/AdminStore'
+import { useUserStore } from '@/stores/UserStore'
+import ArrowIcon from '@/components/ArrowIcon.vue'
 
+const router = useRouter()
 const adminStore = useAdminStore()
+const userStore = useUserStore()
 
-onMounted(() => {
+onMounted(async () => {
+  if (!userStore.user) {
+    await userStore.fetchUser()
+  }
+
+  if (!userStore.isAdmin) {
+    return router.push('/not-authorized')
+  }
+
   adminStore.fetchIncidents()
-  adminStore.fetchAdmins()
+
+  if (userStore.isSuperAdmin) {
+    adminStore.fetchAdmins()
+  }
 })
 
 const crisisCount = computed(() => adminStore.incidents.length)
@@ -18,33 +34,48 @@ const crisisTypes = ref([
   { name: 'Vannforsyning', count: 1, color: 'bg-blue-200' }
 ])
 
-const adminButtons = [
-  { label: 'LEGG TIL NY KRISE', isPrimary: true },
-  { label: 'Aktive kriser' },
-  { label: 'Kart markører' },
-  { label: 'Nyhetshåndtering' },
-  { label: 'Scenarier' },
-  { label: 'Gamification' },
-  { label: 'Admin brukere' }
-]
+const adminButtons = computed(() => {
+  const buttons = [
+    { label: 'LEGG TIL NY KRISE', isPrimary: true },
+    { label: 'Aktive kriser' },
+    { label: 'Kart markører' },
+    { label: 'Nyhetshåndtering' },
+    { label: 'Scenarier' },
+    { label: 'Gamification' },
+  ]
+
+  if (userStore.isSuperAdmin) {
+    buttons.push({ label: 'Admin brukere' })
+  }
+
+  return buttons
+})
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-100 p-6 font-sans">
-    <h1 class="text-3xl font-bold text-blue-900 mb-8">Admin dashbord</h1>
+  <div v-if="userStore.isLoading" class="p-6 text-center text-gray-600">Laster...</div>
+
+  <div v-else-if="!userStore.isAdmin" class="p-6 text-center text-red-600">
+    Du har ikke tilgang til denne siden.
+  </div>
+
+  <div v-else class="min-h-screen bg-gray-100 p-6 font-sans">
+    <h1 class="text-3xl font-bold text-blue-900 mb-8 text-center">Admin dashbord</h1>
 
     <!-- Button Grid -->
     <div class="grid grid-cols-2 gap-4 max-w-4xl mx-auto">
       <button
         v-for="btn in adminButtons"
         :key="btn.label"
-        :class="[
-          'w-full h-16 px-4 text-left font-bold border rounded flex justify-between items-center bg-white shadow-sm',
-          btn.isPrimary ? 'text-red-600 col-span-2 border-2 border-red-600' : 'text-gray-800'
+        :class="[ 
+          'w-full h-16 px-4 text-left font-bold border rounded flex justify-between items-center shadow-sm transition',
+          btn.isPrimary
+            ? 'text-red-600 border-red-600 border-2 bg-white'
+            : 'text-gray-800 border bg-white'
         ]"
       >
         {{ btn.label }}
-        <span class="text-xl font-bold">&gt;</span>
+        <ArrowIcon class="w-5" />
       </button>
     </div>
 
@@ -55,7 +86,10 @@ const adminButtons = [
         <div class="text-2xl font-bold">{{ crisisCount }}</div>
       </div>
 
-      <div class="bg-white border rounded p-4 text-center shadow-sm">
+      <div
+        v-if="userStore.isSuperAdmin"
+        class="bg-white border rounded p-4 text-center shadow-sm"
+      >
         <div class="text-gray-600 text-sm">Admin brukere</div>
         <div class="text-2xl font-bold">{{ adminCount }}</div>
       </div>

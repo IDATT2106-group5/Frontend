@@ -1,4 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '@/stores/UserStore'
+
 import HomeView from '../views/mainViews/HomeView.vue'
 import LoginView from '../views/login/LoginView.vue'
 import RegisterView from '../views/mainViews/RegisterView.vue'
@@ -19,6 +21,7 @@ import MapView from '@/views/mapView/MapView.vue'
 import RequestPasswordView from '@/views/login/RequestResetView.vue'
 import ResetPasswordConfirmView from '@/views/login/ResetPasswordConfirmView.vue'
 import AdminDashboardView from '@/views/adminViews/AdminDashboardView.vue'
+import notAuthorizedView from '@/views/mainViews/notAuthorizedView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -53,9 +56,15 @@ const router = createRouter({
       meta:{hideNavbar: true },
     },
     {
+      path: '/not-authorized',
+      name: 'not-authorized',
+      component: notAuthorizedView,
+    },
+    {
       path: '/admin-dashboard',
       name: 'admin-dashboard',
       component: AdminDashboardView,
+      meta: { requiresAdmin: true },
     },
     {
       path: '/storage-detail',
@@ -140,5 +149,28 @@ const router = createRouter({
     }
   ],
 })
+
+router.beforeEach(async (to, from, next) => {
+  const userStore = useUserStore()
+
+  if (!userStore.user && localStorage.getItem('jwt')) {
+    try {
+      await userStore.fetchUser()
+    } catch (e) {
+      return next('/login')
+    }
+  }
+
+  if (to.meta.requiresAdmin && !userStore.isAdmin) {
+    return next('/not-authorized')
+  }
+
+  if ((to.path === '/login' || to.path === '/register') && userStore.user) {
+    return next('/')
+  }
+
+  return next()
+})
+
 
 export default router

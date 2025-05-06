@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { useUserStore } from '@/stores/UserStore'
 import AdminService from '@/service/adminService'
 import IncidentService from '@/service/incidentService'
 
@@ -12,6 +13,12 @@ export const useAdminStore = defineStore('admin', {
 
   actions: {
     async fetchAdmins() {
+      const userStore = useUserStore()
+      if (!userStore.isSuperAdmin) {
+        console.warn('[AdminStore] Access denied: only SUPERADMIN can fetch admins.')
+        return
+      }
+
       try {
         this.isLoading = true
         const data = await AdminService.getAllAdmins()
@@ -25,6 +32,11 @@ export const useAdminStore = defineStore('admin', {
     },
 
     async fetchIncidents() {
+      const userStore = useUserStore()
+      if (!userStore.isAdmin) {
+        console.warn('[AdminStore] Access denied: only ADMIN or SUPERADMIN can fetch incidents.')
+        return
+      }
       try {
         this.isLoading = true
         const data = await IncidentService.getAllIncidents()
