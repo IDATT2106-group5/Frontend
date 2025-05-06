@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { Apple, Droplet, Hammer, Hourglass, Package, Pill } from 'lucide-vue-next'
+import { Apple, Droplet, Hammer, Hourglass, Package, Pill, CircleAlert } from 'lucide-vue-next'
 import { RouterLink, useRouter } from 'vue-router'
 import { useStorageStore } from '@/stores/StorageStore'
 import { useHouseholdStore } from '@/stores/HouseholdStore'
@@ -302,7 +302,9 @@ onMounted(async () => {
           <span class="md:hidden font-medium">Selvforsynt i:</span>
           <div class="flex items-center">
             <span>{{ item.selfSufficient }}</span>
-            <span v-if="item.alert" class="text-red-500 ml-2">•</span>
+            <span v-if="item.alert" class="text-red-500 ml-2">
+              <CircleAlert class="h-4 w-4 md:h-5 md:w-5" />
+            </span>
           </div>
         </div>
 
