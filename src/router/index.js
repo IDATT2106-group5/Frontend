@@ -163,7 +163,9 @@ router.beforeEach(async (to, from, next) => {
   if (!userStore.user && localStorage.getItem('jwt')) {
     try {
       await userStore.fetchUser()
-    } catch (e) {
+    } catch (error) {
+      console.error('Feil ved henting av brukerdata:', error)
+      userStore.logout() 
       return next('/login')
     }
   }
@@ -171,7 +173,7 @@ router.beforeEach(async (to, from, next) => {
   if (to.meta.requiresAuth && !userStore.token) {
     return next('/login')
   }
-  
+
   if (to.meta.requiresAdmin && !userStore.isAdmin) {
     return next('/not-authorized')
   }
