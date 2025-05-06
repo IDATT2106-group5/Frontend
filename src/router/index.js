@@ -22,6 +22,7 @@ import RequestPasswordView from '@/views/login/RequestResetView.vue'
 import ResetPasswordConfirmView from '@/views/login/ResetPasswordConfirmView.vue'
 import AdminDashboardView from '@/views/adminViews/AdminDashboardView.vue'
 import notAuthorizedView from '@/views/mainViews/notAuthorizedView.vue'
+import PersonVern from '@/views/mainViews/PersonVern.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -35,7 +36,7 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
-      meta:{hideNavbar: true },
+      meta:{hideNavbar: true, hideFooter: true },
     },
     {
       path: '/request-reset',
@@ -53,7 +54,7 @@ const router = createRouter({
       path: '/register',
       name: 'register',
       component: RegisterView,
-      meta:{hideNavbar: true },
+      meta:{hideNavbar: true, hideFooter: true },
     },
     {
       path: '/not-authorized',
@@ -106,7 +107,7 @@ const router = createRouter({
       path: '/register-success',
       name: 'RegisterSuccess',
       component: RegisterSuccessView,
-      meta:{hideNavbar: true },
+      meta:{hideNavbar: true , hideFooter: true },
     },
     {
       path: '/register-failed',
@@ -128,6 +129,11 @@ const router = createRouter({
       path: '/after',
       name: 'after',
       component: AfterView,
+    },
+    {
+      path: '/personvern',
+      name: 'personvern',
+      component: PersonVern,
     },
     {
       path: '/2FA',
