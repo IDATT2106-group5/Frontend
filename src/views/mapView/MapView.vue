@@ -9,6 +9,11 @@
       </div>
     </transition>
 
+    <!-- Add the search bar -->
+    <div class="map-search-container">
+      <MapSearchBar />
+    </div>
+
     <!-- Existing components with proper condition checks -->
     <div class="closest-facility-container" v-if="!isLoadingMarkers && !markersLoadError">
       <ClosestFacilityFinder />
@@ -80,6 +85,7 @@ import { useMapStore } from '@/stores/map/mapStore';
 import { storeToRefs } from 'pinia';
 import MarkerFilter from '@/components/map/MarkerFilter.vue';
 import Button from '@/components/ui/button/Button.vue';
+import MapSearchBar from '@/components/map/MapSearchBar.vue';
 import 'leaflet/dist/leaflet.css';
 import ClosestFacilityFinder from "@/components/map/ClosestFacilityFinder.vue";
 
@@ -88,7 +94,8 @@ export default {
   components: {
     ClosestFacilityFinder,
     MarkerFilter,
-    Button
+    Button,
+    MapSearchBar
   },
   setup() {
     const mapContainer = ref(null);
@@ -200,6 +207,17 @@ export default {
   overflow: hidden;
 }
 
+/* Search container */
+.map-search-container {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 400px;
+  z-index: 1000;
+}
+
 .closest-facility-container {
   position: absolute;
   top: 16px;
@@ -212,6 +230,11 @@ export default {
     top: auto;
     bottom: 16px;
     right: 16px;
+  }
+
+  .map-search-container {
+    top: 10px;
+    max-width: 90%;
   }
 }
 
@@ -491,6 +514,11 @@ export default {
   padding: 4px;
 }
 
+/* Search result marker styles */
+:deep(.search-result-icon) {
+  z-index: 1000 !important;
+}
+
 .map-loading-overlay {
   position: absolute;
   top: 0;
@@ -549,6 +577,11 @@ export default {
   background-color: #2980b9;
 }
 
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* Mobile-specific styles */
 @media (max-width: 767px) {
   .layer-controls {
@@ -600,6 +633,10 @@ export default {
 
   .map-loading-text {
     font-size: 14px;
+  }
+
+  .marker-filter-container {
+    top: 70px; /* Moved below search bar on mobile */
   }
 }
 </style>
