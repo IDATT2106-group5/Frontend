@@ -99,7 +99,6 @@
               />
             </div>
             <div class="marker-info">
-              <h3>{{ marker.name }}</h3>
               <p>{{ marker.address }}, {{ marker.city }}</p>
             </div>
             <Button
@@ -145,7 +144,6 @@
                 :key="type.id"
                 :value="type.id"
               >
-                {{ type.name }}
               </option>
             </select>
           </div>
