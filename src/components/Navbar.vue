@@ -1,6 +1,19 @@
 <script setup>
-import { Newspaper, Globe, ShoppingCart, User, Menu, Bell } from 'lucide-vue-next'
-import { ref } from 'vue'
+import {
+  Newspaper,
+  Globe,
+  ShoppingCart,
+  User,
+  Menu,
+  Bell,
+  Mail,
+  AlarmCheck,
+  Package,
+  Home,
+  Info
+} from 'lucide-vue-next'
+
+import { ref, computed } from 'vue'
 import { Button } from '@/components/ui/button'
 import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/UserStore'
@@ -38,6 +51,15 @@ function handleLogout() {
   userStore.logout()
   router.push('/login')
 }
+
+const notificationIcons = {
+  INVITATION: Mail,
+  MEMBERSHIP_REQUEST: User,
+  INCIDENT: AlarmCheck,
+  STOCK_CONTROL: Package,
+  HOUSEHOLD: Home,
+  INFO: Info
+}
 </script>
 
 <template>
@@ -57,10 +79,12 @@ function handleLogout() {
           <Globe class="w-5 h-5 text-white" />
           Kart
         </RouterLink>
+        <RouterLink to="/storage" class="flex items-center gap-2 hover:underline">
         <a href="#" class="flex items-center gap-2 hover:underline">
           <ShoppingCart class="w-5 h-5 text-white" />
           Min beholdning
         </a>
+        </RouterLink>
         <RouterLink to="/household" class="flex items-center gap-2 hover:underline">
           <User class="w-5 h-5 text-white" />
           Min husstand
@@ -68,13 +92,18 @@ function handleLogout() {
       </nav>
 
       <div class="flex gap-4 items-center">
-        <Button @click="toggleNotifications" variant="outline" class="text-white border-white bg-[#2c3e50] hover:bg-blue-600 relative">
-          <Bell class="w-4 h-4 mr-2" />
-          Varsler
-          <span v-if="notificationCount > 0" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-            {{ notificationCount }}
-          </span>
-        </Button>
+        <div
+          @click="toggleNotifications"
+          class="relative cursor-pointer hover:bg-blue-600 p-2 rounded transition-colors"
+        >
+          <Bell class="w-5 h-5 text-white fill-white" />
+          <span
+            v-if="notificationCount > 0"
+            class="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center"
+          >
+    {{ notificationCount }}
+  </span>
+        </div>
 
         <template v-if="userStore.token">
           <Button @click="handleLogout" variant="outline" class="text-white border-white bg-[#2c3e50] hover:bg-red-600">
@@ -112,20 +141,6 @@ function handleLogout() {
         <User class="w-5 h-5 text-white" />
         Min husstand
       </RouterLink>
-      <div class="pt-2">
-        <template v-if="userStore.token">
-          <Button @click="handleLogout" variant="outline" class="w-full text-white border-white bg-[#2c3e50] hover:bg-red-600">
-            Logg ut
-          </Button>
-        </template>
-        <template v-else>
-          <RouterLink to="/login">
-            <Button variant="outline" class="w-full text-white border-white bg-[#2c3e50] hover:bg-gray-300">
-              Login
-            </Button>
-          </RouterLink>
-        </template>
-      </div>
     </div>
   </header>
 
@@ -144,15 +159,11 @@ function handleLogout() {
       </div>
       <div v-for="notification in notifications" :key="notification.id" class="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer" :class="{ 'bg-blue-50': !notification.read }" @click="handleMarkAsRead(notification.id)">
         <div class="flex">
-          <div class="mr-3 text-xl">
-            {{
-              notification.type === 'INVITATION' ? '📩' :
-              notification.type === 'MEMBERSHIP_REQUEST' ? '👤' :
-              notification.type === 'INCIDENT' ? '🚨' :
-              notification.type === 'STOCK_CONTROL' ? '📦' :
-              notification.type === 'HOUSEHOLD' ? '🏠' :
-              notification.type === 'INFO' ? 'ℹ️' : '🔔'
-            }}
+          <div class="mr-3 text-gray-700">
+            <component
+              :is="notificationIcons[notification.type] || Bell"
+              class="w-5 h-5"
+            />
           </div>
           <div class="flex-1">
             <div class="flex justify-between items-start">

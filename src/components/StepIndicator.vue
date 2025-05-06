@@ -1,8 +1,20 @@
 <!-- src/components/StepIndicator.vue -->
 <script setup>
 import { useRoute } from 'vue-router'
+
+/**
+ * Vue Router's current route object.
+ * Provides access to the current path, params, query, etc.
+ * @type {import('vue-router').RouteLocationNormalizedLoaded}
+ */
 const route = useRoute()
 
+/**
+ * Checks if the given path matches the current route's path.
+ *
+ * @param {string} path - The path to compare with the current route.
+ * @returns {boolean} `true` if the given path matches the current route's path, `false` otherwise.
+ */
 const isActive = (path) => route.path === path
 </script>
 
