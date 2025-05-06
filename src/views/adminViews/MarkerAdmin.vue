@@ -285,8 +285,8 @@
 
     <!-- Right panel: Map -->
     <div class="right-panel">
-      <BaseMap
-        ref="baseMap"
+      <MapView
+        ref="mapView"
         :center="mapCenter"
         :zoom="mapZoom"
         @map-ready="onMapReady"
@@ -300,23 +300,23 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useMarkerAdminStore } from '@/stores/admin/markerAdminStore';
 import { storeToRefs } from 'pinia';
 import MarkerConfigService from '@/service/map/markerConfigService';
-import BaseMap from '@/components/map/BaseMap.vue';
+import MapView from '@/views/mapView/MapView.vue';
 import Button from '@/components/ui/button/Button.vue';
-import Input from '@/components/ui/input/Input.vue'; // Import Input component
-import SearchBar from '@/components/SearchBar.vue'; // Import SearchBar component
+import Input from '@/components/ui/input/Input.vue';
+import SearchBar from '@/components/SearchBar.vue';
 import L from 'leaflet';
 
 export default {
   name: 'markerAdmin',
   components: {
-    BaseMap,
+    MapView,
     Button,
     Input,
     SearchBar
   },
 
   setup() {
-    const baseMap = ref(null);
+    const mapView = ref(null);
     const map = ref(null);
     const tempMarker = ref(null);
     const showFilterDropdown = ref(false);
@@ -524,7 +524,7 @@ export default {
     });
 
     return {
-      baseMap,
+      mapView,
       mapCenter,
       mapZoom,
       markers,
