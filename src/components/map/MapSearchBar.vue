@@ -193,6 +193,13 @@ export default {
   align-items: center;
 }
 
+/* Hide browser's default clear button for search inputs */
+.search-input::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
 .search-input {
   width: 100%;
   padding: 10px 36px 10px 16px;
