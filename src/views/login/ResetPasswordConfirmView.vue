@@ -73,7 +73,10 @@ const resetPassword = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col items-center justify-center p-4 bg-gray-50">
+  <div class="min-h-screen flex flex-col items-center justify-center p-4 bg-white">
+    <RouterLink to="/" class="absolute top-4 left-6">
+      <img src="/src/assets/icons/Krisefikser.png" alt="Krisefikser Logo" class="w-12 hover:opacity-80" />
+    </RouterLink>
     <h1 class="text-2xl font-bold mb-4">Lag nytt passord</h1>
     <p class="text-gray-700 mb-4">Fyll inn nytt passord for å tilbakestille kontoen din.</p>
 

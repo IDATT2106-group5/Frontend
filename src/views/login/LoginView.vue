@@ -33,7 +33,10 @@
   </script>
 
   <template>
-    <main class="flex flex-col items-center justify-center min-h-screen p-4 space-y-3">
+    <main class="flex flex-col items-center justify-center min-h-screen p-4 space-y-3 relative bg-white">
+      <RouterLink to="/" class="absolute top-4 left-6">
+      <img src="/src/assets/icons/Krisefikser.png" alt="Krisefikser Logo" class="w-12 hover:opacity-80" />
+      </RouterLink>
       <img src="/src/assets/icons/Krisefikser.png" alt="Krisefikser Logo" class="w-60 mb-4" />
       <h1 class="text-3xl font-bold">Login</h1>
 

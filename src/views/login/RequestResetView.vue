@@ -38,7 +38,10 @@ const checkEmailAndSendResetLink = async () => {
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+  <div class="flex flex-col items-center justify-center min-h-screen bg-white">
+    <RouterLink to="/" class="absolute top-4 left-6">
+      <img src="/src/assets/icons/Krisefikser.png" alt="Krisefikser Logo" class="w-12 hover:opacity-80" />
+    </RouterLink>
     <Mail class="w-20 h-20 text-blue-700 mb-4" />
 
     <h1 class="text-2xl font-bold mb-2">Tilbakestill passord</h1>
