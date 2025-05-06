@@ -170,7 +170,7 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
         const { id, ...requestData } = this.markerFormData;
 
         // Call API to create the marker
-        const response = await MarkerAdminService.createMarker(requestData);
+        await MarkerAdminService.createMarker(requestData)
 
         // Assuming the API returns a success message rather than the created object
         this.success = 'Markør opprettet.';
@@ -205,10 +205,10 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
 
       try {
         // Call API to update the marker
-        const response = await MarkerAdminService.updateMarker(
+        await MarkerAdminService.updateMarker(
           this.markerFormData.id,
           this.markerFormData
-        );
+        )
 
         // Assuming the API returns a success message
         this.success = 'Markør oppdatert.';
