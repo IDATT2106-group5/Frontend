@@ -1,4 +1,4 @@
-import L from 'leaflet'
+import L from 'leaflet';
 
 /**
  * Service that handles Leaflet map operations
@@ -25,7 +25,7 @@ class MapService {
 
     L.control.zoom({
       position: 'bottomright'
-    }).addTo(map.value);
+    }).addTo(map);
 
     return map;
   }
