@@ -38,6 +38,8 @@ const isEditing = ref(false);
 const isLoading = ref(true);
 const error = ref(null);
 const activeCategory = ref('all');
+const searchQuery = ref('');
+const searchResults = ref(null);
 
 const storageStore = useStorageStore();
 const userStore = useUserStore();
@@ -91,6 +93,12 @@ const handleItemUpdate = async (id, data) => {
   console.log("Data to update:", data);
   try {
     await storageStore.updateItem(id, data);
+
+    // Update search results if needed
+    if (searchQuery.value) {
+      // Refresh search results to ensure consistency
+      handleSearch(searchQuery.value);
+    }
   } catch (e) {
     console.error('Failed to update item:', e);
   }
@@ -103,6 +111,12 @@ const handleItemUpdate = async (id, data) => {
 const handleItemDelete = async (id) => {
   try {
     await storageStore.deleteItem(id);
+
+    // Update search results if needed
+    if (searchQuery.value) {
+      // Refresh search results to ensure consistency
+      handleSearch(searchQuery.value);
+    }
   } catch (e) {
     console.error('Failed to delete item:', e);
   }
@@ -117,9 +131,75 @@ const handleItemDelete = async (id) => {
 const handleItemAdd = async (item) => {
   try {
     await storageStore.addItem(item.itemId, item.data);
+
+    // Update search results if needed
+    if (searchQuery.value) {
+      // Refresh search results to ensure consistency
+      handleSearch(searchQuery.value);
+    }
   } catch (e) {
     console.error('Failed to add item:', e);
   }
+};
+
+/**
+ * Gets items from the store by their IDs
+ * Used to retrieve full items for search results
+ *
+ * @param {string} category - The category to look in
+ * @param {Array} itemIds - Array of item IDs to retrieve
+ * @returns {Array} - The full item objects
+ */
+const getItemsById = (category, itemIds) => {
+  if (!storageStore.groupedItems[category]) return [];
+
+  return itemIds.map(id => {
+    // Find the original item in the store
+    const originalItem = storageStore.groupedItems[category].find(item => item.id === id);
+    return originalItem || null;
+  }).filter(item => item !== null); // Remove any nulls (items not found)
+};
+
+/**
+ * Handles search input and filters the storage items
+ * NEW IMPLEMENTATION: Store item IDs instead of copies
+ * @param {string} query - The search query
+ */
+const handleSearch = (query) => {
+  searchQuery.value = query;
+
+  if (!query) {
+    searchResults.value = null;
+    return;
+  }
+
+  const lowerQuery = query.toLowerCase();
+  const results = {};
+
+  Object.entries(storageStore.groupedItems).forEach(([category, items]) => {
+    if (!items || !Array.isArray(items)) return;
+
+    // Store ONLY the IDs of matching items
+    const matchedItemIds = items
+      .filter(item => {
+        const name = (item.name || '').toLowerCase();
+        const expiryDate = (item.expiryDate || '').toLowerCase();
+        const quantity = String(item.quantity || '');
+        const unit = (item.unit || '').toLowerCase();
+
+        return name.includes(lowerQuery) ||
+          expiryDate.includes(lowerQuery) ||
+          quantity.includes(lowerQuery) ||
+          unit.includes(lowerQuery);
+      })
+      .map(item => item.id); // Extract just the IDs
+
+    if (matchedItemIds.length > 0) {
+      results[category] = matchedItemIds;
+    }
+  });
+
+  searchResults.value = results;
 };
 
 /**
@@ -138,7 +218,6 @@ onMounted(async () => {
       const householdId = response.id;
       storageStore.setCurrentHouseholdId(householdId);
       await storageStore.fetchItems();
-      console.log('Items:', storageStore.items);
     }
 
   } catch (e) {
@@ -153,154 +232,184 @@ provide('handleNavItemClick', handleNavItemClick);
 </script>
 
 <template>
-  <div>
+  <div class="flex flex-col min-h-screen">
     <StorageNavbar />
-    <div>
-      <div class="mt-6">
-        <SearchBar />
+    <!-- Top section with search bar and edit button -->
+    <div class="px-20 mt-6">
+      <div class="grid grid-cols-3 items-center">
+        <!-- Empty column for spacing -->
+        <div class="col-span-1"></div>
+
+        <!-- Center column with search bar -->
+        <div class="col-span-1 flex justify-center">
+          <SearchBar @search="handleSearch" class="w-full" />
+        </div>
+
+        <!-- Right column with button -->
+        <div class="col-span-1 flex justify-end">
+          <Button
+            @click="isEditing = !isEditing"
+            class="px-4 py-2 rounded text-sm font-medium w-52 text-center"
+            :class="isEditing ? 'bg-red-600 text-white' : 'bg-[#2c3e50] text-white'"
+          >
+            {{ isEditing ? 'Lukk' : 'Rediger - / Legg til i lager' }}
+          </Button>
+        </div>
       </div>
-      <div class="pl-20 pr-20" >
-        <div class="mb-4 mt-4 flex justify-between items-center">
-          <h2 class="text-xl font-bold">
-            {{ capitalizedCategory }}
-          </h2>
-          <div class="flex gap-2">
-            <Button
-              @click="isEditing = !isEditing"
-              class="px-4 py-2 rounded text-sm font-medium"
-              :class="isEditing ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'"
-            >
-              {{ isEditing ? 'Lukk' : 'Rediger' }}
-            </Button>
+    </div>
+
+    <!-- Main content area -->
+    <div class="px-20 flex-grow">
+      <!-- Search Results Section -->
+      <div v-if="searchQuery && searchResults" class="mb-6 mt-4">
+        <h2 class="text-xl font-bold mb-3">Søkeresultater for "{{ searchQuery }}"</h2>
+
+        <div v-if="Object.keys(searchResults).length === 0" class="p-4 bg-gray-100 rounded">
+          Ingen resultater funnet.
+        </div>
+
+        <div v-else>
+          <div v-for="(itemIds, category) in searchResults" :key="category" class="mb-6">
+            <h3 class="font-medium text-lg mb-2">{{ category }}</h3>
+            <EditableNestedItemList
+              :items="getItemsById(category, itemIds)"
+              :isEditing="isEditing"
+              :searchQuery="searchQuery"
+              @update-item="handleItemUpdate"
+              @delete-item="handleItemDelete"
+            />
           </div>
         </div>
-
-        <div v-if="isLoading || storageStore.isLoading" class="flex justify-center py-10">
-          <div
-            class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-
-        <div v-else-if="error" class="p-4 bg-red-100 text-red-700 rounded">
-          {{ error }}
-        </div>
-
-        <div v-else-if="storageStore.error" class="p-4 bg-red-100 text-red-700 rounded">
-          {{ storageStore.error }}
-        </div>
-
-        <Accordion type="single" collapsible
-                   v-model:value="openItem">
-          <AccordionItem v-if="activeCategory === 'all' || activeCategory === 'væske'" value="vaske">
-            <AccordionTrigger @click="toggleAccordion('vaske')">
-              <div class="flex items-center gap-3">
-                <Droplet />
-                Væske
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <EditableNestedItemList
-                :items="storageStore.groupedItems['Væske']"
-                :isEditing="isEditing"
-                @update-item="handleItemUpdate"
-                @delete-item="handleItemDelete"
-              />
-              <AddStorageItem
-                v-if="isEditing"
-                category="Væske"
-                @add-item="handleItemAdd"
-              />
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem v-if="activeCategory === 'all' || activeCategory === 'mat'" value="mat">
-            <AccordionTrigger @click="toggleAccordion('mat')">
-              <div class="flex items-center gap-3">
-                <Apple />
-                Mat
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <EditableNestedItemList
-                :items="storageStore.groupedItems['Mat']"
-                :isEditing="isEditing"
-                @update-item="handleItemUpdate"
-                @delete-item="handleItemDelete"
-              />
-              <AddStorageItem
-                v-if="isEditing"
-                category="Mat"
-                @add-item="handleItemAdd"
-              />
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem v-if="activeCategory === 'all' || activeCategory === 'medisiner'" value="medisiner">
-            <AccordionTrigger @click="toggleAccordion('medisiner')">
-              <div class="flex items-center gap-3">
-                <Pill />
-                Medisiner
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <EditableNestedItemList
-                :items="storageStore.groupedItems['Medisiner']"
-                :isEditing="isEditing"
-                @update-item="handleItemUpdate"
-                @delete-item="handleItemDelete"
-              />
-              <AddStorageItem
-                v-if="isEditing"
-                category="Medisiner"
-                @add-item="handleItemAdd"
-              />
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem v-if="activeCategory === 'all' || activeCategory === 'redskap'" value="redskap">
-            <AccordionTrigger @click="toggleAccordion('redskap')">
-              <div class="flex items-center gap-3">
-                <Hammer />
-                Redskap
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <EditableNestedItemList
-                :items="storageStore.groupedItems['Redskap']"
-                :isEditing="isEditing"
-                @update-item="handleItemUpdate"
-                @delete-item="handleItemDelete"
-              />
-              <AddStorageItem
-                v-if="isEditing"
-                category="Redskap"
-                @add-item="handleItemAdd"
-              />
-            </AccordionContent>
-          </AccordionItem>
-
-          <AccordionItem v-if="activeCategory === 'all' || activeCategory === 'diverse'" value="diverse">
-            <AccordionTrigger @click="toggleAccordion('diverse')">
-              <div class="flex items-center gap-3">
-                <Package />
-                Diverse
-              </div>
-            </AccordionTrigger>
-            <AccordionContent>
-              <EditableNestedItemList
-                :items="storageStore.groupedItems['Diverse']"
-                :isEditing="isEditing"
-                @update-item="handleItemUpdate"
-                @delete-item="handleItemDelete"
-              />
-              <AddStorageItem
-                v-if="isEditing"
-                category="Diverse"
-                @add-item="handleItemAdd"
-              />
-            </AccordionContent>
-          </AccordionItem>
-        </Accordion>
       </div>
+
+      <!-- Loading indicator -->
+      <div v-if="isLoading" class="flex justify-center items-center py-10">
+        <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-[#2c3e50]"></div>
+      </div>
+
+      <!-- Error message -->
+      <div v-if="error" class="p-4 bg-red-100 text-red-700 rounded mb-4">
+        {{ error }}
+      </div>
+
+      <!-- Regular Content Section (Always visible) -->
+      <div v-if="!isLoading" class="mb-4 mt-4">
+        <h2 class="text-xl font-bold">
+          {{ capitalizedCategory }}
+        </h2>
+      </div>
+
+      <Accordion v-if="!isLoading" type="single" collapsible v-model:value="openItem">
+        <AccordionItem v-if="activeCategory === 'all' || activeCategory === 'væske'" value="vaske">
+          <AccordionTrigger @click="toggleAccordion('vaske')">
+            <div class="flex items-center gap-3">
+              <Droplet />
+              Væske
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <EditableNestedItemList
+              :items="storageStore.groupedItems['Væske']"
+              :isEditing="isEditing"
+              @update-item="handleItemUpdate"
+              @delete-item="handleItemDelete"
+            />
+            <AddStorageItem
+              v-if="isEditing"
+              category="Væske"
+              @add-item="handleItemAdd"
+            />
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem v-if="activeCategory === 'all' || activeCategory === 'mat'" value="mat">
+          <AccordionTrigger @click="toggleAccordion('mat')">
+            <div class="flex items-center gap-3">
+              <Apple />
+              Mat
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <EditableNestedItemList
+              :items="storageStore.groupedItems['Mat']"
+              :isEditing="isEditing"
+              @update-item="handleItemUpdate"
+              @delete-item="handleItemDelete"
+            />
+            <AddStorageItem
+              v-if="isEditing"
+              category="Mat"
+              @add-item="handleItemAdd"
+            />
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem v-if="activeCategory === 'all' || activeCategory === 'medisiner'" value="medisiner">
+          <AccordionTrigger @click="toggleAccordion('medisiner')">
+            <div class="flex items-center gap-3">
+              <Pill />
+              Medisiner
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <EditableNestedItemList
+              :items="storageStore.groupedItems['Medisiner']"
+              :isEditing="isEditing"
+              @update-item="handleItemUpdate"
+              @delete-item="handleItemDelete"
+            />
+            <AddStorageItem
+              v-if="isEditing"
+              category="Medisiner"
+              @add-item="handleItemAdd"
+            />
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem v-if="activeCategory === 'all' || activeCategory === 'redskap'" value="redskap">
+          <AccordionTrigger @click="toggleAccordion('redskap')">
+            <div class="flex items-center gap-3">
+              <Hammer />
+              Redskap
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <EditableNestedItemList
+              :items="storageStore.groupedItems['Redskap']"
+              :isEditing="isEditing"
+              @update-item="handleItemUpdate"
+              @delete-item="handleItemDelete"
+            />
+            <AddStorageItem
+              v-if="isEditing"
+              category="Redskap"
+              @add-item="handleItemAdd"
+            />
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem v-if="activeCategory === 'all' || activeCategory === 'diverse'" value="diverse">
+          <AccordionTrigger @click="toggleAccordion('diverse')">
+            <div class="flex items-center gap-3">
+              <Package />
+              Diverse
+            </div>
+          </AccordionTrigger>
+          <AccordionContent>
+            <EditableNestedItemList
+              :items="storageStore.groupedItems['Diverse']"
+              :isEditing="isEditing"
+              @update-item="handleItemUpdate"
+              @delete-item="handleItemDelete"
+            />
+            <AddStorageItem
+              v-if="isEditing"
+              category="Diverse"
+              @add-item="handleItemAdd"
+            />
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
     </div>
   </div>
 </template>

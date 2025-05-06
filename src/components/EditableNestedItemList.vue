@@ -11,6 +11,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  searchQuery: {
+    type: String,
+    default: '',
+  }
 })
 
 const emit = defineEmits(['update-item', 'delete-item'])
@@ -35,7 +39,6 @@ function getExpirationStatus(expirationDate) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  // Parse the Norwegian date format (dd.mm.yyyy)
   const parts = expirationDate.split('.')
   if (parts.length !== 3) return { text: 'Invalid date', isExpired: false }
 
@@ -247,7 +250,8 @@ function deleteItem(itemId) {
 </script>
 
 <template>
-  <div class="p-4 bg-white rounded">
+  <!-- Regular view (when no search query) -->
+  <div v-if="!searchQuery" class="p-4 bg-white rounded">
     <div
       class="grid grid-cols-5 items-center p-3 font-semibold text-gray-700 border-b border-gray-300"
     >
@@ -270,7 +274,7 @@ function deleteItem(itemId) {
             <span
               v-if="getEarliestItemExpirationStatus(group).isExpired"
               class="text-red-600 font-medium"
-              >{{ getEarliestItemExpirationStatus(group).text }}</span
+            >{{ getEarliestItemExpirationStatus(group).text }}</span
             >
             <span v-else>{{ getEarliestItemExpirationStatus(group).text }}</span>
           </div>
@@ -329,7 +333,7 @@ function deleteItem(itemId) {
               <span
                 v-if="getExpirationStatus(item.expiryDate).isExpired"
                 class="text-red-600 font-medium"
-                >{{ getExpirationStatus(item.expiryDate).text }}</span
+              >{{ getExpirationStatus(item.expiryDate).text }}</span
               >
               <span v-else>{{ getExpirationStatus(item.expiryDate).text }}</span>
             </div>
@@ -367,13 +371,83 @@ function deleteItem(itemId) {
               <span
                 v-if="subGroup[0].expirationStatus && subGroup[0].expirationStatus.isExpired"
                 class="text-red-600 font-medium"
-                >{{ subGroup[0].expirationStatus.text }}</span
+              >{{ subGroup[0].expirationStatus.text }}</span
               >
               <span v-else>{{
-                subGroup[0].expirationStatus ? subGroup[0].expirationStatus.text : ''
-              }}</span>
+                  subGroup[0].expirationStatus ? subGroup[0].expirationStatus.text : ''
+                }}</span>
             </div>
             <div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p v-else class="text-gray-500 italic text-center mt-4">Ingen varer funnet.</p>
+  </div>
+
+  <!-- Search results view -->
+  <div v-else class="p-4 bg-white rounded">
+    <div
+      class="grid grid-cols-5 items-center p-3 font-semibold text-gray-700 border-b border-gray-300"
+    >
+      <div class="font-medium pb-3">Navn:</div>
+      <div class="font-medium pb-3">Utløps dato:</div>
+      <div class="font-medium pb-3">Kvantitet:</div>
+      <div class="font-medium pb-3">Går ut på dato om:</div>
+    </div>
+
+    <div v-if="items && items.length > 0">
+      <div
+        v-for="item in items"
+        :key="item.id"
+        class="grid grid-cols-5 items-center p-2 hover:bg-gray-50 border-b border-gray-200"
+      >
+        <div class="font-medium">{{ item.name }}</div>
+        <div>
+          <input
+            v-if="editingItem === item.id"
+            type="date"
+            v-model="editingData.expiryDate"
+            class="w-full px-2 py-1 border rounded"
+          />
+          <span v-else>{{ item.expiryDate || 'N/A' }}</span>
+        </div>
+        <div>
+          <div v-if="editingItem === item.id" class="flex items-center">
+            <input
+              v-model="editingData.quantity"
+              type="number"
+              class="w-24 px-2 py-1 border rounded"
+            />
+            <span class="ml-2">{{ item.unit || 'stk' }}</span>
+          </div>
+          <span v-else>{{ item.quantity }} {{ item.unit || 'stk' }}</span>
+        </div>
+        <div>
+          <span
+            v-if="getExpirationStatus(item.expiryDate).isExpired"
+            class="text-red-600 font-medium"
+          >{{ getExpirationStatus(item.expiryDate).text }}</span
+          >
+          <span v-else>{{ getExpirationStatus(item.expiryDate).text }}</span>
+        </div>
+        <div v-if="isEditing" class="flex justify-end space-x-2">
+          <div class="flex space-x-2">
+            <Pencil
+              v-if="editingItem !== item.id"
+              @click.stop="startEditing(item)"
+              class="h-5 w-5 text-gray-600 hover:text-blue-600 cursor-pointer"
+            />
+            <Save
+              v-if="editingItem === item.id"
+              @click.stop="saveItemEdit(item.id)"
+              class="h-5 w-5 text-gray-600 hover:text-green-600 cursor-pointer"
+            />
+            <Trash
+              @click.stop="deleteItem(item.id)"
+              class="h-5 w-5 text-gray-600 hover:text-red-600 cursor-pointer"
+            />
           </div>
         </div>
       </div>

@@ -238,11 +238,26 @@ export const useStorageStore = defineStore('storage', () => {
       // Get the original item
       const originalItem = items.value[itemIndex];
 
+      // Store the original expiration date
+      const originalExpiration = originalItem.item.expiration;
+
+      console.log("Original item before update:", originalItem);
+      console.log('Original expiration date: ', originalExpiration);
+
+      // Format the date correctly for the backend
+      let formattedExpirationDate = null;
+      if (data.expiryDate) {
+        // Parse the date from DD.MM.YYYY format
+        const [day, month, year] = data.expiryDate.split('.');
+        // Format to ISO string which is what LocalDateTime.parse expects
+        formattedExpirationDate = `${year}-${month}-${day}T00:00:00`;
+      }
+
       // Create payload in the format expected by the API
       const payload = {
         unit: originalItem.unit,
         amount: data.quantity || originalItem.amount,
-        expirationDate: data.expiryDate ? new Date(data.expiryDate) : null
+        expirationDate: formattedExpirationDate
       };
 
       console.log("Sending payload to API:", payload);

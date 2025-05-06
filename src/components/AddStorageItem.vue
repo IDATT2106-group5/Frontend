@@ -183,6 +183,16 @@ function removeRow(index) {
 }
 
 /**
+ * Selects an item from the dropdown and closes the dropdown
+ * @param {Object} row - The row to update
+ * @param {Object} item - The item to select
+ */
+function selectItem(row, item) {
+  row.selectedItem = item;
+  row.isDropdownOpen = false;
+}
+
+/**
  * Saves an item to storage and manages UI state
  * @param {Object} row - The row containing the item to save
  */
@@ -265,7 +275,7 @@ function saveItem(row) {
             <div
               v-for="item in filteredItems"
               :key="item.id"
-              @click="() => { row.selectedItem = item; }"
+              @click="selectItem(row, item)"
               class="px-3 py-2 hover:bg-blue-100 cursor-pointer"
               :class="{'bg-blue-100': row.selectedItem && row.selectedItem.id === item.id}"
             >

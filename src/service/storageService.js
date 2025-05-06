@@ -83,30 +83,10 @@ class StorageService extends BaseService {
   // Update a storage item
   async updateStorageItem(storageItemId, data) {
     try {
-      // Create a formatted date string that Java's LocalDateTime.parse() can understand
-      let formattedDate = null;
-      if (data.expirationDate) {
-        // Check if it's already a Date object or needs to be converted
-        const date = data.expirationDate instanceof Date ?
-          data.expirationDate :
-          new Date(data.expirationDate);
-
-        // Format in a way that Java's LocalDateTime.parse() can handle
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        const seconds = String(date.getSeconds()).padStart(2, '0');
-
-        // Format without timezone info, as LocalDateTime expects
-        formattedDate = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-      }
-
       const payload = {
         unit: data.unit,
         amount: data.amount,
-        expirationDate: formattedDate
+        expirationDate: data.expirationDate
       };
 
       console.log("Data: ", payload);
