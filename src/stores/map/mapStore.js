@@ -120,29 +120,11 @@ export const useMapStore = defineStore('map', {
 
   actions: {
     /**
-     * Initialize the map and setup initial state
-     * @param {HTMLElement} container - DOM element to contain the map
-     * @returns {L.Map} The created map instance
+     * Set the map instance from the BaseMap component
+     * @param {L.Map} mapInstance - The map instance from BaseMap
      */
-    initMap(container) {
-      // Create the map using service
-      this.map = MapService.createMap(container);
-
-      // Set the initial active layer
-      this.setActiveLayer(this.activeLayerId);
-
-      // Initialize markers
-      this.initMarkers();
-
-      // Initialize incidents
-      this.initIncidents();
-
-      // Force a resize after initialization to handle container sizing issues
-      setTimeout(() => {
-        MapService.invalidateMapSize(this.map);
-      }, 300);
-
-      return this.map;
+    setMap(mapInstance) {
+      this.map = mapInstance;
     },
 
     /**
@@ -292,23 +274,11 @@ export const useMapStore = defineStore('map', {
     },
 
     /**
-     * Set the active base layer for the map
-     * @param {string} layerId - ID of the layer to activate
-     */
-    setActiveLayer(layerId) {
-      if (!this.map) return;
-
-      const layer = MapService.setActiveLayer(this.map, layerId);
-
-      if (layer) {
-        this.activeLayerId = layerId;
-      }
-    },
-
-    /**
      * Initialize markers and their layer groups
      */
     async initMarkers() {
+      if (!this.map) return;
+
       this.isLoadingMarkers = true;
       this.markersLoadError = null;
 
@@ -524,13 +494,6 @@ export const useMapStore = defineStore('map', {
     },
 
     /**
-     * Resize the map when container dimensions change
-     */
-    resizeMap() {
-      MapService.invalidateMapSize(this.map);
-    },
-
-    /**
      * Clean up resources when component is unmounted
      */
     cleanupMap() {
@@ -563,11 +526,7 @@ export const useMapStore = defineStore('map', {
         this.incidentLayer = null;
       }
 
-      // Clean up the map
-      if (this.map) {
-        MapService.cleanupMap(this.map);
-        this.map = null;
-      }
+      this.map = null;
     },
 
     /**

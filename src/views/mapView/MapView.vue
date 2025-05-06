@@ -1,6 +1,12 @@
 <template>
   <div class="map-container">
-    <div id="map" ref="mapContainer"></div>
+    <!-- Base Map Component -->
+    <BaseMap
+      ref="baseMap"
+      :initial-layer="activeLayerId"
+      @map-ready="handleMapReady"
+      @layer-changed="handleLayerChanged"
+    />
 
     <!-- Loading indicator -->
     <div v-if="isLoadingMarkers" class="map-loading-overlay">
@@ -63,21 +69,22 @@
 </template>
 
 <script>
-import { onMounted, ref, onUnmounted, computed } from 'vue';
+import { ref, onUnmounted, computed, onMounted } from 'vue'
 import { useMapStore } from '@/stores/map/mapStore';
 import { storeToRefs } from 'pinia';
+import BaseMap from '@/components/map/BaseMap.vue';
 import MarkerFilter from '@/components/map/MarkerFilter.vue';
 import Button from '@/components/ui/button/Button.vue';
-import 'leaflet/dist/leaflet.css';
 
 export default {
   name: 'EmergencyMap',
   components: {
+    BaseMap,
     MarkerFilter,
     Button
   },
   setup() {
-    const mapContainer = ref(null);
+    const baseMap = ref(null);
     const mapStore = useMapStore();
     const windowWidth = ref(window.innerWidth);
     const isFilterCollapsed = ref(false);
@@ -100,7 +107,6 @@ export default {
     onMounted(() => {
       isFilterCollapsed.value = isMobileView.value;
       isLayerCollapsed.value = isMobileView.value;
-      mapStore.initMap(mapContainer.value);
 
       // Add resize event listener
       window.addEventListener('resize', handleResize);
@@ -116,7 +122,11 @@ export default {
 
     const handleResize = () => {
       windowWidth.value = window.innerWidth;
-      mapStore.resizeMap();
+
+      // Resize the map via the mapStore
+      if (baseMap.value) {
+        baseMap.value.resizeMap();
+      }
 
       // Auto-collapse filter and layers on small screens when resizing
       if (isMobileView.value) {
@@ -129,8 +139,22 @@ export default {
       }
     };
 
+    // Handler for when the map is ready
+    const handleMapReady = (mapInstance) => {
+      mapStore.setMap(mapInstance); // Add this method to your mapStore
+      mapStore.initMarkers();
+      mapStore.initIncidents();
+    };
+
+    // Handler for layer changes from BaseMap
+    const handleLayerChanged = (layerId) => {
+      mapStore.activeLayerId = layerId;
+    };
+
     const setActiveLayer = (layerId) => {
-      mapStore.setActiveLayer(layerId);
+      if (baseMap.value) {
+        baseMap.value.setActiveLayer(layerId);
+      }
     };
 
     const retryLoadMarkers = () => {
@@ -140,10 +164,11 @@ export default {
     const toggleFilterCollapse = () => {
       isFilterCollapsed.value = !isFilterCollapsed.value;
       // When expanding filter, we need to resize map after a small delay
-      // to account for the new layout
       if (!isFilterCollapsed.value) {
         setTimeout(() => {
-          mapStore.resizeMap();
+          if (baseMap.value) {
+            baseMap.value.resizeMap();
+          }
         }, 300);
       }
     };
@@ -153,13 +178,15 @@ export default {
       // When expanding layers, we need to resize map after a small delay
       if (!isLayerCollapsed.value) {
         setTimeout(() => {
-          mapStore.resizeMap();
+          if (baseMap.value) {
+            baseMap.value.resizeMap();
+          }
         }, 300);
       }
     };
 
     return {
-      mapContainer,
+      baseMap,
       layerOptions,
       activeLayerId,
       setActiveLayer,
@@ -171,6 +198,8 @@ export default {
       toggleFilterCollapse,
       isLayerCollapsed,
       toggleLayerCollapse,
+      handleMapReady,
+      handleLayerChanged
     };
   }
 };
@@ -182,11 +211,6 @@ export default {
   height: calc(100vh - 60px);
   position: relative;
   overflow: hidden;
-}
-
-#map {
-  width: 100%;
-  height: 100%;
 }
 
 /* Layer Control Container */
@@ -338,53 +362,6 @@ export default {
   margin-top: 12px;
 }
 
-/* Custom Zoom Controls */
-:deep(.leaflet-control-zoom) {
-  position: absolute !important;
-  top: 70px !important;
-  right: 16px !important;
-  margin: 0 !important;
-  border: none;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  overflow: hidden;
-}
-
-:deep(.leaflet-control-zoom-in),
-:deep(.leaflet-control-zoom-out) {
-  width: 36px;
-  height: 36px;
-  line-height: 36px;
-  background-color: white;
-  color: #333;
-  font-size: 18px;
-  font-weight: bold;
-  display: block;
-}
-
-:deep(.leaflet-control-zoom-in) {
-  border-bottom: 1px solid #eee;
-}
-
-:deep(.leaflet-control-zoom-in:hover),
-:deep(.leaflet-control-zoom-out:hover) {
-  background-color: #f0f0f0;
-}
-
-:deep(.leaflet-control-attribution) {
-  display: none;
-}
-
-:deep(.custom-div-icon) {
-  background: white;
-  border-radius: 50%;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
-}
-
 .map-loading-overlay {
   position: absolute;
   top: 0;
@@ -475,18 +452,6 @@ export default {
     margin-bottom: 0;
   }
 
-  :deep(.leaflet-control-zoom) {
-    top: 66px !important;
-  }
-
-  :deep(.leaflet-control-zoom-in),
-  :deep(.leaflet-control-zoom-out) {
-    width: 30px;
-    height: 30px;
-    line-height: 30px;
-    font-size: 16px;
-  }
-
   .map-loading-spinner {
     width: 30px;
     height: 30px;
@@ -496,4 +461,5 @@ export default {
     font-size: 14px;
   }
 }
+
 </style>
