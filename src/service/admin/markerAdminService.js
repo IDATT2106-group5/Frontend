@@ -66,7 +66,7 @@ class MarkerAdminService extends BaseService {
    */
   async deleteMarker(id) {
     try {
-      return await this.delete(`/${id}`);
+      return await this.deleteItem(`${id}`);
     } catch (error) {
       console.error(`Error deleting marker ${id}:`, error);
       throw error;
