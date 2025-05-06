@@ -2,6 +2,13 @@
   <div class="map-container">
     <div id="map" ref="mapContainer"></div>
 
+    <!-- Add notification display -->
+    <transition name="fade">
+      <div v-if="mapStore.notification" class="map-notification">
+        {{ mapStore.notification }}
+      </div>
+    </transition>
+
     <!-- Add the closest facility finder panel -->
     <div class="closest-facility-container">
       <ClosestFacilityFinder v-if="!isLoadingMarkers && !markersLoadError" />
@@ -206,9 +213,70 @@ export default {
   }
 }
 
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
 #map {
   width: 100%;
   height: 100%;
+}
+
+/* Custom Marker Popup Styles */
+.marker-popup-container {
+  padding: 4px;
+}
+
+.marker-info-content {
+  margin-bottom: 12px;
+}
+
+.marker-popup-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+  border-top: 1px solid #eee;
+  padding-top: 8px;
+}
+
+.marker-route-button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.marker-route-button:hover {
+  background-color: #388e3c;
+}
+
+/* Map Notification */
+.map-notification {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  z-index: 1000;
+  font-size: 14px;
+  animation: fade-in-out 3s ease-in-out;
+}
+
+@keyframes fade-in-out {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 /* Layer Control Container */

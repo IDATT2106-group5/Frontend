@@ -21,6 +21,10 @@ export const useMapStore = defineStore('map', {
     markerData: {},
     cachedMarkerTypes: null,
 
+    // Notifications
+    notification: null,
+    notificationTimeout: null,
+
     // Incident state
     incidents: [],
     incidentLayer: null,
@@ -265,11 +269,108 @@ export const useMapStore = defineStore('map', {
      * @returns {L.Marker} Leaflet marker with popup
      */
     createMarkerWithPopup(markerData, markerType) {
-      const popupContent = MarkerConfigService.createMarkerPopupContent(markerData);
+      if (!markerData || !markerType) return null;
 
-      return L.marker([markerData.lat, markerData.lng], {
+      const marker = L.marker([markerData.lat, markerData.lng], {
         icon: markerType.icon
-      }).bindPopup(popupContent);
+      });
+
+      // Create popup content with route button
+      const popupContent = document.createElement('div');
+      popupContent.className = 'marker-popup-container';
+
+      // Add the standard popup info
+      const infoContent = document.createElement('div');
+      infoContent.className = 'marker-info-content';
+      infoContent.innerHTML = MarkerConfigService.createMarkerPopupContent(markerData);
+      popupContent.appendChild(infoContent);
+
+      // Add action buttons container
+      const actionsContainer = document.createElement('div');
+      actionsContainer.className = 'marker-popup-actions';
+
+      // Add route button
+      const routeButton = document.createElement('button');
+      routeButton.className = 'marker-route-button';
+      routeButton.textContent = 'Vis rute hit';
+      routeButton.onclick = (e) => {
+        e.stopPropagation();
+        this.createRouteToMarker(markerData);
+        marker.closePopup();
+      };
+      actionsContainer.appendChild(routeButton);
+      popupContent.appendChild(actionsContainer);
+
+      // Bind the popup with our custom content
+      marker.bindPopup(popupContent);
+
+      return marker;
+    },
+
+    // Add this new method
+
+    /**
+     * Create a route from user's location to a selected map marker
+     * @param {Object} markerData - The marker to route to
+     */
+    async createRouteToMarker(markerData) {
+      try {
+        // Get user's current position
+        const position = await this.getUserPosition();
+        if (!position) {
+          this.routeError = "Kunne ikke finne din posisjon. Vennligst gi tillatelse til stedsbestemmelse.";
+          return;
+        }
+
+        const startCoords = [position.coords.latitude, position.coords.longitude];
+        const endCoords = [markerData.lat, markerData.lng];
+
+        // Use existing route generation
+        await this.generateRoute(startCoords, endCoords);
+
+        // Add a notification that the route was created
+        this.showNotification(`Rute til ${markerData.name || 'markør'} generert`);
+      } catch (error) {
+        console.error("Error creating route to marker:", error);
+        this.routeError = "Kunne ikke generere rute. Vennligst prøv igjen senere.";
+      }
+    },
+
+    /**
+     * Get user's current position as a promise
+     * @returns {Promise<GeolocationPosition>} User's position
+     */
+    getUserPosition() {
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) {
+          reject(new Error('Geolocation is not supported by your browser'));
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(resolve, reject, {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 60000
+        });
+      });
+    },
+
+    /**
+     * Show a temporary notification message
+     * @param {string} message - Message to display
+     */
+    showNotification(message) {
+      this.notification = message;
+
+      // Clear previous timeout if exists
+      if (this.notificationTimeout) {
+        clearTimeout(this.notificationTimeout);
+      }
+
+      // Auto-dismiss after 3 seconds
+      this.notificationTimeout = setTimeout(() => {
+        this.notification = null;
+      }, 3000);
     },
 
     /**
