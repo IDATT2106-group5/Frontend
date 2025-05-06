@@ -117,7 +117,7 @@
       <div v-else class="marker-form-panel">
         <h1>{{ isCreating ? 'Legg til ny markør' : 'Rediger markør' }}</h1>
 
-        <div class="info-box">
+        <div class="info-box" v-if="showInfoBox">
           <span class="info-icon">?</span>
           <span>Hvordan lage ny markør på kartet</span>
           <button class="close-btn" @click="closeInfoBox">X</button>
@@ -198,13 +198,6 @@
             </label>
 
             <div v-if="showDescriptionTips" class="tips-box">
-              <h4>Tips for en god beskrivelse:</h4>
-              <ul>
-                <li>Vær konkret om hva som finnes på stedet</li>
-                <li>Nevn relevante detaljer som kan være viktige i en krisesituasjon</li>
-                <li>Inkluder informasjon om tilgjengelighet</li>
-                <li>Beskriv synlige kjennetegn ved stedet</li>
-              </ul>
               <button
                 type="button"
                 class="close-btn"
@@ -212,6 +205,13 @@
               >
                 X
               </button>
+              <h4>Tips for en god beskrivelse:</h4>
+              <ul>
+                <li>Vær konkret om hva som finnes på stedet</li>
+                <li>Nevn relevante detaljer som kan være viktige i en krisesituasjon</li>
+                <li>Inkluder informasjon om tilgjengelighet</li>
+                <li>Beskriv synlige kjennetegn ved stedet</li>
+              </ul>
             </div>
 
             <textarea
@@ -296,7 +296,12 @@
 
     <!-- Right panel: Map -->
     <div class="right-panel">
-      <div ref="mapContainer" class="admin-map"></div>
+      <BaseMap
+        ref="baseMap"
+        :center="mapCenter"
+        :zoom="mapZoom"
+        @map-ready="onMapReady"
+      />
     </div>
   </div>
 </template>
@@ -306,19 +311,26 @@ import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useMarkerAdminStore } from '@/stores/admin/markerAdminStore';
 import { storeToRefs } from 'pinia';
 import MarkerConfigService from '@/service/map/markerConfigService';
+import BaseMap from '@/components/map/BaseMap.vue'; // Import BaseMap component
 import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 
 export default {
   name: 'markerAdmin',
+  components: {
+    BaseMap // Register BaseMap component
+  },
 
   setup() {
-    const mapContainer = ref(null);
+    const baseMap = ref(null);
     const map = ref(null);
     const tempMarker = ref(null);
     const showFilterDropdown = ref(false);
     const showDescriptionTips = ref(false);
     const showInfoBox = ref(true);
+
+    // Map configuration
+    const mapCenter = ref([63.4305, 10.3951]); // Trondheim
+    const mapZoom = ref(13);
 
     const markerAdminStore = useMarkerAdminStore();
     const {
@@ -342,26 +354,9 @@ export default {
     const markerTypes = computed(() => markerAdminStore.markerTypes);
 
     // Methods
-    const initMap = () => {
-      if (!mapContainer.value) return;
-
-      // Initialize Leaflet map
-      map.value = L.map(mapContainer.value, {
-        center: [63.4305, 10.3951], // Trondheim
-        zoom: 13,
-        zoomControl: false
-      });
-
-      // Add zoom controls to top right
-      L.control.zoom({
-        position: 'topright'
-      }).addTo(map.value);
-
-      // Add the base tile layer
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(map.value);
+    const onMapReady = (leafletMap) => {
+      // Store the map instance
+      map.value = leafletMap;
 
       // Add click handler for setting marker position
       map.value.on('click', onMapClick);
@@ -522,9 +517,6 @@ export default {
 
     // Lifecycle hooks
     onMounted(async () => {
-      // Initialize the map
-      initMap();
-
       // Fetch markers
       await markerAdminStore.fetchMarkers();
 
@@ -534,15 +526,17 @@ export default {
     });
 
     onUnmounted(() => {
-      // Clean up map
-      if (map.value) {
-        map.value.remove();
-        map.value = null;
+      // Clean up marker if needed
+      if (tempMarker.value) {
+        tempMarker.value.remove();
+        tempMarker.value = null;
       }
     });
 
     return {
-      mapContainer,
+      baseMap,
+      mapCenter,
+      mapZoom,
       markers,
       filteredMarkers,
       markerFormData,
@@ -557,6 +551,7 @@ export default {
       showFilterDropdown,
       showDescriptionTips,
       showInfoBox,
+      onMapReady,
       onSearchChange,
       onFilterChange,
       toggleFilterDropdown,
@@ -661,11 +656,6 @@ export default {
 .right-panel {
   flex: 2;
   position: relative;
-}
-
-.admin-map {
-  width: 100%;
-  height: 100%;
   border-radius: 8px;
   overflow: hidden;
 }
