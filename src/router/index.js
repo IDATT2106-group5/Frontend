@@ -24,6 +24,7 @@ import ResetPasswordConfirmView from '@/views/login/ResetPasswordConfirmView.vue
 import AdminDashboardView from '@/views/adminViews/AdminDashboardView.vue'
 import notAuthorizedView from '@/views/mainViews/notAuthorizedView.vue'
 import PersonVern from '@/views/mainViews/PersonVern.vue'
+import AdminUserView from '@/views/adminViews/AdminUsersView.vue'
 import MarkerAdmin from '@/views/adminViews/MarkerAdmin.vue'
 
 const router = createRouter({
@@ -67,6 +68,12 @@ const router = createRouter({
       path: '/admin-dashboard',
       name: 'admin-dashboard',
       component: AdminDashboardView,
+      meta: { requiresAdmin: true },
+    },
+    {
+      path: '/admin-users',
+      name: 'admin-users',
+      component: AdminUserView,
       meta: { requiresAdmin: true },
     },
     {
