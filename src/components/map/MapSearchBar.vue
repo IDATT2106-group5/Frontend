@@ -6,7 +6,6 @@
         type="search"
         placeholder="Søk etter adresse eller sted..."
         class="search-input"
-        @input="onSearch"
         @keydown="onKeyDown"
         :disabled="isSearching"
       />
@@ -18,6 +17,14 @@
         aria-label="Tøm søk"
       >
         ×
+      </button>
+      <button
+        v-if="searchInput && !isSearching"
+        class="search-button"
+        @click="triggerSearch"
+        aria-label="Søk"
+      >
+        <SearchIcon class="search-icon" size="16" />
       </button>
     </div>
 
@@ -47,15 +54,20 @@
 import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useMapStore } from '@/stores/map/mapStore';
 import { storeToRefs } from 'pinia';
+import { Search as SearchIcon } from 'lucide-vue-next';
 
 export default {
   name: 'MapSearchBar',
+  components: {
+    SearchIcon
+  },
   setup() {
     const mapStore = useMapStore();
     const { searchResults, isSearching, searchError } = storeToRefs(mapStore);
 
     const searchInput = ref('');
     const debounceTimeout = ref(null);
+    const autoSearchTimeout = ref(null);
 
     // Format address components
     const formatAddress = (address) => {
@@ -79,26 +91,30 @@ export default {
       return parts.join(', ');
     };
 
-    // Handle search input with debounce
-    const onSearch = () => {
-      clearTimeout(debounceTimeout.value);
-
-      debounceTimeout.value = setTimeout(() => {
-        if (searchInput.value.trim()) {
-          mapStore.searchPlaces(searchInput.value);
-        }
-      }, 300);
+    // Trigger the search immediately
+    const triggerSearch = () => {
+      if (searchInput.value.trim()) {
+        mapStore.searchPlaces(searchInput.value);
+      }
     };
 
     // Handle keydown events
     const onKeyDown = (event) => {
+      // Reset the auto-search timeout every time the user types
+      clearTimeout(autoSearchTimeout.value);
+
       if (event.key === 'Enter') {
-        clearTimeout(debounceTimeout.value);
-        if (searchInput.value.trim()) {
-          mapStore.searchPlaces(searchInput.value);
-        }
+        // Search immediately on Enter
+        triggerSearch();
       } else if (event.key === 'Escape') {
         clearSearch();
+      } else {
+        // Set up auto-search after 4 seconds of inactivity
+        autoSearchTimeout.value = setTimeout(() => {
+          if (searchInput.value.trim().length >= 3) {
+            triggerSearch();
+          }
+        }, 1000);
       }
     };
 
@@ -108,6 +124,10 @@ export default {
       mapStore.searchResults = [];
       mapStore.searchError = null;
       mapStore.clearSearchResultMarker();
+
+      // Clear the timeouts
+      clearTimeout(debounceTimeout.value);
+      clearTimeout(autoSearchTimeout.value);
     };
 
     // Select a search result
@@ -133,6 +153,7 @@ export default {
     onUnmounted(() => {
       document.removeEventListener('click', handleClickOutside);
       clearTimeout(debounceTimeout.value);
+      clearTimeout(autoSearchTimeout.value);
     });
 
     // Clear search results when input is empty
@@ -148,7 +169,7 @@ export default {
       searchResults,
       isSearching,
       searchError,
-      onSearch,
+      triggerSearch,
       onKeyDown,
       clearSearch,
       selectResult,
@@ -201,7 +222,7 @@ export default {
 
 .search-clear-button {
   position: absolute;
-  right: 12px;
+  right: 40px;
   background: none;
   border: none;
   color: #777;
@@ -217,6 +238,29 @@ export default {
 
 .search-clear-button:hover {
   color: #333;
+}
+
+.search-button {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.search-icon {
+  color: #555;
+  transition: color 0.2s;
+}
+
+.search-button:hover .search-icon {
+  color: #000;
 }
 
 .search-results {
