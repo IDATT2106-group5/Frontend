@@ -2,6 +2,18 @@
   <div class="map-container">
     <div id="map" ref="mapContainer"></div>
 
+    <!-- Add notification display with proper v-if check -->
+    <transition name="fade">
+      <div v-if="notification" class="map-notification">
+        {{ notification }}
+      </div>
+    </transition>
+
+    <!-- Existing components with proper condition checks -->
+    <div class="closest-facility-container" v-if="!isLoadingMarkers && !markersLoadError">
+      <ClosestFacilityFinder />
+    </div>
+
     <!-- Loading indicator -->
     <div v-if="isLoadingMarkers" class="map-loading-overlay">
       <div class="map-loading-spinner"></div>
@@ -69,10 +81,12 @@ import { storeToRefs } from 'pinia';
 import MarkerFilter from '@/components/map/MarkerFilter.vue';
 import Button from '@/components/ui/button/Button.vue';
 import 'leaflet/dist/leaflet.css';
+import ClosestFacilityFinder from "@/components/map/ClosestFacilityFinder.vue";
 
 export default {
   name: 'EmergencyMap',
   components: {
+    ClosestFacilityFinder,
     MarkerFilter,
     Button
   },
@@ -88,7 +102,8 @@ export default {
       layerOptions,
       activeLayerId,
       isLoadingMarkers,
-      markersLoadError
+      markersLoadError,
+      notification
     } = storeToRefs(mapStore);
 
     // Determine if we're in mobile view
@@ -171,6 +186,7 @@ export default {
       toggleFilterCollapse,
       isLayerCollapsed,
       toggleLayerCollapse,
+      notification
     };
   }
 };
@@ -184,9 +200,99 @@ export default {
   overflow: hidden;
 }
 
+.closest-facility-container {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 1000;
+}
+
+@media (max-width: 767px) {
+  .closest-facility-container {
+    top: auto;
+    bottom: 16px;
+    right: 16px;
+  }
+}
+
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.5s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
 #map {
   width: 100%;
   height: 100%;
+}
+
+/* Custom Marker Popup Styles */
+.marker-popup-container {
+  padding: 4px;
+}
+
+.marker-info-content {
+  margin-bottom: 12px;
+}
+
+.marker-popup {
+  min-width: 200px;
+}
+
+.marker-popup h3 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.marker-popup p {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.marker-popup-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+  border-top: 1px solid #eee;
+  padding-top: 8px;
+}
+
+.marker-route-button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.marker-route-button:hover {
+  background-color: #388e3c;
+}
+
+/* Map Notification */
+.map-notification {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 4px;
+  z-index: 1000;
+  font-size: 14px;
+}
+
+@keyframes fade-in-out {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 /* Layer Control Container */
