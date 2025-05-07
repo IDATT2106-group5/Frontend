@@ -135,18 +135,43 @@
         <form @submit.prevent="onSaveMarker">
           <div class="form-group">
             <label for="type">Type</label>
-            <select
-              id="type"
-              v-model="markerFormData.type"
-              class="form-control"
-            >
-              <option
-                v-for="type in markerTypes"
-                :key="type.id"
-                :value="type.id"
+            <div class="custom-select-wrapper">
+              <div
+                class="custom-select"
+                @click="toggleDropdown"
+                :class="{ 'dropdown-open': dropdownOpen }"
               >
-              </option>
-            </select>
+                <div class="selected-option">
+                  <div class="option-icon">
+                    <component
+                      :is="getMarkerIcon(markerFormData.type)"
+                      :color="getMarkerColor(markerFormData.type)"
+                      size="20"
+                    />
+                  </div>
+                  <span class="option-text">{{ getMarkerTypeName(markerFormData.type) }}</span>
+                  <div class="dropdown-arrow">▼</div>
+                </div>
+              </div>
+              <div class="options-container" v-if="dropdownOpen">
+                <div
+                  v-for="type in markerTypes"
+                  :key="type.id"
+                  class="option-item"
+                  @click="selectMarkerType(type.id)"
+                  :class="{ 'selected': markerFormData.type === type.id }"
+                >
+                  <div class="option-icon">
+                    <component
+                      :is="getMarkerIcon(type.id)"
+                      :color="getMarkerColor(type.id)"
+                      size="20"
+                    />
+                  </div>
+                  <span class="option-text">{{ type.name }}</span>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="form-group">
@@ -320,6 +345,7 @@ export default {
     const tempMarker = ref(null);
     const showFilterDropdown = ref(false);
     const showDescriptionTips = ref(false);
+    const dropdownOpen = ref(false);
 
     // Map configuration
     const mapCenter = ref([63.4305, 10.3951]); // Trondheim
@@ -345,6 +371,31 @@ export default {
 
     // Computed properties
     const markerTypes = computed(() => markerAdminStore.markerTypes);
+
+    // Close dropdown when clicking outside
+    const closeDropdownOnOutsideClick = (e) => {
+      const customSelect = document.querySelector('.custom-select-wrapper');
+      if (customSelect && !customSelect.contains(e.target)) {
+        dropdownOpen.value = false;
+      }
+    };
+
+    // Toggle dropdown state
+    const toggleDropdown = () => {
+      dropdownOpen.value = !dropdownOpen.value;
+    };
+
+    // Get marker type name by id
+    const getMarkerTypeName = (typeId) => {
+      const type = markerTypes.value.find(t => t.id === typeId);
+      return type ? type.name : '';
+    };
+
+    // Select marker type
+    const selectMarkerType = (typeId) => {
+      markerFormData.value.type = typeId;
+      dropdownOpen.value = false;
+    };
 
     // Methods
     const onMapReady = (leafletMap) => {
@@ -512,6 +563,8 @@ export default {
       // Initialize search and filter
       searchTerm.value = markerAdminStore.searchTerm;
       filterType.value = markerAdminStore.filterType;
+
+      document.addEventListener('click', closeDropdownOnOutsideClick);
     });
 
     onUnmounted(() => {
@@ -520,6 +573,9 @@ export default {
         tempMarker.value.remove();
         tempMarker.value = null;
       }
+
+      document.removeEventListener('click', closeDropdownOnOutsideClick);
+
     });
 
     return {
@@ -539,6 +595,10 @@ export default {
       filterType,
       showFilterDropdown,
       showDescriptionTips,
+      dropdownOpen,
+      toggleDropdown,
+      getMarkerTypeName,
+      selectMarkerType,
       onMapReady,
       onSearchChange,
       onFilterChange,
@@ -559,6 +619,96 @@ export default {
 </script>
 
 <style scoped>
+
+.custom-select-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.custom-select {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  background-color: white;
+  cursor: pointer;
+  user-select: none;
+  height: 42px; /* Match your form control height */
+}
+
+.custom-select:hover {
+  border-color: #bbb;
+}
+
+.dropdown-open {
+  border-color: #3498db;
+  box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.3);
+}
+
+.selected-option {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  height: 100%;
+}
+
+.option-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 10px;
+  width: 24px;
+  height: 24px;
+}
+
+.option-text {
+  flex: 1;
+}
+
+.dropdown-arrow {
+  color: #666;
+  font-size: 10px;
+  margin-left: 8px;
+}
+
+.options-container {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 1px solid #ddd;
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.option-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.option-item:hover {
+  background-color: #f5f5f5;
+}
+
+.option-item.selected {
+  background-color: #e0f0ff;
+}
+
+/* Keep all your existing styles below */
+.marker-admin-container {
+  display: flex;
+  width: 100%;
+  height: calc(100vh - 60px);
+  gap: 16px;
+  padding: 16px;
+  position: relative;
+}
+
 .marker-admin-container {
   display: flex;
   width: 100%;
