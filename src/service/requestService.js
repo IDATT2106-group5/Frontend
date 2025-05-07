@@ -1,14 +1,25 @@
 import BaseService from '@/service/baseService';
 
+/**
+ * Service for managing membership invitations and join requests.
+ * Handles sending, receiving, and responding to invitations and join requests.
+ */
 class RequestService extends BaseService {
+  /**
+   * Initializes the RequestService with the membership requests base path.
+   */
   constructor() {
     super('/membership-requests');
   }
-
-  //Method for sending an invitation to a user
+  /**
+   * Sends an invitation to a user.
+   *
+   * @param {Object} invitationData - Data for the invitation (e.g., userId, householdId).
+   * @returns {Promise<Object>} API response.
+   * @throws {Error} If the request fails.
+   */
     async sendInvitation(invitationData) {
       try {
-        console.log('[SENDING INVITATION] To email:', invitationData.email, 'For household:', invitationData.householdId);
         return await this.post('send-invitation', invitationData);
       } catch (error) {
         console.error('[ERROR] Sending invitation:', error);
@@ -16,7 +27,13 @@ class RequestService extends BaseService {
       }
     }
   
-    //Method for getting all sent invitations by householdId
+   /**
+   * Fetches all invitations sent by a household.
+   *
+   * @param {string} householdId - ID of the household.
+   * @returns {Promise<Array<Object>>} List of sent invitations.
+   * @throws {Error} If the request fails.
+   */
     async getSentInvitationsByHousehold(householdId) {
       try {
         const response = await this.post('invitations/sent/by-household', {
@@ -38,16 +55,18 @@ class RequestService extends BaseService {
         throw error;
       }
     }
-  
 
-  //Method for getting all received join request to the household
+  /**
+   * Fetches all join requests received by the household.
+   *
+   * @param {string} householdId - Household ID.
+   * @returns {Promise<Array<Object>>} List of join requests.
+   * @throws {Error} If the request fails.
+   */
   async getReceivedJoinRequests(householdId) {
     try {
-      console.log('[REQUEST] Sending householdId to backend:', householdId);
-  
+      
       const data = await this.post('join-requests/received', { householdId });
-  
-      console.log('[RESPONSE] Received from backend:', data);
   
       return data;
     } catch (error) {
@@ -67,11 +86,16 @@ class RequestService extends BaseService {
     }
   }
 
-
-    // Method for getting all received invitations for a user
+  /**
+   * Fetches all invitations received by a user.
+   *
+   * @param {string} userId - User ID.
+   * @returns {Promise<Array<Object>>} List of received invitations.
+   * @throws {Error} If the request fails.
+   */
     async getReceivedInvitationsByUser(userId) {
       try {
-        console.log('[REQUEST] Getting received invitations for userId:', userId);
+
         const response = await this.post('invitations/received', { userId });
 
         if (Array.isArray(response)) {
@@ -90,10 +114,15 @@ class RequestService extends BaseService {
       }
     }
 
-    // Method for sending a join request to a household
+  /**
+   * Sends a join request to a household.
+   *
+   * @param {Object} requestData - Join request data (e.g., userId, householdId).
+   * @returns {Promise<Object>} API response.
+   * @throws {Error} If the request fails.
+   */
     async sendJoinRequest(requestData) {
       try {
-        console.log('[SENDING JOIN REQUEST] UserId:', requestData.userId, 'To household:', requestData.householdId);
         return await this.post('send-join-request', requestData);
       } catch (error) {
         console.error('[ERROR] Sending join request:', error);
@@ -101,7 +130,13 @@ class RequestService extends BaseService {
       }
     }
 
-  //Method for accepting a join request
+  /**
+   * Accepts a join request by its ID.
+   *
+   * @param {string} requestId - The ID of the join request to accept.
+   * @returns {Promise<Object>} API response.
+   * @throws {Error} If the request fails.
+   */
   async acceptJoinRequest(requestId) {
     try {
       return await this.post('accept', { requestId });
@@ -111,7 +146,13 @@ class RequestService extends BaseService {
     }
   }
   
-  //Method for declining a join request
+  /**
+   * Declines a join request by its ID.
+   *
+   * @param {string} requestId - The ID of the join request to decline.
+   * @returns {Promise<Object>} API response.
+   * @throws {Error} If the request fails.
+   */
   async declineJoinRequest(requestId) {
     try {
       return await this.post('decline', { requestId });
