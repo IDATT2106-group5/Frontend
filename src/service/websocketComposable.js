@@ -1,43 +1,76 @@
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useUserStore } from '@/stores/UserStore.js'
+import { useHouseholdStore } from '@/stores/HouseholdStore.js'
 import WebSocketService from '@/service/websocketService.js'
 
 export default function useWebSocket() {
   const notifications = ref([])
   const notificationCount = ref(0)
   const connected = ref(false)
-
-  const userStore = useUserStore()
   const webSocketService = new WebSocketService()
+  const userStore = useUserStore()
+  const householdStore = useHouseholdStore()
 
   onMounted(() => {
-    webSocketService.init({
-      userId: userStore.userId,
-      token: userStore.token,
-      onConnected: () => {
-        connected.value = true
-        fetchNotifications()
-      },
-      onDisconnected: () => {
-        connected.value = false
-      },
-      onNotification: () => {
-        fetchNotifications()
-      },
-      onPositionUpdate: (position) => {
-        console.log('Received position update:', position)
-      }
-    })
+    if (userStore.user && userStore.token) {
+      initWebSocket()
+    }
   })
+
+  // Watch for user data to become available
+  watch(
+    () => userStore.user,
+    (newUser) => {
+      if (newUser && userStore.token && !connected.value) {
+        initWebSocket()
+      }
+    },
+  )
+
+
+  async function initWebSocket() {
+    try {
+      if (!householdStore.currentHousehold) {
+        await householdStore.checkCurrentHousehold();
+      }
+
+      webSocketService.init({
+        userId: userStore.user?.id,
+        token: userStore.token,
+        householdId: householdStore.currentHousehold.id,
+        onConnected: () => {
+          connected.value = true
+          if (userStore.user?.id) {
+            fetchNotifications(userStore.user.id)
+          }
+        },
+        onDisconnected: () => {
+          connected.value = false
+        },
+        onNotification: () => {
+          if (userStore.user?.id) {
+            fetchNotifications(userStore.user.id)
+          }
+        },
+        onPositionUpdate: (position) => {
+          console.log('Received position update:', position)
+        },
+      })
+    } catch (error) {
+      console.error('Failed to initialize WebSocket:', error)
+    }
+  }
 
   onBeforeUnmount(() => {
     webSocketService.disconnect()
   })
 
-  async function subscribeToPosition(householdId) {
+  async function subscribeToPosition(householdId, callback) {
     if (userStore.token && householdId) {
-      webSocketService.subscribeToPosition(householdId)
-      updatePosition(29, '10.0', '20.0')
+      webSocketService.subscribeToPosition(householdId, (position) => {
+        console.log('Position update received:', position)
+        if (callback) callback(position)
+      })
     }
   }
 
@@ -69,9 +102,11 @@ export default function useWebSocket() {
     notificationCount.value = 0
   }
 
-  async function fetchNotifications() {
+  async function fetchNotifications(userId) {
+    if (!userId || !userStore.token) return
+
     try {
-      const requestData = { userId: userStore.userId }
+      const requestData = { userId: userId }
       const response = await fetch('http://localhost:8080/api/notifications/get', {
         method: 'POST',
         headers: {
@@ -90,6 +125,8 @@ export default function useWebSocket() {
   }
 
   async function fetchHouseholdPositions() {
+    if (!userStore.token) return []
+
     try {
       const response = await fetch(`http://localhost:8080/api/household/positions`, {
         method: 'GET',
@@ -115,6 +152,6 @@ export default function useWebSocket() {
     resetNotificationCount,
     subscribeToPosition,
     updatePosition,
-    fetchHouseholdPositions
+    fetchHouseholdPositions,
   }
 }

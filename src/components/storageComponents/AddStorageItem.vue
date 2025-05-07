@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
-import { useItemStore } from '@/stores/ItemStore';
+import { useItemStore } from '@/stores/ItemStore.js';
 import { PlusCircle, Undo, Search } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button/index.js';
 
