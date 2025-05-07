@@ -1,13 +1,12 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Copy, Edit, User } from 'lucide-vue-next'
+import { Copy, Edit, User, Home } from 'lucide-vue-next'
 import { toast } from '@/components/ui/toast'
 
 import { useHouseholdStore } from '@/stores/HouseholdStore'
 import useHousehold from '@/components/householdMainView/useHouseholdViewModel.js'
 import MembersTab from '@/components/householdMainView/tabs/MembersTab.vue'
-import SearchTab from '@/components/householdMainView/tabs/SearchTab.vue'
 import AddMemberModal from '@/components/householdMainView/modals/AddMemberModal.vue'
 import InviteMemberModal from '@/components/householdMainView/modals/InviteMemberModal.vue'
 import EditHouseholdModal from '@/components/householdMainView/modals/EditHouseholdModal.vue'
@@ -36,6 +35,14 @@ const {
 const activeTab = ref('members')
 const confirmLeaveOpen = ref(false)
 const confirmDeleteOpen = ref(false)
+
+// Join household functionality
+const joinHouseholdId = ref('')
+const joinError = ref('')
+const joinSuccess = ref('')
+const joinIsLoading = ref(false)
+const foundHousehold = ref(null)
+const requestSent = ref(false)
 
 // Fetch invitations if not in a household
 onMounted(async () => {
@@ -75,7 +82,77 @@ async function handleDelete() {
 }
 
 const goCreate = () => router.push('/household/create')
-const goJoin = () => router.push('/household/join')
+
+// Join household functionality
+const searchForHousehold = async () => {
+  joinError.value = ''
+  joinSuccess.value = ''
+  requestSent.value = false
+  foundHousehold.value = null
+  joinIsLoading.value = true
+
+  console.log('📤 Searching with householdId:', joinHouseholdId.value)
+
+  if (!joinHouseholdId.value || joinHouseholdId.value <= 0) {
+    console.warn('⚠️ Invalid ID (empty or non-positive)')
+    joinError.value = 'Husstands-ID må være et positivt tall'
+    joinIsLoading.value = false
+    return
+  }
+
+  if (isNaN(Number(joinHouseholdId.value)) || Number(joinHouseholdId.value) <= 0) {
+    console.warn('⚠️ householdId is not a number or <= 0')
+    joinError.value = 'Husstands-ID må være et positivt tall'
+    joinIsLoading.value = false
+    return
+  }
+
+  try {
+    const found = await houseStore.searchHouseholdById(joinHouseholdId.value)
+    console.log('✅ Found household:', found)
+
+    if (found && found.id) {
+      // Create a plain object from the response to avoid reactive proxy issues
+      foundHousehold.value = {
+        id: found.id,
+        name: found.name || 'Ukjent navn'
+      }
+      console.log('🎯 foundHousehold.value set:', foundHousehold.value)
+      joinSuccess.value = `Husstand funnet: ${found.name || 'Husstand ' + found.id}`
+    } else {
+      console.warn('⚠️ No household found')
+      joinError.value = 'Ingen husstand funnet'
+    }
+  } catch (err) {
+    console.error('❌ Search error:', err)
+    joinError.value = houseStore.error || 'Kunne ikke finne husstand'
+  } finally {
+    joinIsLoading.value = false
+  }
+}
+
+const sendJoinRequest = async () => {
+  if (!foundHousehold.value || !foundHousehold.value.id) {
+    joinError.value = 'Du må først søke etter en gyldig husstand'
+    return
+  }
+
+  joinIsLoading.value = true
+  joinError.value = ''
+  joinSuccess.value = ''
+
+  try {
+    await houseStore.sendJoinRequest(foundHousehold.value.id)
+    joinSuccess.value = 'Forespørsel om å bli med i husstand sendt!'
+    requestSent.value = true
+    foundHousehold.value = null
+  } catch (err) {
+    console.error('Error sending join request:', err)
+    joinError.value = houseStore.error || 'Kunne ikke sende forespørsel om å bli med i husstand'
+  } finally {
+    joinIsLoading.value = false
+  }
+}
 
 // Accept/decline invitation handlers
 const acceptInvitation = async (invId) => {
@@ -100,7 +177,6 @@ const declineInvitation = async (invId) => {
   }
 }
 </script>
-
 <template>
   <div class="min-h-screen bg-gray-100">
     <div class="max-w-3xl mx-auto p-6 space-y-4">
@@ -133,11 +209,59 @@ const declineInvitation = async (invId) => {
               <span class="text-xl">+</span> Opprett husstand
             </button>
           </div>
-          <div>
-            <h3 class="font-semibold text-lg mb-2">Bli med i husstand</h3>
-            <button @click="goJoin" class="flex items-center gap-2 px-5 py-2 rounded-md bg-primary text-white font-medium shadow hover:opacity-90">
-              <User class="w-5 h-5" /> Bli med i husstand
+        </div>
+
+        <!-- Join Household Section -->
+        <div class="mt-10 max-w-md mx-auto">
+          <h2 class="text-xl font-bold mb-2">Søk om å bli med i et annet husstand</h2>
+          <p class="text-teal-800 mb-4">Skriv inn husstands-ID for å søke etter husstand:</p>
+          
+          <div class="space-y-4">
+            <div>
+              <label for="joinHouseholdId" class="block text-sm font-medium text-gray-700 mb-1">
+                Husstands ID
+              </label>
+              <input
+                v-model="joinHouseholdId"
+                id="joinHouseholdId"
+                type="number"
+                min="1"
+                class="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+            </div>
+            
+            <button
+              @click="searchForHousehold"
+              class="w-full bg-teal-600 text-white py-2 rounded hover:bg-teal-700 transition"
+              :disabled="joinIsLoading"
+            >
+              <span v-if="joinIsLoading">Søker...</span>
+              <span v-else>Søk</span>
             </button>
+
+            <div v-if="joinError" class="p-2 bg-red-50 border border-red-200 rounded">
+              <p class="text-red-600 text-sm">{{ joinError }}</p>
+            </div>
+            
+            <!-- Display found household info -->
+            <div v-if="foundHousehold && !requestSent" class="p-4 bg-white border rounded shadow-sm space-y-2">
+              <h3 class="text-lg font-semibold mb-2">Husstand funnet!</h3>
+              <p class="text-sm text-gray-700">Husstandsnavn: <span class="text-gray-900">{{ foundHousehold.name || 'Ukjent navn' }}</span></p>
+              <p class="text-sm text-gray-700">Husstands-ID: <span class="text-gray-900">{{ foundHousehold.id }}</span></p>
+
+              <button
+                @click="sendJoinRequest"
+                class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+                :disabled="joinIsLoading"
+              >
+                <span v-if="joinIsLoading">Sender forespørsel...</span>
+                <span v-else>Send forespørsel om å bli med</span>
+              </button>
+            </div>
+
+            <div v-if="joinSuccess" class="p-2 bg-green-50 border border-green-200 rounded">
+              <p class="text-green-600 text-sm">{{ joinSuccess }}</p>
+            </div>
           </div>
         </div>
 
@@ -198,8 +322,97 @@ const declineInvitation = async (invId) => {
           </button>
         </div>
 
-        <MembersTab v-if="activeTab === 'members'" @open-add="openAddMemberForm" @open-invite="openInviteForm" />
-        <SearchTab v-else />
+        <!-- Tab content with better spacing -->
+        <div class="mt-6">
+          <MembersTab v-if="activeTab === 'members'" @open-add="openAddMemberForm" @open-invite="openInviteForm" />
+          <div v-else-if="activeTab === 'search'" class="p-6 rounded-lg">
+            <!-- Join Household UI -->
+            <div class="flex flex-col items-center justify-center">
+              <h1 class="text-xl font-bold mb-2">Søk om å bli med i et annet husstand</h1>
+              <p class="text-teal-800 mb-4">Skriv inn husstands-ID for å søke etter husstand:</p>
+              
+              <div class="w-full max-w-md space-y-4">
+                <div>
+                  <label for="joinHouseholdId" class="block text-sm font-medium text-gray-700 mb-1">
+                    Husstands ID
+                  </label>
+                  <input
+                    v-model="joinHouseholdId"
+                    id="joinHouseholdId"
+                    type="number"
+                    min="1"
+                    class="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+                
+                <button
+                  @click="searchForHousehold"
+                  class="w-full bg-teal-600 text-white py-2 rounded hover:bg-teal-700 transition"
+                  :disabled="joinIsLoading"
+                >
+                  <span v-if="joinIsLoading">Søker...</span>
+                  <span v-else>Søk</span>
+                </button>
+
+                <div v-if="joinError" class="p-2 bg-red-50 border border-red-200 rounded">
+                  <p class="text-red-600 text-sm">{{ joinError }}</p>
+                </div>
+                
+                <!-- Display found household info -->
+                <div v-if="foundHousehold && !requestSent" class="p-4 bg-white border rounded shadow-sm space-y-2">
+                  <h3 class="text-lg font-semibold mb-2">Husstand funnet!</h3>
+                  <p class="text-sm text-gray-700">Husstandsnavn: <span class="text-gray-900">{{ foundHousehold.name || 'Ukjent navn' }}</span></p>
+                  <p class="text-sm text-gray-700">Husstands-ID: <span class="text-gray-900">{{ foundHousehold.id }}</span></p>
+
+                  <button
+                    @click="sendJoinRequest"
+                    class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+                    :disabled="joinIsLoading"
+                  >
+                    <span v-if="joinIsLoading">Sender forespørsel...</span>
+                    <span v-else>Send forespørsel om å bli med</span>
+                  </button>
+                </div>
+
+                <div v-if="joinSuccess" class="p-2 bg-green-50 border border-green-200 rounded">
+                  <p class="text-green-600 text-sm">{{ joinSuccess }}</p>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Invitations Received -->
+            <div class="mt-10">
+              <h3 class="text-xl font-semibold text-center mb-4">Invitasjoner mottatt</h3>
+              <div v-if="houseStore.receivedInvitations.length === 0" class="text-center text-gray-500 italic">
+                Ingen invitasjoner mottatt
+              </div>
+              <div
+                v-for="invitasjon in houseStore.receivedInvitations"
+                :key="invitasjon.id"
+                class="bg-white rounded-md p-4 max-w-md mx-auto border border-gray-200 mb-4"
+              >
+                <div class="text-sm space-y-1 mb-4">
+                  <p><strong>Husstands-ID:</strong> {{ invitasjon.householdId }}</p>
+                  <p><strong>Navn:</strong> {{ invitasjon.householdName }}</p>
+                </div>
+                <div class="flex gap-2 justify-end">
+                  <button
+                    @click="acceptInvitation(invitasjon.id)"
+                    class="px-4 py-1 rounded bg-primary text-white hover:opacity-90"
+                  >
+                    Aksepter
+                  </button>
+                  <button
+                    @click="declineInvitation(invitasjon.id)"
+                    class="px-4 py-1 rounded border border-gray-400 hover:bg-gray-100"
+                  >
+                    Avslå
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <AddMemberModal v-if="showAddForm" @close="showAddForm = false" />
         <InviteMemberModal v-if="showInviteForm" @close="showInviteForm = false" />
