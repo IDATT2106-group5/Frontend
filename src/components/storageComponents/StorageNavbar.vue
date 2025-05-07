@@ -1,6 +1,6 @@
 <script setup>
 import { inject, ref } from 'vue'
-import { useHouseholdStore } from '@/stores/HouseholdStore'
+import { useHouseholdStore } from '@/stores/HouseholdStore.js'
 import { ShoppingBasket, Apple, Droplet, Pill, Package, Hammer, UsersRound, Menu } from 'lucide-vue-next'
 
 /**

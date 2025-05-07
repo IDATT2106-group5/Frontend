@@ -9,10 +9,10 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 
-import StorageNavbar from "@/components/StorageNavbar.vue";
-import EditableNestedItemList from "@/components/EditableNestedItemList.vue";
-import SearchBar from '@/components/SearchBar.vue';
-import AddStorageItem from '@/components/AddStorageItem.vue';
+import StorageNavbar from "@/components/storageComponents/StorageNavbar.vue";
+import EditableNestedItemList from "@/components/storageComponents/EditableNestedItemList.vue";
+import SearchBar from '@/components/storageComponents/SearchBar.vue';
+import AddStorageItem from '@/components/storageComponents/AddStorageItem.vue';
 
 import { useStorageStore } from '@/stores/StorageStore.js';
 import { useUserStore } from '@/stores/UserStore.js';
