@@ -13,6 +13,59 @@ class RegisterAdminService extends BaseService {
   }
 
   /**
+   * Invites an emailadress to become a new Admin in the application.
+   *
+   * @param {Object} adminData - The data of the admin to be invited.
+   * @param {string} adminData.email - The email of the invited Admin
+   * @param {string} adminData.fullName - The full name of the invited Admin
+   * @returns {Promise<Object>} A promise that resolves to the server's response.
+   * @throws {Error} If the invitation fails for any reason
+   */
+  async inviteAdmin(adminData) {
+    if (!adminData.email) {
+      throw new Error('[ERROR] Email is required for admin invitation');
+    }
+
+    if (!adminData.fullName ) {
+      throw new Error('[ERROR] Full name is required for admin invitation');
+    }
+
+    try {
+      const response = await this.post('invite', adminData);
+      console.log('[RESPONSE] Admin invitation was successful');
+      return response;
+    } catch (error) {
+        if (error.response) {
+          const status = error.response.status;
+          const data = error.response.data;
+
+          if (status === 400) {
+            console.error('[ERROR] Invalid admin invitation data:', data.message || 'Validation failed');
+            throw new Error(data.message || 'Ugyldig invitasjonsdata. Vennligst sjekk informasjonen og prøv igjen.');
+          }
+
+          if (status === 401 || status === 403) {
+            console.error('[ERROR] Unauthorized admin invitation attempt');
+            throw new Error('Ugyldig token eller manglende rettigheter for invitasjon.');
+          }
+
+          if (status === 409) {
+            console.error('[ERROR] User already exists');
+            throw new Error('En bruker med denne e-postadressen eksisterer allerede.');
+          }
+
+          if (status === 500) {
+            console.error('[ERROR] Server error during admin invitation:', error);
+            throw new Error('En serverfeil oppstod. Vennligst prøv igjen senere.');
+          }
+        }
+
+      console.error('[ERROR] Failed to invite new admin:', error);
+      throw new Error('Kunne ikke fullføre invitasjonen. Vennligst sjekk nettverkstilkoblingen og prøv igjen.');
+    }
+  }
+
+  /**
    * Registers a new admin by sending the provided admin data to the server.
    *
    * @param {Object} adminData - The data of the admin to be registered.
