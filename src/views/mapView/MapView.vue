@@ -83,6 +83,7 @@ import useWebSocket from '@/service/websocketComposable.js'
 import L from 'leaflet'
 import ClosestFacilityFinder from '@/components/map/ClosestFacilityFinder.vue'
 import { useUserStore } from '@/stores/UserStore.js'
+import { useHouseholdStore } from '@/stores/HouseholdStore.js'
 
 export default {
   name: 'EmergencyMap',
@@ -102,6 +103,9 @@ export default {
     const map = ref(null)
     const mapInitialized = ref(false)
     const userStore = useUserStore()
+    const householdStore = useHouseholdStore()
+
+    const householdId = householdStore.currentHousehold.id
 
     const { subscribeToPosition, fetchHouseholdPositions, connected } = useWebSocket()
 
@@ -129,14 +133,11 @@ export default {
 
           // Process any stored positions that came in before map initialization
           userPositions.value.forEach((position, userId) => {
-            const isCurrentUser = userId === 29
+            const isCurrentUser = userId === userStore.user.id
             updateUserMarker(userId, position.longitude, position.latitude, isCurrentUser)
           })
 
-          // Only subscribe and fetch positions after map is ready
-          const householdId = 5
           if (connected.value) {
-            console.log('Subscribing to household positions')
             subscribeToPosition(householdId, handlePositionUpdate)
           }
 
@@ -163,7 +164,6 @@ export default {
 
     watch(connected, (isConnected) => {
       if (isConnected) {
-        const householdId = 5
         subscribeToPosition(householdId, handlePositionUpdate)
       }
     })
@@ -175,7 +175,7 @@ export default {
       // Remove all markers
       userMarkers.value.forEach((marker) => {
         if (map.value) {
-          map.removeLayer(marker)
+          map.value.removeLayer(marker)
         }
       })
 
@@ -191,13 +191,14 @@ export default {
         return
       }
 
-      const { userId, longitude, latitude } = positionData
+      const { userId, fullName, longitude, latitude } = positionData
 
       // Validate coordinates before processing
       if (
         !userId ||
         longitude === null ||
         latitude === null ||
+        fullName === null ||
         isNaN(parseFloat(longitude)) ||
         isNaN(parseFloat(latitude))
       ) {
@@ -217,14 +218,14 @@ export default {
       // If map is initialized, update marker immediately
       if (mapInitialized.value && map.value) {
         const isCurrentUser = userId === userStore.user.id
-        updateUserMarker(userId, parsedLong, parsedLat, isCurrentUser)
+        const name = fullName.split(' ')[0]
+        updateUserMarker(userId, name, parsedLong, parsedLat, isCurrentUser)
       } else {
         console.log(`Map not ready yet. Storing position for user ${userId} for later display`)
       }
     }
 
-    function updateUserMarker(userId, longitude, latitude, isCurrentUser = false) {
-      // First check if marker already exists
+    function updateUserMarker(userId, name, longitude, latitude, isCurrentUser = false) {
       if (userMarkers.value.has(userId)) {
         const marker = userMarkers.value.get(userId)
         marker.setLatLng([latitude, longitude])
@@ -232,7 +233,6 @@ export default {
         return
       }
 
-      // If no marker exists, create a new one
       try {
         let markerIcon
 
@@ -257,7 +257,7 @@ export default {
         } else {
           markerIcon = L.divIcon({
             className: 'user-position-marker',
-            html: `<div style="background-color: #ff4d4f; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">${userId}</div>`,
+            html: `<div style="background-color: #ff4d4f; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">${name}</div>`,
             iconSize: [30, 30],
             iconAnchor: [15, 15],
           })
