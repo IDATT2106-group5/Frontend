@@ -20,6 +20,8 @@ export default {
   components: { CirclePlus, Button },
 
   setup() {
+    const router = useRouter()
+
     const scenarioStore = useScenarioStore()
 
     const loading = computed(() => scenarioStore.isLoading)
@@ -53,12 +55,17 @@ export default {
       await scenarioStore.fetchAllScenarios()
     }
 
+    const goToScenarioPage = (id) => {
+      router.push(`/scenarios/${id}`)
+    }
+
     return {
       loading,
       error,
       scenarios,
       getIconComponent,
-      fetchScenarios
+      fetchScenarios,
+      goToScenarioPage
     }
   },
 }
@@ -89,11 +96,13 @@ export default {
     </div>
 
     <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-      <div
-        v-for="scenario in scenarios"
-        :key="scenario.id"
-        class="bg-white rounded-lg shadow-md border border-gray-200 h-40 flex flex-col"
-      >
+        <div
+            v-for="scenario in scenarios"
+            :key="scenario.id"
+            @click="goToScenarioPage(scenario.id)"
+            class="cursor-pointer bg-white rounded-lg shadow-md border border-gray-200 h-40 flex flex-col hover:shadow-lg transition"
+        >
+
         <div class="flex flex-col items-center justify-center flex-grow px-5 py-4">
           <component
             :is="getIconComponent(scenario)"

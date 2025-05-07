@@ -108,7 +108,6 @@ const goToScenarios = () => {
                     max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition">
           <InfoBox
             @click="goToScenarios"
-
             title="2. Les på ulike scenarioer"
             description="Få kunnskap om ulike krisesituasjoner"
           >

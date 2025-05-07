@@ -28,6 +28,7 @@ import AdminUserView from '@/views/adminViews/AdminUsersView.vue'
 import ScenarioList from '@/components/scenario/ScenarioList.vue'
 import ScenarioAdminView from '@/views/ScenarioAdminView.vue'
 import EditScenarioList from '@/components/scenario/EditScenarioList.vue'
+import ScenarioInfo from '@/components/scenario/ScenarioInfo.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -146,6 +147,11 @@ const router = createRouter({
       path: '/scenarios',
       name: 'ScenarioList',
       component: ScenarioList
+    },
+    {
+      path: '/scenarios/:id',
+      name: 'ScenarioInfo',
+      component: ScenarioInfo
     },
     {
       path: '/before',
