@@ -9,12 +9,21 @@ export default class WebSocketService {
       onDisconnected: () => {},
       onNotification: () => {},
       onPositionUpdate: () => {},
+      onIncident: () => {}, // Add default empty callback for incident
     }
     this.userId = null
     this.token = null
   }
 
-  init({ userId, householdId, token, onConnected, onDisconnected, onNotification, onPositionUpdate }) {
+  init({
+    userId,
+    householdId,
+    token,
+    onConnected,
+    onDisconnected,
+    onNotification,
+    onPositionUpdate,
+  }) {
     this.userId = userId
     this.token = token
     this.householdId = householdId
@@ -54,14 +63,39 @@ export default class WebSocketService {
 
     console.log(`User ID: ${this.userId}, Token: ${this.token}`)
 
-    this.stompClient.subscribe('/topic/notifications', () => this.callbacks.onNotification())
+    this.stompClient.subscribe('/topic/notifications', (message) => {
+      try {
+        const data = JSON.parse(message.body)
+        this.callbacks.onNotification(data)
+
+        // Check for incident type and call the specific handler
+        if (data && data.type === 'INCIDENT') {
+          this.callbacks.onIncident(data)
+        }
+      } catch (error) {
+        console.error('Error parsing notification:', error)
+        this.callbacks.onNotification()
+      }
+    })
     console.log('Subscribed to /topic/notifications')
 
     if (this.token && this.userId) {
-      this.stompClient.subscribe(`/user/queue/notifications`, () => this.callbacks.onNotification())
+      this.stompClient.subscribe(`/user/queue/notifications`, (message) => {
+        try {
+          const data = JSON.parse(message.body)
+          this.callbacks.onNotification(data)
+
+          // Check for incident type and call the specific handler
+          if (data && data.type === 'INCIDENT') {
+            this.callbacks.onIncident(data)
+          }
+        } catch (error) {
+          console.error('Error parsing notification:', error)
+          this.callbacks.onNotification()
+        }
+      })
       console.log(`Subscribed to /user/queue/notifications`)
     }
-    this.subscribeToPosition(this.householdId)
 
     this.callbacks.onConnected()
   }
@@ -78,12 +112,16 @@ export default class WebSocketService {
     }
   }
 
-  subscribeToPosition(householdId) {
+  subscribeToPosition(householdId, callback) {
     if (this.stompClient && this.connected && this.token && householdId) {
-      this.stompClient.subscribe(
-        `/topic/position/${householdId}`,
-        (message) => this.callbacks.onPositionUpdate(JSON.parse(message.body))
-      )
+      this.stompClient.subscribe(`/topic/position/${householdId}`, (message) => {
+        try {
+          const data = JSON.parse(message.body)
+          if (callback) callback(data)
+        } catch (error) {
+          console.error('Error parsing position data:', error)
+        }
+      })
       console.log(`Subscribed to /topic/position/${householdId}`)
       return true
     } else {
