@@ -32,7 +32,7 @@ async function handleInvite(adminData) {
     successMessage.value = '';
     if (clearSuccessTimeout.value) clearTimeout(clearSuccessTimeout.value);
 
-    this.adminStore.error = null;
+    adminStore.error = null;
 
     const response = await adminStore.inviteNewAdmin(adminData);
 
