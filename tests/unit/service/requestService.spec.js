@@ -134,20 +134,32 @@ describe('RequestService', () => {
     expect(mockMethods.post).toHaveBeenCalledWith('send-join-request', data);
     expect(result.sent).toBe(true);
   });
-
+  
   it('acceptJoinRequest posts with requestId', async () => {
     mockMethods.post.mockResolvedValue({ accepted: true });
     const result = await RequestService.acceptJoinRequest('req123');
-
-    expect(mockMethods.post).toHaveBeenCalledWith('accept', { requestId: 'req123' });
+  
+    expect(mockMethods.post).toHaveBeenCalledWith('accept-join-request', { requestId: 'req123' });
     expect(result.accepted).toBe(true);
   });
-
+  it('acceptInvitationRequest posts with requestId', async () => {
+    mockMethods.post.mockResolvedValue({ accepted: true });
+    const result = await RequestService.acceptInvitationRequest('req456');
+  
+    expect(mockMethods.post).toHaveBeenCalledWith('accept-invitation-request', { requestId: 'req456' });
+    expect(result.accepted).toBe(true);
+  });
+  it('declineJoinRequest throws on error', async () => {
+    const error = new Error('decline error');
+    mockMethods.post.mockRejectedValue(error);
+  
+    await expect(RequestService.declineJoinRequest('req789')).rejects.toThrow('decline error');
+  });
   it('declineJoinRequest posts with requestId', async () => {
     mockMethods.post.mockResolvedValue({ declined: true });
     const result = await RequestService.declineJoinRequest('req456');
 
     expect(mockMethods.post).toHaveBeenCalledWith('decline', { requestId: 'req456' });
     expect(result.declined).toBe(true);
-  });
+  });  
 });

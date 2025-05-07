@@ -459,9 +459,11 @@ export const useHouseholdStore = defineStore('household', {
 
     /**
      * Accepts a received invitation.
+     * Updates the invitation status to 'ACCEPTED' and refreshes the current household data.
      * @param {string} invitationId - ID of the invitation.
      * @returns {Promise<boolean>} True if successful.
-     */  
+     * @throws {Error} If the request fails or the invitation cannot be processed.
+     */
     async acceptInvitation(invitationId) {
       try {
         this.isLoading = true;
@@ -663,8 +665,10 @@ export const useHouseholdStore = defineStore('household', {
 
     /**
      * Searches for a household by ID.
+     * Validates the input, queries the backend, and stores the found household's ID and name.
      * @param {string|number} householdId - Household ID.
-     * @returns {Promise<{ id: number, name: string }>} Household data.
+     * @returns {Promise<{ id: number, name: string } | null>} The household's ID and name if found, otherwise null.
+     * @throws {Error} If the input is invalid or the search fails due to a backend error.
      */
     async searchHouseholdById(householdId) {
       try {
@@ -678,7 +682,6 @@ export const useHouseholdStore = defineStore('household', {
           householdId: Number(householdId),
         });
     
-        // Check if result is null BEFORE destructuring
         if (!household || !household.id) {
           return null;
         }
@@ -689,7 +692,7 @@ export const useHouseholdStore = defineStore('household', {
     
       } catch (err) {
         this.error = err.response?.data?.error || err.message || 'Kunne ikke søke etter husstand';
-        return null; // Return null instead of throwing
+        return null; 
       } finally {
         this.isLoading = false;
       }

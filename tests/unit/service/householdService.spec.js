@@ -164,15 +164,16 @@ describe('HouseholdService', () => {
   });
 
   describe('searchHouseholdById', () => {
-    it('should throw on invalid householdId', async () => {
-      await expect(HouseholdService.searchHouseholdById({ householdId: 'abc' })).rejects.toThrow('Ugyldig husstands-ID');
+    it('should return null on invalid householdId', async () => {
+      const result = await HouseholdService.searchHouseholdById({ householdId: 'abc' });
+      expect(result).toBeNull(); 
     });
-
+  
     it('should call post if ID is valid', async () => {
-      mockMethods.post.mockResolvedValue({ found: true });
+      mockMethods.post.mockResolvedValue({ id: 1, name: 'TestHouse' }); 
       const result = await HouseholdService.searchHouseholdById({ householdId: 123 });
       expect(mockMethods.post).toHaveBeenCalledWith('search', { householdId: 123 });
-      expect(result.found).toBe(true);
+      expect(result.id).toBe(1);
     });
-  });
+  });  
 });

@@ -146,10 +146,10 @@ class RequestService extends BaseService {
     }
   }
 
-    /**
-   * Accepts a join request by its ID.
+  /**
+   * Accepts a membership invitation by its ID.
    *
-   * @param {string} requestId - The ID of the join request to accept.
+   * @param {string} requestId - The ID of the invitation to accept.
    * @returns {Promise<Object>} API response.
    * @throws {Error} If the request fails.
    */

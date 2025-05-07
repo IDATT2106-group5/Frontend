@@ -31,6 +31,7 @@ vi.mock('@/service/householdService', () => ({
       getReceivedJoinRequests: vi.fn(),
       getReceivedInvitationsByUser: vi.fn(),
       acceptJoinRequest: vi.fn(),
+      acceptInvitationRequest: vi.fn(),
       declineJoinRequest: vi.fn(),
       sendJoinRequest: vi.fn()
     }
@@ -123,7 +124,7 @@ describe('HouseholdStore', () => {
 
   it('acceptInvitation updates status and refreshes household', async () => {
     store.receivedInvitations = [{ id: 'inv1', status: 'PENDING' }];
-    RequestService.acceptJoinRequest.mockResolvedValue({});
+    RequestService.acceptInvitationRequest.mockResolvedValue({});
     HouseholdService.getHouseholdDetailsByUserId.mockResolvedValue({
       household: { id: 'h1', owner: { id: 'user1' } },
       users: [],
