@@ -1,7 +1,414 @@
-// src/views/admin/IncidentAdmin.vue
+<script>
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { useIncidentAdminStore } from '@/stores/admin/incidentAdminStore';
+import { storeToRefs } from 'pinia';
+import IncidentConfigService from '@/service/map/incidentConfigService';
+import MapView from '@/views/mapView/MapView.vue';
+import Button from '@/components/ui/button/Button.vue';
+import Input from '@/components/ui/input/Input.vue';
+import L from 'leaflet';
+import { useScenarioStore } from '@/stores/ScenarioStore'
+
+export default {
+  name: 'IncidentAdmin',
+  components: {
+    MapView,
+    Button,
+    Input
+  },
+
+  /**
+   * @function setup
+   * @description Vue Composition API setup function
+   * @returns {Object} Reactive properties and methods for the component
+   */
+  setup() {
+
+    const mapView = ref(null);
+    const map = ref(null);
+    const incidentLayers = ref(null);
+    const showFilterDropdown = ref(false);
+    const showDescriptionTips = ref(false);
+    const selectedScenarioId = ref(null);
+    const mapCenter = ref([63.4305, 10.3951]);
+    const mapZoom = ref(13);
+    const searchTerm = ref('');
+    const filterSeverity = ref('');
+    const startDate = ref('');
+    const startTime = ref('');
+    const endDate = ref('');
+    const endTime = ref('');
+
+
+    const scenarioStore = useScenarioStore();
+    const incidentAdminStore = useIncidentAdminStore();
+
+    const {
+      incidents,
+      filteredIncidents,
+      incidentFormData,
+      isEditing,
+      isCreating,
+      isLoading,
+      error,
+      success
+    } = storeToRefs(incidentAdminStore);
+
+    /**
+     * @async
+     * @function fetchScenarios
+     * @description Fetches all available scenarios from the server
+     * @returns {Promise<void>}
+     */
+    const fetchScenarios = async () => {
+      await scenarioStore.fetchAllScenarios();
+    };
+
+    /**
+     * @function updateDateTimeFields
+     * @description Updates date and time fields based on the current incident form data
+     */
+    const updateDateTimeFields = () => {
+      if (incidentFormData.value.startedAt) {
+        const startDateTime = new Date(incidentFormData.value.startedAt);
+        startDate.value = startDateTime.toISOString().split('T')[0];
+        startTime.value = startDateTime.toTimeString().substring(0, 5);
+      } else {
+        const now = new Date();
+        startDate.value = now.toISOString().split('T')[0];
+        startTime.value = now.toTimeString().substring(0, 5);
+      }
+
+      if (incidentFormData.value.endedAt) {
+        const endDateTime = new Date(incidentFormData.value.endedAt);
+        endDate.value = endDateTime.toISOString().split('T')[0];
+        endTime.value = endDateTime.toTimeString().substring(0, 5);
+      } else {
+        endDate.value = '';
+        endTime.value = '';
+      }
+    };
+
+    /**
+     * @description Watch for changes in incident form data to update date/time fields
+     */
+    watch(() => incidentFormData.value, updateDateTimeFields, { immediate: true });
+
+    /**
+     * @description Watch for changes in start date/time to update incident form data
+     */
+    watch([startDate, startTime], () => {
+      if (startDate.value && startTime.value) {
+        incidentFormData.value.startedAt = new Date(`${startDate.value}T${startTime.value}`).toISOString();
+      }
+    });
+
+    /**
+     * @description Watch for changes in end date/time to update incident form data
+     */
+    watch([endDate, endTime], () => {
+      if (endDate.value && endTime.value) {
+        incidentFormData.value.endedAt = new Date(`${endDate.value}T${endTime.value}`).toISOString();
+      } else {
+        incidentFormData.value.endedAt = null;
+      }
+    });
+
+    /**
+     * @type {import('vue').ComputedRef<Array>}
+     * @description Computed property that returns available severity levels
+     */
+    const severityLevels = computed(() => incidentAdminStore.severityLevels);
+
+    /**
+     * @function getSeverityColor
+     * @description Gets the color associated with a severity level
+     * @param {string|number} severityId - ID of the severity level
+     * @returns {string} Hex color code for the severity level
+     */
+    const getSeverityColor = (severityId) => {
+      const levels = IncidentConfigService.getSeverityLevels();
+      return levels[severityId]?.color || '#45D278';
+    };
+
+    /**
+     * @function formatDateForDisplay
+     * @description Formats a date string for display in Norwegian locale
+     * @param {string} dateString - ISO date string
+     * @returns {string} Formatted date string or empty string if input is falsy
+     */
+    const formatDateForDisplay = (dateString) => {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return `Startet: ${date.toLocaleDateString('no-NO')} ${date.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })}`;
+    };
+
+    /**
+     * @function onMapReady
+     * @description Callback function when the map is ready
+     * @param {Object} leafletMap - Leaflet map instance
+     */
+    const onMapReady = (leafletMap) => {
+      map.value = leafletMap;
+
+      map.value.on('click', onMapClick);
+
+      incidentLayers.value = L.layerGroup().addTo(map.value);
+
+      if (isEditing.value || isCreating.value) {
+        drawIncidentOnMap();
+      }
+    };
+
+    /**
+     * @function onMapClick
+     * @description Handler for map click events
+     * @param {Object} e - Click event object containing latlng data
+     */
+    const onMapClick = async (e) => {
+      if (!isEditing.value && !isCreating.value) return;
+
+      const { lat, lng } = e.latlng;
+
+      incidentAdminStore.updateIncidentCoordinates(lat, lng);
+
+      drawIncidentOnMap();
+    };
+
+    /**
+     * @function drawIncidentOnMap
+     * @description Renders the current incident on the map
+     */
+    const drawIncidentOnMap = () => {
+      if (incidentLayers.value) {
+        incidentLayers.value.clearLayers();
+      }
+
+      if (!map.value) return;
+
+      const incidentLayerGroup = IncidentConfigService.createIncidentCircles(
+        incidentFormData.value,
+        map.value
+      );
+
+      if (incidentLayerGroup) {
+        incidentLayerGroup.addTo(incidentLayers.value);
+      }
+    };
+
+    /**
+     * @function onSearchChange
+     * @description Updates the search term when the search input changes
+     */
+    const onSearchChange = () => {
+      incidentAdminStore.setSearchTerm(searchTerm.value);
+    };
+
+    /**
+     * @function onFilterChange
+     * @description Updates the severity filter and closes the dropdown
+     */
+    const onFilterChange = () => {
+      incidentAdminStore.setFilterSeverity(filterSeverity.value);
+      showFilterDropdown.value = false;
+    };
+
+    /**
+     * @function toggleFilterDropdown
+     * @description Toggles the visibility of the severity filter dropdown
+     */
+    const toggleFilterDropdown = () => {
+      showFilterDropdown.value = !showFilterDropdown.value;
+    };
+
+    /**
+     * @function toggleDescriptionTips
+     * @description Toggles the visibility of description tips
+     */
+    const toggleDescriptionTips = () => {
+      showDescriptionTips.value = !showDescriptionTips.value;
+    };
+
+    /**
+     * @function onAddNew
+     * @description Initializes the form for creating a new incident
+     */
+    const onAddNew = () => {
+      incidentAdminStore.initNewIncident();
+      updateDateTimeFields();
+
+      selectedScenarioId.value = null;
+
+      if (map.value) {
+        map.value.setView([incidentFormData.value.latitude, incidentFormData.value.longitude], 13);
+      }
+
+      drawIncidentOnMap();
+    };
+
+    /**
+     * @function onEditIncident
+     * @description Sets up the form for editing an existing incident
+     * @param {Object} incident - The incident to edit
+     */
+    const onEditIncident = (incident) => {
+      incidentAdminStore.editIncident(incident);
+
+      selectedScenarioId.value = incident.scenarioId || null;
+
+      updateDateTimeFields();
+
+      if (map.value) {
+        map.value.setView([incident.latitude, incident.longitude], 13);
+      }
+      drawIncidentOnMap();
+    };
+
+    /**
+     * @async
+     * @function onSaveIncident
+     * @description Saves the current incident and clears map layers if successful
+     * @returns {Promise<void>}
+     */
+    const onSaveIncident = async () => {
+      incidentFormData.value.scenarioId = selectedScenarioId.value;
+
+      const success = await incidentAdminStore.saveIncident();
+
+      if (success) {
+        if (incidentLayers.value) {
+          incidentLayers.value.clearLayers();
+        }
+      }
+    };
+
+    /**
+     * @function onCancelEdit
+     * @description Cancels the current edit operation and clears map layers
+     */
+    const onCancelEdit = () => {
+      incidentAdminStore.cancelEdit();
+
+      if (incidentLayers.value) {
+        incidentLayers.value.clearLayers();
+      }
+    };
+
+    /**
+     * @async
+     * @function onDeleteIncident
+     * @description Deletes the current incident after confirmation
+     * @returns {Promise<void>}
+     */
+    const onDeleteIncident = async () => {
+      if (!confirm('Er du sikker på at du vil slette denne krisesituasjonen?')) {
+        return;
+      }
+
+      const success = await incidentAdminStore.deleteIncident(incidentFormData.value.id);
+
+      if (success) {
+        if (incidentLayers.value) {
+          incidentLayers.value.clearLayers();
+        }
+      }
+    };
+
+    /**
+     * @function clearSuccess
+     * @description Clears success messages from the store
+     */
+    const clearSuccess = () => {
+      incidentAdminStore.clearSuccess();
+    };
+
+    /**
+     * @function clearError
+     * @description Clears error messages from the store
+     */
+    const clearError = () => {
+      incidentAdminStore.clearError();
+    };
+
+    /**
+     * @description Watch for changes in incident radius or severity to update map
+     */
+    watch(
+      [
+        () => incidentFormData.value.impactRadius,
+        () => incidentFormData.value.severity
+      ],
+      () => {
+        drawIncidentOnMap();
+      }
+    );
+
+    /**
+     * @description Watch for changes in selected scenario to update form data
+     */
+    watch(selectedScenarioId, (newVal) => {
+      if (incidentFormData.value) {
+        incidentFormData.value.scenarioId = newVal;
+      }
+    });
+
+    /**
+     * @description Lifecycle hook that runs when component is mounted
+     */
+    onMounted(async () => {
+      await scenarioStore.fetchAllScenarios();
+
+      await incidentAdminStore.fetchIncidents();
+
+      searchTerm.value = incidentAdminStore.searchTerm;
+      filterSeverity.value = incidentAdminStore.filterSeverity;
+    });
+
+    return {
+      mapView,
+      mapCenter,
+      mapZoom,
+      incidents,
+      filteredIncidents,
+      incidentFormData,
+      isEditing,
+      isCreating,
+      isLoading,
+      error,
+      success,
+      severityLevels,
+      searchTerm,
+      filterSeverity,
+      showFilterDropdown,
+      showDescriptionTips,
+      startDate,
+      startTime,
+      endDate,
+      endTime,
+      selectedScenarioId,
+      onMapReady,
+      onSearchChange,
+      onFilterChange,
+      toggleFilterDropdown,
+      toggleDescriptionTips,
+      onAddNew,
+      onEditIncident,
+      onSaveIncident,
+      onCancelEdit,
+      onDeleteIncident,
+      getSeverityColor,
+      formatDateForDisplay,
+      clearSuccess,
+      clearError,
+      fetchScenarios,
+      scenarios: computed(() => scenarioStore.getAllScenarios)
+    };
+  }
+};
+</script>
+
 <template>
   <div class="incident-admin-container">
-    <!-- Alert messages -->
     <div v-if="success" class="alert alert-success">
       {{ success }}
       <Button variant="ghost" size="icon" class="close-btn" @click="clearSuccess">×</Button>
@@ -12,19 +419,15 @@
       <Button variant="ghost" size="icon" class="close-btn" @click="clearError">×</Button>
     </div>
 
-    <!-- Loading overlay -->
     <div v-if="isLoading" class="loading-overlay">
       <div class="loading-spinner"></div>
       <p>Laster...</p>
     </div>
 
-    <!-- Left panel: List or Form -->
     <div class="left-panel">
-      <!-- Incident List -->
       <div v-if="!isEditing && !isCreating" class="incident-list-panel">
         <h1>Aktive kriseområder</h1>
 
-        <!-- Search and Filter -->
         <div class="search-filter-container">
           <input
             type="text"
@@ -70,7 +473,6 @@
                   @change="onFilterChange"
                 />
                 <div class="filter-label-with-icon">
-                  <!-- Add severity level indicator -->
                   <div
                     class="severity-indicator"
                     :style="{backgroundColor: getSeverityColor(level.id)}"
@@ -82,7 +484,6 @@
           </div>
         </div>
 
-        <!-- Incidents List -->
         <div class="incidents-container">
           <div
             v-for="incident in filteredIncidents"
@@ -121,7 +522,6 @@
         </Button>
       </div>
 
-      <!-- Incident Form (Edit/Create) -->
       <div v-else class="incident-form-panel">
         <h1>{{ isCreating ? 'Ny krisesituasjon' : 'Rediger krisesituasjon' }}</h1>
 
@@ -180,7 +580,6 @@
                 x
               </button>
 
-              <!-- Tips list -->
               <ul class="tips-list">
                 <li>Vær konkret om hva som har skjedd</li>
                 <li>Beskriv omfanget av krisen tydelig</li>
@@ -329,7 +728,6 @@
       </div>
     </div>
 
-    <!-- Right panel: Map -->
     <div class="right-panel">
       <MapView
         ref="mapView"
@@ -340,325 +738,6 @@
     </div>
   </div>
 </template>
-
-<script>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { useIncidentAdminStore } from '@/stores/admin/incidentAdminStore';
-import { storeToRefs } from 'pinia';
-import IncidentConfigService from '@/service/map/incidentConfigService';
-import MapView from '@/views/mapView/MapView.vue';
-import Button from '@/components/ui/button/Button.vue';
-import Input from '@/components/ui/input/Input.vue';
-import L from 'leaflet';
-import { useScenarioStore } from '@/stores/ScenarioStore'
-
-export default {
-  name: 'IncidentAdmin',
-  components: {
-    MapView,
-    Button,
-    Input
-  },
-
-  setup() {
-    const mapView = ref(null);
-    const map = ref(null);
-    const incidentLayers = ref(null);
-    const showFilterDropdown = ref(false);
-    const showDescriptionTips = ref(false);
-
-    // Map configuration
-    const mapCenter = ref([63.4305, 10.3951]); // Trondheim
-    const mapZoom = ref(13);
-
-    const scenarioStore = useScenarioStore();
-    const fetchScenarios = async () => {
-      await scenarioStore.fetchAllScenarios();
-    };
-
-    const incidentAdminStore = useIncidentAdminStore();
-    const {
-      incidents,
-      filteredIncidents,
-      incidentFormData,
-      isEditing,
-      isCreating,
-      isLoading,
-      error,
-      success
-    } = storeToRefs(incidentAdminStore);
-
-    const searchTerm = ref('');
-    const filterSeverity = ref('');
-
-    // Date and time handling for form inputs
-    const startDate = ref('');
-    const startTime = ref('');
-    const endDate = ref('');
-    const endTime = ref('');
-
-    // Set initial date/time values when component mounted or form data changes
-    const updateDateTimeFields = () => {
-      if (incidentFormData.value.startedAt) {
-        const startDateTime = new Date(incidentFormData.value.startedAt);
-        startDate.value = startDateTime.toISOString().split('T')[0];
-        startTime.value = startDateTime.toTimeString().substring(0, 5);
-      } else {
-        const now = new Date();
-        startDate.value = now.toISOString().split('T')[0];
-        startTime.value = now.toTimeString().substring(0, 5);
-      }
-
-      if (incidentFormData.value.endedAt) {
-        const endDateTime = new Date(incidentFormData.value.endedAt);
-        endDate.value = endDateTime.toISOString().split('T')[0];
-        endTime.value = endDateTime.toTimeString().substring(0, 5);
-      } else {
-        endDate.value = '';
-        endTime.value = '';
-      }
-    };
-
-    // Watch for changes to form data
-    watch(() => incidentFormData.value, updateDateTimeFields, { immediate: true });
-
-    // Watch date/time inputs to update form data
-    watch([startDate, startTime], () => {
-      if (startDate.value && startTime.value) {
-        incidentFormData.value.startedAt = new Date(`${startDate.value}T${startTime.value}`).toISOString();
-      }
-    });
-
-    watch([endDate, endTime], () => {
-      if (endDate.value && endTime.value) {
-        incidentFormData.value.endedAt = new Date(`${endDate.value}T${endTime.value}`).toISOString();
-      } else {
-        incidentFormData.value.endedAt = null;
-      }
-    });
-
-
-    // Computed properties
-    const severityLevels = computed(() => incidentAdminStore.severityLevels);
-
-    // Methods
-    const getSeverityColor = (severityId) => {
-      const levels = IncidentConfigService.getSeverityLevels();
-      return levels[severityId]?.color || '#45D278';
-    };
-
-    const formatDateForDisplay = (dateString) => {
-      if (!dateString) return '';
-      const date = new Date(dateString);
-      return `Startet: ${date.toLocaleDateString('no-NO')} ${date.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })}`;
-    };
-
-    const onMapReady = (leafletMap) => {
-      // Store the map instance
-      map.value = leafletMap;
-
-      // Add click handler for setting incident position
-      map.value.on('click', onMapClick);
-
-      // Initialize layers for incidents
-      incidentLayers.value = L.layerGroup().addTo(map.value);
-
-      // Draw any existing incidents if editing
-      if (isEditing.value || isCreating.value) {
-        drawIncidentOnMap();
-      }
-    };
-
-    const onMapClick = async (e) => {
-      if (!isEditing.value && !isCreating.value) return;
-
-      const { lat, lng } = e.latlng;
-
-      // Update form data
-      incidentAdminStore.updateIncidentCoordinates(lat, lng);
-
-      // Redraw incident visualization
-      drawIncidentOnMap();
-    };
-
-    const drawIncidentOnMap = () => {
-      // Clear previous layers
-      if (incidentLayers.value) {
-        incidentLayers.value.clearLayers();
-      }
-
-      if (!map.value) return;
-
-      // Create incident visualization
-      const incidentLayerGroup = IncidentConfigService.createIncidentCircles(
-        incidentFormData.value,
-        map.value
-      );
-
-      if (incidentLayerGroup) {
-        incidentLayerGroup.addTo(incidentLayers.value);
-      }
-    };
-
-    const onSearchChange = () => {
-      incidentAdminStore.setSearchTerm(searchTerm.value);
-    };
-
-    const onFilterChange = () => {
-      incidentAdminStore.setFilterSeverity(filterSeverity.value);
-      showFilterDropdown.value = false;
-    };
-
-    const toggleFilterDropdown = () => {
-      showFilterDropdown.value = !showFilterDropdown.value;
-    };
-
-    const toggleDescriptionTips = () => {
-      showDescriptionTips.value = !showDescriptionTips.value;
-    };
-
-    const onAddNew = () => {
-      incidentAdminStore.initNewIncident();
-      updateDateTimeFields();
-
-      // Center map at default location
-      if (map.value) {
-        map.value.setView([incidentFormData.value.latitude, incidentFormData.value.longitude], 13);
-      }
-
-      // Draw incident on map
-      drawIncidentOnMap();
-    };
-
-    const onEditIncident = (incident) => {
-      incidentAdminStore.editIncident(incident);
-      updateDateTimeFields();
-
-
-      // Center map at incident location
-      if (map.value) {
-        map.value.setView([incident.latitude, incident.longitude], 13);
-      }
-
-      // Draw incident on map
-      drawIncidentOnMap();
-    };
-
-    const onSaveIncident = async () => {
-      const success = await incidentAdminStore.saveIncident();
-
-      if (success) {
-        // Clear visualization if going back to list view
-        if (incidentLayers.value) {
-          incidentLayers.value.clearLayers();
-        }
-      }
-    };
-
-    const onCancelEdit = () => {
-      incidentAdminStore.cancelEdit();
-
-      // Clear visualization
-      if (incidentLayers.value) {
-        incidentLayers.value.clearLayers();
-      }
-    };
-
-    const onDeleteIncident = async () => {
-      if (!confirm('Er du sikker på at du vil slette denne krisesituasjonen?')) {
-        return;
-      }
-
-      const success = await incidentAdminStore.deleteIncident(incidentFormData.value.id);
-
-      if (success) {
-        // Clear visualization
-        if (incidentLayers.value) {
-          incidentLayers.value.clearLayers();
-        }
-      }
-    };
-
-    const clearSuccess = () => {
-      incidentAdminStore.clearSuccess();
-    };
-
-    const clearError = () => {
-      incidentAdminStore.clearError();
-    };
-
-    // Watch for changes to impact radius or severity to update visualization
-    watch(
-      [
-        () => incidentFormData.value.impactRadius,
-        () => incidentFormData.value.severity
-      ],
-      () => {
-        drawIncidentOnMap();
-      }
-    );
-
-    // (Continued from previous code)
-    onMounted(async () => {
-    
-      await scenarioStore.fetchAllScenarios()
-
-      // Fetch incidents
-      await incidentAdminStore.fetchIncidents();
-
-      // Initialize search and filter
-      searchTerm.value = incidentAdminStore.searchTerm;
-      filterSeverity.value = incidentAdminStore.filterSeverity;
-    });
-
-    onUnmounted(() => {
-
-  
-    });
-
-
-
-    return {
-      mapView,
-      mapCenter,
-      mapZoom,
-      incidents,
-      filteredIncidents,
-      incidentFormData,
-      isEditing,
-      isCreating,
-      isLoading,
-      error,
-      success,
-      severityLevels,
-      searchTerm,
-      filterSeverity,
-      showFilterDropdown,
-      showDescriptionTips,
-      startDate,
-      startTime,
-      endDate,
-      endTime,
-      onMapReady,
-      onSearchChange,
-      onFilterChange,
-      toggleFilterDropdown,
-      toggleDescriptionTips,
-      onAddNew,
-      onEditIncident,
-      onSaveIncident,
-      onCancelEdit,
-      onDeleteIncident,
-      getSeverityColor,
-      formatDateForDisplay,
-      clearSuccess,
-      clearError,
-      fetchScenarios,
-      scenarios: computed(() => scenarioStore.getAllScenarios)
-    };
-  }
-};
-</script>
 
 <style scoped>
 .incident-admin-container {
