@@ -14,7 +14,6 @@ export const useMapStore = defineStore('map', {
   state: () => ({
     // Core map state
     map: null,
-    activeLayerId: 'standard',
     initialLat: 63.43,
     initialLng: 10.39,
     initialZoom: 13,
@@ -57,24 +56,9 @@ export const useMapStore = defineStore('map', {
     searchError: null,
     selectedSearchResult: null,
     searchResultMarker: null,
-
   }),
 
   getters: {
-    /**
-     * Get the layer options for UI
-     */
-    layerOptions() {
-      return MapService.getLayerOptions();
-    },
-
-    /**
-     * Get all layer definitions
-     */
-    mapLayers() {
-      return MapService.getLayerDefinitions();
-    },
-
     /**
      * Get only marker types that are currently visible
      */
@@ -154,20 +138,15 @@ export const useMapStore = defineStore('map', {
 
       try {
         // Create the map with initial values from state
-        this.map = L.map(container, {
+        this.map = MapService.createMap(container, {
           center: [this.initialLat, this.initialLng],
           zoom: this.initialZoom,
-          layers: [],
-          zoomControl: false // Disable default zoom control
         });
 
         // Add zoom control in the bottom right corner
         L.control.zoom({
           position: 'bottomright'
         }).addTo(this.map);
-
-        // Set the initial active layer
-        this.setActiveLayer(this.activeLayerId);
 
         // Make route function available globally for popup click handlers
         window.createRouteToMarker = (markerData) => {
@@ -424,20 +403,6 @@ export const useMapStore = defineStore('map', {
           this.markerLayers[typeId].addTo(this.map);
         }
       });
-    },
-
-    /**
-     * Set the active base layer for the map
-     * @param {string} layerId - ID of the layer to activate
-     */
-    setActiveLayer(layerId) {
-      if (!this.map) return;
-
-      const layer = MapService.setActiveLayer(this.map, layerId);
-
-      if (layer) {
-        this.activeLayerId = layerId;
-      }
     },
 
     /**

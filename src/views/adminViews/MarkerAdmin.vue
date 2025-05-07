@@ -501,7 +501,7 @@ export default {
 
       // Center map at marker location
       if (map.value) {
-        map.value.setView([marker.latitude, marker.longitude], 14);
+        map.value.setView([marker.latitude, marker.longitude], 16);
       }
 
       // Create temporary marker
