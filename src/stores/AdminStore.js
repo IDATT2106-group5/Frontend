@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { useUserStore } from '@/stores/UserStore'
 import AdminService from '@/service/adminService'
+import RegisterAdminService from '@/service/admin/registerAdminService'
 import IncidentService from '@/service/incidentService'
 
 export const useAdminStore = defineStore('admin', {
@@ -46,6 +47,26 @@ export const useAdminStore = defineStore('admin', {
         this.error = err.message || 'Noe gikk galt ved henting av hendelser'
       } finally {
         this.isLoading = false
+      }
+    },
+
+    async inviteNewAdmin(adminData) {
+      this.userStore.isLoading = true
+      this.userStore.error = null
+      try {
+        const response = await RegisterAdminService.inviteAdmin(adminData)
+
+        if (response) {
+          console.log("[Response from Invite] ", response);
+          return true
+        }
+        return false
+      } catch (error) {
+        console.error('[AdminStore] Failed to invite new admin:', err)
+        this.error = err.message || 'Noe gikk galt ved invitasjon av ny admin'
+        return false;
+      } finally {
+        this.userStore.isLoading = false
       }
     }
   }
