@@ -26,7 +26,7 @@ onMounted(async () => {
       <h1 class="text-4xl font-semibold text-black mb-6 max-w-6xl mx-auto">Administrer admin-brukere</h1>
     </div>
     <div class="max-w-6xl mx-auto flex flex-col md:flex-row gap-6">
-      <div class="md:w-1/3">
+      <div class="md:w-1/3 flex justify-center md:justify-start md:items-start">
         <InviteNewAdmin @invite-admin="handleInvite" />
       </div>
 
