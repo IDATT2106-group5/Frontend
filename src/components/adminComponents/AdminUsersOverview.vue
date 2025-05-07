@@ -70,16 +70,15 @@ export default {
     async confirmPasswordReset() {
       if (!this.adminEmailForPassword) return
 
-      this.isResettingPassword = true
-      this.adminStore.error = null;
       this.showPasswordModal = false
+      this.isResettingPassword = true
+      this.adminStore.error = null
 
       const emailToReset = this.adminEmailForPassword
 
       try {
-        await AdminService.resetPassword(emailToReset)
-
         this.successfulResets[emailToReset] = true
+        await AdminService.resetPassword(emailToReset)
 
         setTimeout(() => {
           this.successfulResets[emailToReset] = false
@@ -88,9 +87,11 @@ export default {
       } catch (error) {
         console.error('Kunne ikke tilbakestille passord:', error)
         this.adminStore.error = `Kunne ikke sende nytt passord: ${error.message || 'Ukjent feil'}`
+        this.successfulResets[emailToReset] = false
       } finally {
         this.isResettingPassword = false
         this.adminEmailForPassword = ''
+        this.adminStore.isLoading = false
       }
     },
 
@@ -101,7 +102,7 @@ export default {
     openDeleteModal(admin) {
       this.adminToDelete = admin
       this.showDeleteModal = true
-      this.adminStore.error = null;
+      this.adminStore.error = null
     },
 
     /**
@@ -119,9 +120,10 @@ export default {
     async confirmDelete() {
       if (!this.adminToDelete) return
 
+      this.showPasswordModal = false
       this.isDeleting = true
       this.adminStore.error = null
-      this.showPasswordModal = false
+      this.adminStore.isLoading = true
 
       try {
         await AdminService.deleteAdmin(this.adminToDelete.id)
@@ -131,6 +133,7 @@ export default {
         console.error('Failed to delete admin:', error)
         this.adminStore.error = error.message || 'Ukjent feil'
       } finally {
+        this.adminStore.isLoading = false
         this.isDeleting = false
       }
     }
