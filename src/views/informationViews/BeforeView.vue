@@ -41,6 +41,15 @@ const router = useRouter()
 const goToUnder = () => {
   router.push('/under')
 }
+
+/**
+ * Navigates the user to the "/scenarios" route when called.
+ * @function
+ */
+const goToScenarios = () => {
+  router.push('/scenarios') 
+}
+
 </script>
 
 <template>
@@ -96,7 +105,8 @@ const goToUnder = () => {
 
         <!-- Card 2 -->
         <div class="flex flex-col sm:flex-row items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-6 min-h-[160px]
-                    max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition">
+                    max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition"
+             @click="goToScenarios">
           <InfoBox
             title="2. Les på ulike scenarioer"
             description="Få kunnskap om ulike krisesituasjoner"
