@@ -3,7 +3,7 @@ import { useAdminStore } from '@/stores/AdminStore'
 import { useUserStore } from '@/stores/UserStore'
 import AdminService from '@/service/adminService'
 import ConfirmModal from '@/components/householdMainView/modals/ConfirmModal.vue'
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 
 export default {
   components: {
@@ -23,8 +23,8 @@ export default {
     const showPasswordModal = ref(false)
     const adminEmailForPassword = ref('')
 
-    const errorMessage = ref('')
-    const passwordSuccessMessage = ref('')
+    const successfulResets = reactive({})
+
     const isDeleting = ref(false)
     const isResettingPassword = ref(false)
 
@@ -39,8 +39,7 @@ export default {
       adminToDelete,
       showPasswordModal,
       adminEmailForPassword,
-      errorMessage,
-      passwordSuccessMessage,
+      successfulResets,
       isDeleting,
       isResettingPassword
     }
@@ -72,20 +71,23 @@ export default {
       if (!this.adminEmailForPassword) return
 
       this.isResettingPassword = true
-      this.passwordSuccessMessage = ''
-      this.errorMessage = ''
+      this.adminStore.error = null;
       this.showPasswordModal = false
 
+      const emailToReset = this.adminEmailForPassword
+
       try {
-        await AdminService.resetPassword(this.adminEmailForPassword)
-        this.passwordSuccessMessage = `Nytt passord sendt til: ${this.adminEmailForPassword}`
+        await AdminService.resetPassword(emailToReset)
+
+        this.successfulResets[emailToReset] = true
 
         setTimeout(() => {
-          this.passwordSuccessMessage = ''
-        }, 5000)
+          this.successfulResets[emailToReset] = false
+        }, 60000)
+
       } catch (error) {
         console.error('Kunne ikke tilbakestille passord:', error)
-        this.errorMessage = `Kunne ikke sende nytt passord: ${error.message || 'Ukjent feil'}`
+        this.adminStore.error = `Kunne ikke sende nytt passord: ${error.message || 'Ukjent feil'}`
       } finally {
         this.isResettingPassword = false
         this.adminEmailForPassword = ''
@@ -99,7 +101,7 @@ export default {
     openDeleteModal(admin) {
       this.adminToDelete = admin
       this.showDeleteModal = true
-      this.errorMessage = ''
+      this.adminStore.error = null;
     },
 
     /**
@@ -118,7 +120,7 @@ export default {
       if (!this.adminToDelete) return
 
       this.isDeleting = true
-      this.errorMessage = ''
+      this.adminStore.error = null
       this.showPasswordModal = false
 
       try {
@@ -127,7 +129,7 @@ export default {
         this.adminToDelete = null
       } catch (error) {
         console.error('Failed to delete admin:', error)
-        this.errorMessage = error.message || 'Ukjent feil'
+        this.adminStore.error = error.message || 'Ukjent feil'
       } finally {
         this.isDeleting = false
       }
@@ -142,16 +144,6 @@ export default {
       <p class="text-gray-600">Laster administratorer...</p>
     </div>
 
-    <!-- Success message for password reset
-    <div v-if="passwordSuccessMessage" class="p-3 bg-green-100 text-green-700 rounded m-4">
-      {{ passwordSuccessMessage }}
-    </div> -->
-
-    <!-- Error message -->
-    <!-- <div v-if="errorMessage" class="p-3 bg-red-100 text-red-700 rounded m-4">
-      {{ errorMessage }}
-    </div> -->
-
     <div v-else>
       <div v-for="admin in adminStore.admins" :key="admin.email"
            class="flex items-center justify-between p-4 border-b border-gray-200 last:border-b-0">
@@ -161,8 +153,18 @@ export default {
           <div v-if="admin.role === 'SUPERADMIN'" class="text-black mr-4">Super Admin</div>
 
           <template v-if="admin.role !== 'SUPERADMIN'">
-            <button @click="openPasswordModal(admin.email)"
-                    class="text-blue-600 hover:text-blue-800 mr-4 font-medium">
+            <button
+              v-if="successfulResets[admin.email]"
+              disabled
+              class="text-black-600 mr-4 font-medium cursor-default"
+            >
+              Sendt
+            </button>
+            <button
+              v-else
+              @click="openPasswordModal(admin.email)"
+              class="text-blue-600 hover:text-blue-800 mr-4 font-medium"
+            >
               Send nytt passord
             </button>
 

@@ -32,7 +32,7 @@ async function handleInvite(adminData) {
     successMessage.value = '';
     if (clearSuccessTimeout.value) clearTimeout(clearSuccessTimeout.value);
 
-    adminStore.error = null;
+    this.adminStore.error = null;
 
     const response = await adminStore.inviteNewAdmin(adminData);
 
@@ -67,7 +67,7 @@ onMounted(async () => {
     </div>
 
     <div class="flex justify-center">
-      <div v-if="isInviteLoading || adminStore.isLoading" class="mb-4 p-3 bg-blue-50 text-blue-700 rounded flex items-center justify-center">
+      <div v-if="adminStore.isLoading" class="mb-4 p-3 bg-blue-50 text-blue-700 rounded flex items-center justify-center">
         <Loader class="h-5 w-5 mr-2 animate-spin" />
         <span>Laster...</span>
       </div>
