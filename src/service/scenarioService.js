@@ -53,7 +53,7 @@ class ScenarioService extends BaseService {
    */
   async updateScenario(id, scenarioData) {
     try {
-      return await this.put(`/${id}`, scenarioData)
+      return await this.put(`${id}`, scenarioData)
     } catch (error) {
       console.error('[ScenarioService] Failed to update scenario:', error)
       throw error

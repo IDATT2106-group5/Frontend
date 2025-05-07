@@ -2,14 +2,24 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useScenarioStore } from '@/stores/ScenarioStore'
-// Import Lucide icons
+import { Button } from '@/components/ui/button/index.js'
 import {
-  AlertTriangle, AlertOctagon, Droplets, Flame, Wind,
-  Thermometer, Zap, ShieldAlert
+  AlertTriangle,
+  AlertOctagon,
+  Droplets,
+  Flame,
+  Wind,
+  Thermometer,
+  Zap,
+  ShieldAlert,
+  CirclePlus,
+  Pencil
 } from 'lucide-vue-next'
+
 
 export default {
   name: 'ScenarioList',
+  components: { CirclePlus, Pencil, Button },
 
   setup() {
     const router = useRouter()
@@ -19,21 +29,31 @@ export default {
     const error = computed(() => scenarioStore.getError)
     const scenarios = computed(() => scenarioStore.getAllScenarios)
 
-    // Map icon names to components
+    // Map of available icons
     const iconMap = {
-      AlertTriangle,
-      AlertOctagon,
-      Droplets,
-      Flame,
-      Wind,
-      Thermometer,
-      Zap,
-      ShieldAlert
+      // Using indexes for mapping (no need to store icon names in database)
+      0: AlertTriangle,
+      1: AlertOctagon,
+      2: Droplets,
+      3: Flame,
+      4: Wind,
+      5: Thermometer,
+      6: Zap,
+      7: ShieldAlert,
     }
 
-    // Get the appropriate icon component
-    const getIconComponent = (iconName) => {
-      return iconMap[iconName] || AlertTriangle // Default to AlertTriangle if icon not found
+    // Get icon by index or by id (for deterministic mapping)
+    const getIconComponent = (scenario) => {
+      // Use scenario.id to deterministically choose an icon if no explicit selection
+      // This creates a consistent icon for each scenario without storing it
+      if (!scenario.iconIndex && scenario.iconIndex !== 0) {
+        // Get a number between 0 and 7 based on scenario.id
+        const iconIndex = scenario.id % 8
+        return iconMap[iconIndex] || AlertTriangle
+      }
+
+      // If iconIndex is explicitly set, use that
+      return iconMap[scenario.iconIndex] || AlertTriangle
     }
 
     // Fetch scenarios when component mounts
@@ -60,150 +80,73 @@ export default {
       getIconComponent,
       fetchScenarios,
       addNewScenario,
-      editScenario
+      editScenario,
     }
-  }
+  },
 }
 </script>
 
 <template>
-  <div class="scenario-list">
-    <div class="header">
-      <h1>Scenarioer</h1>
-      <button @click="addNewScenario" class="add-button">+ Legg til nytt scenario</button>
+  <div class="max-w-6xl mx-auto px-5 py-6">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-4xl font-bold text-black">Scenarioer</h1>
+      <Button
+        @click="addNewScenario"
+        variant="OUTLINE"
+        class="bg-[#2c3e50] hover:bg-blue-600 text-white font-medium py-2.5 px-4 rounded inline-flex items-center gap-2"
+      >
+        <CirclePlus class="w-4 h-4 mr-2" /> Legg til nytt scenario
+      </Button>
     </div>
 
-    <div v-if="loading" class="loading">
+    <div v-if="loading" class="text-center py-10">
       <p>Laster...</p>
     </div>
 
-    <div v-else-if="error" class="error">
+    <div v-else-if="error" class="text-center py-10 text-red-600">
       <p>Det oppstod en feil: {{ error }}</p>
-      <button @click="fetchScenarios" class="primary-button">Prøv på nytt</button>
+      <button
+        @click="fetchScenarios"
+        class="mt-4 bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-5 rounded"
+      >
+        Prøv på nytt
+      </button>
     </div>
 
-    <div v-else-if="scenarios.length === 0" class="empty-state">
+    <div v-else-if="scenarios.length === 0" class="text-center py-10">
       <p>Ingen scenarioer funnet</p>
-      <button @click="addNewScenario" class="primary-button">Legg til nytt scenario</button>
+      <button
+        @click="addNewScenario"
+        class="mt-4 bg-green-500 hover:bg-green-600 text-white font-medium py-3 px-5 rounded"
+      >
+        Legg til nytt scenario
+      </button>
     </div>
 
-    <div v-else class="scenario-grid">
-      <div v-for="scenario in scenarios" :key="scenario.id" class="scenario-card">
-        <div class="scenario-content">
-          <component :is="getIconComponent(scenario.icon)" size="32" class="scenario-icon" />
-          <h2>{{ scenario.name }}</h2>
-        </div>
-        <div class="scenario-actions">
-          <button @click="editScenario(scenario.id)" class="edit-button">Rediger</button>
+    <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+      <div
+        v-for="scenario in scenarios"
+        :key="scenario.id"
+        class="bg-white rounded-lg shadow-md border border-gray-200 h-40 flex flex-col"
+      >
+        <div class="flex flex-col items-center justify-center flex-grow px-5 py-4 relative">
+          <!-- Position the button absolutely in the top right corner -->
+          <Button
+            @click="editScenario(scenario.id)"
+            class="absolute top-2 right-2 bg-[#2c3e50] hover:bg-blue-600 text-white text-xs py-1 px-2 rounded inline-flex items-center gap-1"
+          >
+            <Pencil class="w-3 h-3" />
+            Rediger
+          </Button>
+
+          <component
+            :is="getIconComponent(scenario)"
+            size="32"
+            class="text-blue-500 mb-3"
+          />
+          <h2 class="text-lg font-medium text-center m-0">{{ scenario.name }}</h2>
         </div>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.scenario-list {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-}
-
-.add-button {
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.loading, .error, .empty-state {
-  text-align: center;
-  padding: 40px 0;
-}
-
-.error {
-  color: #d32f2f;
-}
-
-.scenario-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.scenario-card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  border: 1px solid #e0e0e0;
-  height: 150px;
-}
-
-.scenario-content {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex-grow: 1;
-  gap: 10px;
-}
-
-.scenario-icon {
-  color: #2196f3;
-}
-
-.scenario-content h2 {
-  font-size: 18px;
-  text-align: center;
-  margin: 0;
-}
-
-.scenario-actions {
-  padding: 10px;
-  display: flex;
-  justify-content: flex-end;
-  border-top: 1px solid #e0e0e0;
-}
-
-.edit-button {
-  background-color: #f0f0f0;
-  color: #333;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.edit-button:hover {
-  background-color: #e0e0e0;
-}
-
-.primary-button {
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.primary-button:hover {
-  background-color: #45a049;
-}
-</style>
