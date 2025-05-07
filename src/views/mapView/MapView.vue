@@ -358,7 +358,7 @@ export default {
       map,
       userMarkers,
       userPositions,
-      isAdminMode: props.isAdminMode
+      isAdminMode: props.isAdminMode,
       isSharing, // Expose from location store
       locationError, // Expose from location store
       togglePositionSharing, // Expose from location store
