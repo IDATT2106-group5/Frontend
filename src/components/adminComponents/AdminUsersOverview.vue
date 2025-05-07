@@ -74,10 +74,6 @@ export default {
       <p class="text-gray-600">Laster administratorer...</p>
     </div>
 
-    <div v-else-if="adminStore.error" class="bg-red-50 text-red-700 p-4 rounded mb-4">
-      {{ adminStore.error }}
-    </div>
-
     <div v-else>
       <div v-for="admin in adminStore.admins" :key="admin.email"
            class="flex items-center justify-between p-4 border-b border-gray-200 last:border-b-0">

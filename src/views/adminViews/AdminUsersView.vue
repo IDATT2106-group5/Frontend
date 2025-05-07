@@ -1,19 +1,44 @@
 <script setup>
-import { onMounted } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import InviteNewAdmin from "@/components/adminComponents/InviteNewAdmin.vue";
 import AdminUserOverview from "@/components/adminComponents/AdminUsersOverview.vue";
 import { useUserStore } from '@/stores/UserStore'
 import { useRouter } from 'vue-router'
 import { useAdminStore } from "@/stores/AdminStore";
+import { CheckCircle, XCircle } from 'lucide-vue-next';
 
 const router = useRouter()
 const userStore = useUserStore()
 const adminStore = useAdminStore()
 
-function handleInvite(adminData) {
+const successMessage = ref('');
+const showSuccess = computed(() => !!successMessage.value);
+const clearSuccessTimeout = ref(null);
+
+
+async function handleInvite(adminData) {
   console.log('New admin invitation:', adminData);
-  const response = adminStore.inviteNewAdmin(adminData)
-  console.log(response)
+
+  try {
+    successMessage.value = '';
+    if (clearSuccessTimeout.value) clearTimeout(clearSuccessTimeout.value);
+
+    adminStore.error = null;
+
+    const response = await adminStore.inviteNewAdmin(adminData);
+
+    if (response && response.message) {
+      successMessage.value = response.message;
+
+      clearSuccessTimeout.value = setTimeout(() => {
+        successMessage.value = '';
+      }, 5000);
+
+      adminStore.fetchAdmins();
+    }
+  } catch (error) {
+    console.error("Error inviting admin:", error);
+  }
 }
 
 onMounted(async () => {
@@ -29,13 +54,30 @@ onMounted(async () => {
       <h1 class="text-4xl font-semibold text-black mb-6 max-w-6xl mx-auto">Administrer Admin Brukere</h1>
     </div>
 
+    <div class="flex justify-center">
+      <div v-if="showSuccess" class="mb-4 p-3 bg-green-100 text-green-700 rounded flex items-center">
+        <CheckCircle class="h-5 w-5 mr-2" />
+        <span>{{ successMessage }}</span>
+      </div>
+
+      <div v-if="adminStore.error" class="mb-4 p-3 bg-red-100 text-red-700 rounded flex items-center">
+        <XCircle class="h-5 w-5 mr-2" />
+        <span>{{ adminStore.error }}</span>
+      </div>
+    </div>
+
+
     <div class="max-w-6xl mx-auto flex flex-col md:flex-row gap-6">
       <div class="md:w-1/3 flex flex-col">
         <div class="flex justify-center">
           <h2 class="text-2xl font-bold mb-4 text-center md:text-left">Invitere Ny Admin</h2>
         </div>
         <div class="flex justify-center md:justify-start">
-          <InviteNewAdmin @invite-admin="handleInvite" />
+          <InviteNewAdmin
+            @invite-admin="handleInvite"
+            :storeError="adminStore.error"
+            :successMessage="successMessage"
+          />
         </div>
       </div>
 

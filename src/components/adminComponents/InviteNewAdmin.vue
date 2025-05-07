@@ -12,7 +12,6 @@ const formData = reactive({
 });
 
 const isSubmitting = ref(false);
-const errorMessage = ref('');
 
 const rules = computed(() => {
   return {
@@ -49,7 +48,6 @@ const submitForm = async () => {
   }
 
   isSubmitting.value = true;
-  errorMessage.value = '';
 
   try {
     emit('invite-admin', {
@@ -123,11 +121,6 @@ const emit = defineEmits(['invite-admin']);
         <div v-if="v$.fullName.$error" class="text-red-500 text-xs mt-1">
           {{ getErrorMessage(v$.fullName) }}
         </div>
-      </div>
-
-      <!-- Error Message Display -->
-      <div v-if="errorMessage" class="text-red-600 text-sm">
-        {{ errorMessage }}
       </div>
 
       <!-- Submit Button -->
