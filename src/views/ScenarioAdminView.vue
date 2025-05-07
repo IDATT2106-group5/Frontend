@@ -54,8 +54,8 @@ export default {
     const scenarioForm = ref({
       name: '',
       description: '',
-      actions: '',
-      checklist: '',
+      toDo: '',
+      packingList: '',
       icon: 'AlertTriangle'
     })
 
@@ -77,8 +77,8 @@ export default {
             scenarioForm.value = {
               name: selectedScenario.name,
               description: selectedScenario.description,
-              actions: selectedScenario.actions || '',
-              checklist: selectedScenario.checklist || '',
+              toDo: selectedScenario.toDo || '',
+              packingList: selectedScenario.packingList || '',
               icon: selectedScenario.icon || 'AlertTriangle'
             }
           } else {
@@ -105,8 +105,8 @@ export default {
         const scenarioData = {
           name: scenarioForm.value.name,
           description: scenarioForm.value.description,
-          actions: scenarioForm.value.actions,
-          checklist: scenarioForm.value.checklist,
+          toDo: scenarioForm.value.toDo,
+          packingList: scenarioForm.value.packingList,
           icon: scenarioForm.value.icon
         }
 
@@ -203,7 +203,7 @@ export default {
       <div class="mb-4">
         <label class="block mb-1 font-medium">Hva du bør gjøre</label>
         <textarea
-          v-model="scenarioForm.actions"
+          v-model="scenarioForm.toDo"
           rows="4"
           class="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
         ></textarea>
@@ -212,7 +212,7 @@ export default {
       <div class="mb-4">
         <label class="block mb-1 font-medium">Pakkeliste</label>
         <textarea
-          v-model="scenarioForm.checklist"
+          v-model="scenarioForm.packingList"
           rows="4"
           class="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
         ></textarea>

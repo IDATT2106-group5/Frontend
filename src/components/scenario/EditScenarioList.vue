@@ -2,14 +2,29 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useScenarioStore } from '@/stores/ScenarioStore'
-// Import Lucide icons
+import { Button } from '@/components/ui/button/index.js'
 import {
-  AlertTriangle, AlertOctagon, Droplets, Flame, Wind,
-  Thermometer, Zap, ShieldAlert
+  AlertTriangle,
+  AlertOctagon,
+  Droplets,
+  Flame,
+  Wind,
+  Thermometer,
+  Zap,
+  ShieldAlert,
+  CirclePlus,
+  Pencil,
+  Map,
 } from 'lucide-vue-next'
 
 export default {
   name: 'ScenarioList',
+  components: {
+    Map,
+    Button,
+    CirclePlus,
+    Pencil,
+  },
 
   setup() {
     const router = useRouter()
@@ -28,7 +43,7 @@ export default {
       Wind,
       Thermometer,
       Zap,
-      ShieldAlert
+      ShieldAlert,
     }
 
     // Get the appropriate icon component
@@ -60,150 +75,73 @@ export default {
       getIconComponent,
       fetchScenarios,
       addNewScenario,
-      editScenario
+      editScenario,
     }
-  }
+  },
 }
 </script>
 
 <template>
-  <div class="scenario-list">
-    <div class="header">
-      <h1>Scenarioer</h1>
-      <button @click="addNewScenario" class="add-button">+ Legg til nytt scenario</button>
+  <div class="max-w-7xl mx-auto p-5">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800">Scenarioer</h1>
+      <Button
+        @click="addNewScenario"
+        variant="outline"
+        class="text-white border-white bg-[#2c3e50] hover:bg-blue-600 hover:text-white"
+      >
+        <CirclePlus class="w-4 h-4 mr-2" />
+        Legg til nytt scenario
+      </Button>
     </div>
 
-    <div v-if="loading" class="loading">
+    <div v-if="loading" class="text-center py-10">
       <p>Laster...</p>
     </div>
 
-    <div v-else-if="error" class="error">
-      <p>Det oppstod en feil: {{ error }}</p>
-      <button @click="fetchScenarios" class="primary-button">Prøv på nytt</button>
+    <div v-else-if="error" class="text-center py-10">
+      <p class="text-red-600">Det oppstod en feil: {{ error }}</p>
+      <Button
+        @click="fetchScenarios"
+        class="bg-green-500 hover:bg-green-600 text-white font-medium rounded mt-4 px-5 py-3"
+      >
+        Prøv på nytt
+      </Button>
     </div>
 
-    <div v-else-if="scenarios.length === 0" class="empty-state">
+    <div v-else-if="scenarios.length === 0" class="text-center py-10">
       <p>Ingen scenarioer funnet</p>
-      <button @click="addNewScenario" class="primary-button">Legg til nytt scenario</button>
+      <Button
+        @click="addNewScenario"
+        class="bg-green-500 hover:bg-green-600 text-white font-medium rounded mt-4 px-5 py-3"
+      >
+        <CirclePlus class="w-4 h-4 mr-2" />
+        Legg til nytt scenario
+      </Button>
     </div>
 
-    <div v-else class="scenario-grid">
-      <div v-for="scenario in scenarios" :key="scenario.id" class="scenario-card">
-        <div class="scenario-content">
-          <component :is="getIconComponent(scenario.icon)" size="32" class="scenario-icon" />
-          <h2>{{ scenario.name }}</h2>
+    <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+      <div
+        v-for="scenario in scenarios"
+        :key="scenario.id"
+        class="bg-white rounded-lg shadow-md border border-gray-200 h-[150px] relative"
+      >
+        <div class="absolute top-3 right-3">
+          <Button
+            @click="editScenario(scenario.id)"
+            variant="outline"
+            class="text-white border-white bg-[#2c3e50] hover:bg-blue-600 hover:text-white"
+          >
+            <Pencil class="w-3 h-3" />
+            Rediger
+          </Button>
         </div>
-        <div class="scenario-actions">
-          <button @click="editScenario(scenario.id)" class="edit-button">Rediger</button>
+        <div class="flex flex-col items-center justify-center h-full p-5 gap-2.5">
+          <component :is="getIconComponent(scenario.icon)" size="32" class="text-blue-500" />
+          <h2 class="text-lg font-medium text-center m-0">{{ scenario.name }}</h2>
         </div>
       </div>
     </div>
   </div>
 </template>
 
-<style scoped>
-.scenario-list {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-}
-
-.add-button {
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  padding: 10px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.loading, .error, .empty-state {
-  text-align: center;
-  padding: 40px 0;
-}
-
-.error {
-  color: #d32f2f;
-}
-
-.scenario-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.scenario-card {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  border: 1px solid #e0e0e0;
-  height: 150px;
-}
-
-.scenario-content {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  flex-grow: 1;
-  gap: 10px;
-}
-
-.scenario-icon {
-  color: #2196f3;
-}
-
-.scenario-content h2 {
-  font-size: 18px;
-  text-align: center;
-  margin: 0;
-}
-
-.scenario-actions {
-  padding: 10px;
-  display: flex;
-  justify-content: flex-end;
-  border-top: 1px solid #e0e0e0;
-}
-
-.edit-button {
-  background-color: #f0f0f0;
-  color: #333;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.edit-button:hover {
-  background-color: #e0e0e0;
-}
-
-.primary-button {
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.primary-button:hover {
-  background-color: #45a049;
-}
-</style>
