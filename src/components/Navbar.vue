@@ -153,7 +153,7 @@ const notificationIcons = {
           <Newspaper class="w-5 h-5 text-white" />
           Nyheter
         </a>
-        <RouterLink to="/admin/map-icons" class="flex items-center gap-2 hover:underline">
+        <RouterLink to="/admin/incidents" class="flex items-center gap-2 hover:underline">
           <Globe class="w-5 h-5 text-white" />
           Kart
         </RouterLink>

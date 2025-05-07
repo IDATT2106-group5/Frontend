@@ -257,7 +257,7 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
      */
     async fetchScenarios() {
       try {
-        this.scenarios = await ScenarioService.fetchAllScenarios();
+        this.scenarios = await ScenarioService.getAllScenarios();
       } catch (error) {
         console.error('Kunne ikke hente scenarier:', error);
       }

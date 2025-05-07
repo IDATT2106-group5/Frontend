@@ -138,6 +138,24 @@
           </div>
 
           <div class="form-group">
+            <label for="scenario">Scenario</label>
+            <select
+              id="scenario"
+              v-model="selectedScenarioId"
+              class="form-control"
+            >
+              <option :value="null">Velg scenario</option>
+              <option
+                v-for="scenario in scenarios"
+                :key="scenario.id"
+                :value="scenario.id"
+              >
+                {{ scenario.name }}
+              </option>
+            </select>
+          </div>
+
+          <div class="form-group">
             <label for="description" class="description-label">
               Beskrivelse
               <Button
@@ -332,6 +350,7 @@ import MapView from '@/views/mapView/MapView.vue';
 import Button from '@/components/ui/button/Button.vue';
 import Input from '@/components/ui/input/Input.vue';
 import L from 'leaflet';
+import { useScenarioStore } from '@/stores/ScenarioStore'
 
 export default {
   name: 'IncidentAdmin',
@@ -351,6 +370,11 @@ export default {
     // Map configuration
     const mapCenter = ref([63.4305, 10.3951]); // Trondheim
     const mapZoom = ref(13);
+
+    const scenarioStore = useScenarioStore();
+    const fetchScenarios = async () => {
+      await scenarioStore.fetchAllScenarios();
+    };
 
     const incidentAdminStore = useIncidentAdminStore();
     const {
@@ -412,6 +436,7 @@ export default {
         incidentFormData.value.endedAt = null;
       }
     });
+
 
     // Computed properties
     const severityLevels = computed(() => incidentAdminStore.severityLevels);
@@ -575,6 +600,9 @@ export default {
 
     // (Continued from previous code)
     onMounted(async () => {
+    
+      await scenarioStore.fetchAllScenarios()
+
       // Fetch incidents
       await incidentAdminStore.fetchIncidents();
 
@@ -584,12 +612,11 @@ export default {
     });
 
     onUnmounted(() => {
-      // Clean up map resources if needed
-      if (incidentLayers.value && map.value) {
-        incidentLayers.value.clearLayers();
-        incidentLayers.value = null;
-      }
+
+  
     });
+
+
 
     return {
       mapView,
@@ -625,7 +652,9 @@ export default {
       getSeverityColor,
       formatDateForDisplay,
       clearSuccess,
-      clearError
+      clearError,
+      fetchScenarios,
+      scenarios: computed(() => scenarioStore.getAllScenarios)
     };
   }
 };
