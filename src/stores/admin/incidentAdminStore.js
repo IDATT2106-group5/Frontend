@@ -2,7 +2,7 @@
 import { defineStore } from 'pinia';
 import IncidentAdminService from '@/service/admin/incidentAdminService';
 import IncidentConfigService from '@/service/map/incidentConfigService';
-import ScenarioService from '@/service/admin/scenarioService';
+import ScenarioService from '@/service/scenarioService';
 
 export const useIncidentAdminStore = defineStore('incidentAdmin', {
   state: () => ({
@@ -262,7 +262,7 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
         console.error('Kunne ikke hente scenarier:', error);
       }
     },
-    
+
     /**
      * Set selected scenario ID
      */
