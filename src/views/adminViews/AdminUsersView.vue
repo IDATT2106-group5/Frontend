@@ -1,11 +1,20 @@
 <script setup>
 import InviteNewAdmin from "@/components/adminComponents/InviteNewAdmin.vue";
 import AdminUserOverview from "@/components/adminComponents/AdminUsersOverview.vue";
+import { useUserStore } from '@/stores/UserStore'
+
+const userStore = useUserStore()
 
 function handleInvite(adminData) {
   console.log('New admin invitation:', adminData);
   // TODO: Add API logic here
 }
+
+onMounted(async () => {
+  if (!userStore.isSuperAdmin) {
+    return router.push('/not-authorized')
+  }
+})
 </script>
 
 <template>
