@@ -14,6 +14,7 @@ const adminStore = useAdminStore()
 const successMessage = ref('');
 const showSuccess = computed(() => !!successMessage.value);
 const clearSuccessTimeout = ref(null);
+const inviteFormRef = ref(null);
 
 
 async function handleInvite(adminData) {
@@ -38,7 +39,10 @@ async function handleInvite(adminData) {
     }
   } catch (error) {
     console.error("Error inviting admin:", error);
+  } finally {
+    inviteFormRef.value.resetForm();
   }
+
 }
 
 onMounted(async () => {
@@ -74,9 +78,8 @@ onMounted(async () => {
         </div>
         <div class="flex justify-center md:justify-start">
           <InviteNewAdmin
+            ref="inviteFormRef"
             @invite-admin="handleInvite"
-            :storeError="adminStore.error"
-            :successMessage="successMessage"
           />
         </div>
       </div>

@@ -26,7 +26,7 @@ const rules = computed(() => {
         (value) => /^[A-Za-zÆØÅæøå\s]+$/.test(value)
       )
     }
-  }
+  };
 });
 
 const v$ = useVuelidate(rules, formData);
@@ -55,19 +55,24 @@ const submitForm = async () => {
       fullName: formData.fullName
     });
 
-    formData.email = '';
-    formData.fullName = '';
-
-    v$.value.$reset();
   } catch (error) {
-    errorMessage.value = 'Det oppstod en feil ved sending av invitasjon';
     console.error(error);
-  } finally {
-    isSubmitting.value = false;
   }
 };
 
+/**
+ * Resets the form fields to their initial state.
+ */
+const resetForm = () => {
+  formData.email = '';
+  formData.fullName = '';
+  v$.value.$reset();
+  isSubmitting.value = false;
+};
+
 const emit = defineEmits(['invite-admin']);
+
+defineExpose({ resetForm });
 </script>
 
 <template>
