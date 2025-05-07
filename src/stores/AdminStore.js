@@ -23,7 +23,12 @@ export const useAdminStore = defineStore('admin', {
       try {
         this.isLoading = true
         const data = await AdminService.getAllAdmins()
-        this.admins = data
+
+        this.admins = data.sort((a, b) => {
+          if (a.role === 'SUPERADMIN' && b.role !== 'SUPERADMIN') return -1;
+          if (b.role === 'SUPERADMIN' && a.role !== 'SUPERADMIN') return 1;
+          return a.email.localeCompare(b.email);
+        });
       } catch (err) {
         console.error('[AdminStore] Failed to fetch admins:', err)
         this.error = err.message || 'Noe gikk galt ved henting av admins'
