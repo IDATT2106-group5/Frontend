@@ -5,7 +5,7 @@ import AdminUserOverview from "@/components/adminComponents/AdminUsersOverview.v
 import { useUserStore } from '@/stores/UserStore'
 import { useRouter } from 'vue-router'
 import { useAdminStore } from "@/stores/AdminStore";
-import { CheckCircle, XCircle } from 'lucide-vue-next';
+import { CheckCircle, XCircle, Loader } from 'lucide-vue-next';
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -59,12 +59,17 @@ onMounted(async () => {
     </div>
 
     <div class="flex justify-center">
-      <div v-if="showSuccess" class="mb-4 p-3 bg-green-100 text-green-700 rounded flex items-center">
+      <div v-if="isInviteLoading || adminStore.isLoading" class="mb-4 p-3 bg-blue-50 text-blue-700 rounded flex items-center justify-center">
+        <Loader class="h-5 w-5 mr-2 animate-spin" />
+        <span>Laster...</span>
+      </div>
+
+      <div v-else-if="showSuccess" class="mb-4 p-3 bg-green-100 text-green-700 rounded flex items-center">
         <CheckCircle class="h-5 w-5 mr-2" />
         <span>{{ successMessage }}</span>
       </div>
 
-      <div v-if="adminStore.error" class="mb-4 p-3 bg-red-100 text-red-700 rounded flex items-center">
+      <div v-else-if="adminStore.error" class="mb-4 p-3 bg-red-100 text-red-700 rounded flex items-center">
         <XCircle class="h-5 w-5 mr-2" />
         <span>{{ adminStore.error }}</span>
       </div>
