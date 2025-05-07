@@ -669,22 +669,27 @@ export const useHouseholdStore = defineStore('household', {
     async searchHouseholdById(householdId) {
       try {
         this.isLoading = true;
+    
         if (!householdId || isNaN(Number(householdId))) {
           throw new Error('Ugyldig husstands-ID format');
         }
     
         const household = await HouseholdService.searchHouseholdById({
-          householdId: Number(householdId)
+          householdId: Number(householdId),
         });
-        
+    
+        // Check if result is null BEFORE destructuring
+        if (!household || !household.id) {
+          return null;
+        }
+    
         const { id, name } = household;
-        
         this.foundHousehold = { id, name };
         return { id, name };
     
       } catch (err) {
         this.error = err.response?.data?.error || err.message || 'Kunne ikke søke etter husstand';
-        throw err;
+        return null; // Return null instead of throwing
       } finally {
         this.isLoading = false;
       }
