@@ -26,7 +26,6 @@
 
         <!-- Search and Filter -->
         <div class="search-filter-container">
-          <!-- Replaced with SearchBar component -->
           <input
             type="text"
             v-model="searchTerm"
@@ -305,7 +304,6 @@ import MarkerConfigService from '@/service/map/markerConfigService';
 import MapView from '@/views/mapView/MapView.vue';
 import Button from '@/components/ui/button/Button.vue';
 import Input from '@/components/ui/input/Input.vue';
-import SearchBar from '@/components/SearchBar.vue';
 import L from 'leaflet';
 
 export default {
@@ -314,7 +312,6 @@ export default {
     MapView,
     Button,
     Input,
-    SearchBar
   },
 
   setup() {
