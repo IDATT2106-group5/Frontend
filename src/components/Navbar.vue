@@ -180,11 +180,11 @@ const notificationIcons = {
           class="flex items-center gap-2 hover:underline"
         >
           <ShoppingCart class="w-5 h-5 text-white" />
-          Min beholdning
+          Beholdning
         </RouterLink>
         <RouterLink to="/household" class="flex items-center gap-2 hover:underline">
           <User class="w-5 h-5 text-white" />
-          Min husstand
+          Husstand
         </RouterLink>
         <RouterLink
           v-if="userStore.isAdmin"
