@@ -144,7 +144,6 @@ export const useLocationStore = defineStore('location', () => {
       } else {
         if (now - lastConnectionLogTime > connectionLogThreshold) {
           console.debug('WebSocket disconnected, will reconnect automatically');
-          lastConnectionLogTime = now;
         }
       }
     }
@@ -154,7 +153,7 @@ export const useLocationStore = defineStore('location', () => {
     setTimeout(() => {
       console.log('Initializing position sharing')
       startPositionSharing()
-    }, 1000)
+    }, 30000)
   }
 
   return {

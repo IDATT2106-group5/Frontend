@@ -226,7 +226,7 @@ export default {
         isNaN(parseFloat(latitude))
       ) {
         console.warn(`Invalid position data for user ${userId}: (${longitude}, ${latitude})`)
-        return // Skip this update
+        return
       }
 
       const parsedLong = parseFloat(longitude)

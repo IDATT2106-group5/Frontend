@@ -14,7 +14,7 @@ import {
   User,
 } from 'lucide-vue-next'
 
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch, computed } from 'vue'
 import { Button } from '@/components/ui/button'
 import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/UserStore'
@@ -25,6 +25,7 @@ const userStore = useUserStore()
 const router = useRouter()
 const mobileMenuOpen = ref(false)
 const showNotifications = ref(false)
+const locationStore = useLocationStore()
 
 const {
   notifications,
@@ -43,6 +44,13 @@ function toggleNotifications() {
   showNotifications.value = !showNotifications.value
   if (showNotifications.value) {
     resetNotificationCount()
+
+    // Mark all unread notifications as read
+    notifications.value.forEach(notification => {
+      if (!notification.read) {
+        markAsRead(notification.id)
+      }
+    })
   }
 }
 
@@ -52,12 +60,14 @@ function handleMarkAsRead(notificationId) {
 
 function formatTimestamp(timestamp) {
   const date = new Date(timestamp)
-  return date.toLocaleString('no-NO', {
-    hour: '2-digit',
-    minute: '2-digit',
-    day: '2-digit',
-    month: '2-digit',
-  })
+
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0') // Month is 0-indexed
+  const year = date.getFullYear()
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+
+  return `${hours}:${minutes}, ${day}.${month}.${year}`
 }
 
 function handleLogout() {
@@ -113,18 +123,18 @@ const notificationIcons = {
         </div>
         <div class="p-6">
           <p class="text-lg mb-4">{{ currentIncident.message }}</p>
-          <p v-show="!isSharing" class="text-sm text-gray-500 mb-4">
+          <p v-show=!locationStore.isSharing class="text-sm text-gray-500 mb-4">
             Del posisjon for å tillate husstanden din til å se posisjonen din
           </p>
-          <p v-show="isSharing" class="text-sm text-gray-500 mb-4">
+          <p v-show=locationStore.isSharing class="text-sm text-gray-500 mb-4">
             Din posisjon er delt med husstanden din, gå til kartet for å se om de er i faresonen
           </p>
           <p class="text-sm text-gray-500 mb-6">
             {{ formatTimestamp(currentIncident.timestamp) }}
           </p>
-          <div class="flex justify-end">
+          <div class="flex justify-center gap-3 pt-4">
             <Button
-              v-show="!isSharing"
+              v-show=!locationStore.isSharing
               @click="startPositionSharing"
               variant="default"
               class="ml-2 bg-blue-600 hover:bg-blue-700"
