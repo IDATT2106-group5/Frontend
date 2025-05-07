@@ -73,8 +73,10 @@ const emit = defineEmits(['invite-admin']);
 </script>
 
 <template>
-  <div class="bg-transparent rounded-lg p-6 shadow-sm border border-gray-200 w-full max-w-md">
-    <h2 class="text-2xl font-bold text-gray-800 mb-6">Invitere Admin</h2>
+  <div class="bg-white rounded-lg p-6 shadow-sm border border-gray-200 w-full max-w-md">
+    <div class="flex justify-center">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6">Invitere Admin</h2>
+    </div>
 
     <form @submit.prevent="submitForm" class="space-y-4">
       <!-- Email Input -->

@@ -70,7 +70,9 @@ export default {
 
 <template>
   <div class="p-6 bg-gray-100 min-h-screen">
-    <h1 class="text-3xl font-semibold text-black mb-6">Administratorer</h1>
+    <div class="flex justify-center">
+      <h2 class="text-3xl font-semibold text-black mb-6">Administratorer</h2>
+    </div>
 
     <div v-if="adminStore.isLoading" class="text-center py-4">
       <p class="text-gray-600">Laster administratorer...</p>
