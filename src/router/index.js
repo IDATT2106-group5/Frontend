@@ -27,6 +27,8 @@ import PersonVern from '@/views/mainViews/PersonVern.vue'
 import AdminUserView from '@/views/adminViews/AdminUsersView.vue'
 import MarkerAdmin from '@/views/adminViews/MarkerAdmin.vue'
 import IncidentAdmin from '@/views/adminViews/IncidentAdmin.vue'
+import ScenarioList from '@/components/scenario/ScenarioList.vue'
+import ScenarioAdminView from '@/views/ScenarioAdminView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -125,6 +127,21 @@ const router = createRouter({
       name: 'RegisterFailed',
       component: RegisterFailedView,
       meta:{hideNavbar: true, hideFooter: true },
+    },
+    {
+      path: '/scenarios',
+      name: 'ScenarioList',
+      component: ScenarioList
+    },
+    {
+      path: '/scenarios/new',
+      name: 'CreateScenario',
+      component: ScenarioAdminView
+    },
+    {
+      path: '/scenarios/:id',
+      name: 'EditScenario',
+      component: ScenarioAdminView
     },
     {
       path: '/before',

@@ -2,11 +2,14 @@
 import { defineStore } from 'pinia';
 import IncidentAdminService from '@/service/admin/incidentAdminService';
 import IncidentConfigService from '@/service/map/incidentConfigService';
+import ScenarioService from '@/service/admin/scenarioService';
 
 export const useIncidentAdminStore = defineStore('incidentAdmin', {
   state: () => ({
     incidents: [],
     filteredIncidents: [],
+    scenarios: [],
+    selectedScenarioId: null,
     searchTerm: '',
     filterSeverity: '',
     isLoading: false,
@@ -247,6 +250,24 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
       } finally {
         this.isLoading = false;
       }
+    },
+
+    /**
+     * Fetch all scenarios
+     */
+    async fetchScenarios() {
+      try {
+        this.scenarios = await ScenarioService.fetchAllScenarios();
+      } catch (error) {
+        console.error('Kunne ikke hente scenarier:', error);
+      }
+    },
+    
+    /**
+     * Set selected scenario ID
+     */
+    setSelectedScenario(id) {
+      this.selectedScenarioId = id;
     },
 
     /**
