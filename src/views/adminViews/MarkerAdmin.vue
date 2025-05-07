@@ -179,6 +179,7 @@
             <Input
               id="address"
               v-model="markerFormData.address"
+              @input="onAddressChange"
             />
           </div>
 
@@ -188,6 +189,7 @@
               <Input
                 id="postalCode"
                 v-model="markerFormData.postalCode"
+                @input="onAddressChange"
               />
             </div>
 
@@ -196,6 +198,7 @@
               <Input
                 id="city"
                 v-model="markerFormData.city"
+                @input="onAddressChange"
               />
             </div>
           </div>
@@ -408,8 +411,7 @@ export default {
       map.value.on('click', onMapClick);
     };
 
-    // In MarkerAdmin.vue in the setup function
-    const onMapClick = (e) => {
+    const onMapClick = async (e) => {
       console.log("Map click handler called:", e.latlng);
 
       // Only proceed if in edit or create mode
@@ -438,7 +440,16 @@ export default {
         tempMarker.value = L.marker([lat, lng], { icon }).addTo(map.value);
         console.log("Created new temporary marker");
       }
+
+      // Perform reverse geocoding to get address information
+      try {
+        const addressInfo = await markerAdminStore.updateAddressFromCoordinates(lat, lng);
+        console.log("Address updated based on new coordinates:", addressInfo);
+      } catch (error) {
+        console.error("Error updating address from coordinates:", error);
+      }
     };
+
     const createMarkerIcon = (type) => {
       // Get configuration for this marker type
       const config = markerConfigs[type];
@@ -450,6 +461,51 @@ export default {
         config.color
       );
     };
+
+    // Add this method to the setup() function in MarkerAdmin.vue
+    const onAddressChange = debounce(async () => {
+      // Only proceed if we have at least some address information
+      if (!markerFormData.value.address && !markerFormData.value.postalCode && !markerFormData.value.city) {
+        return;
+      }
+
+      // Build a complete address string for geocoding
+      const addressQuery = [
+        markerFormData.value.address,
+        markerFormData.value.postalCode,
+        markerFormData.value.city
+      ].filter(Boolean).join(', ');
+
+      if (addressQuery.trim() === '') {
+        return;
+      }
+
+      try {
+        const coordinates = await markerAdminStore.updateCoordinatesFromAddress(addressQuery);
+
+        if (coordinates && tempMarker.value && map.value) {
+          // Update the marker position on the map
+          tempMarker.value.setLatLng([coordinates.lat, coordinates.lng]);
+
+          // Center the map on the new position
+          map.value.setView([coordinates.lat, coordinates.lng], map.value.getZoom());
+        }
+      } catch (error) {
+        console.error('Error geocoding address:', error);
+      }
+    }, 500); // 500ms debounce to avoid too many API calls when typing
+
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
 
     const getMarkerIcon = (type) => {
       return markerConfigs[type]?.lucideIcon || null;
@@ -667,7 +723,9 @@ export default {
       getMarkerIcon,
       getMarkerColor,
       clearSuccess,
-      clearError
+      clearError,
+      onMapClick,
+      onAddressChange,
     };
   }
 };

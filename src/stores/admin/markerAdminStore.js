@@ -2,6 +2,7 @@
 import { defineStore } from 'pinia';
 import MarkerAdminService from '@/service/admin/markerAdminService';
 import MarkerConfigService from '@/service/map/markerConfigService';
+import GeocodingService from '@/service/map/geocodingService.js'
 
 export const useMarkerAdminStore = defineStore('markerAdmin', {
   state: () => ({
@@ -326,6 +327,47 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
     },
 
     /**
+     * Update marker address based on coordinates using reverse geocoding
+     * @param {number} lat - Latitude
+     * @param {number} lng - Longitude
+     * @returns {Promise<Object>} Address information
+     */
+    async updateAddressFromCoordinates(lat, lng) {
+      try {
+
+        const addressInfo = await GeocodingService.reverseGeocode(lat, lng);
+
+        if (addressInfo && addressInfo.address) {
+          // Extract address components from the response
+          const { address } = addressInfo;
+
+          // Parse the address components
+          // The structure may vary depending on the country and location type
+          const streetAddress = address.road || address.footway || address.pedestrian || '';
+          const houseNumber = address.house_number || '';
+          const formattedStreet = houseNumber ? `${streetAddress} ${houseNumber}` : streetAddress;
+
+          // Update the form data with the new address information
+          this.markerFormData.address = formattedStreet;
+          this.markerFormData.postalCode = address.postcode || '';
+          this.markerFormData.city = address.city || address.town || address.village || address.suburb || '';
+
+          return {
+            address: formattedStreet,
+            postalCode: address.postcode || '',
+            city: this.markerFormData.city
+          };
+        }
+
+        return null;
+      } catch (error) {
+        console.error('Error in updateAddressFromCoordinates:', error);
+        // Don't throw the error to prevent UI disruption
+        return null;
+      }
+    },
+
+    /**
      * Update marker coordinates
      */
     updateMarkerCoordinates(lat, lng) {
@@ -339,6 +381,47 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
           marker.latitude = this.markerFormData.latitude;
           marker.longitude = this.markerFormData.longitude;
         }
+      }
+    },
+
+    /**
+     * Update coordinates based on address using geocoding
+     * @param {string} addressQuery - The address string to geocode
+     * @returns {Promise<Object|null>} - Coordinates or null if not found
+     */
+    async updateCoordinatesFromAddress(addressQuery) {
+      try {
+        // Search for places with the address query
+        const results = await GeocodingService.searchPlaces(addressQuery, {
+          limit: 1, // Only get the top result
+          countryCode: 'no' // Limit to Norway
+        });
+
+        if (results && results.length > 0) {
+          const result = results[0];
+          const lat = result.lat;
+          const lng = result.lng;
+
+          // Update store values
+          this.markerFormData.latitude = lat;
+          this.markerFormData.longitude = lng;
+
+          // If we're in edit mode, update the marker in the list
+          if (this.isEditing) {
+            const marker = this.markers.find(m => m.id === this.markerFormData.id);
+            if (marker) {
+              marker.latitude = lat;
+              marker.longitude = lng;
+            }
+          }
+
+          return { lat, lng };
+        }
+
+        return null;
+      } catch (error) {
+        console.error('Error in updateCoordinatesFromAddress:', error);
+        return null;
       }
     },
 
