@@ -10,7 +10,7 @@
     </transition>
 
     <!-- Add the search bar -->
-    <div class="map-search-container" v-if="!isAdminMode">
+    <div class="map-search-container">
       <MapSearchBar />
     </div>
 
