@@ -125,6 +125,11 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
      * Reset form data for creating a new marker
      */
     initNewMarker() {
+      this.isCreating = true;
+      this.isEditing = false;
+      this.error = null;
+      this.success = null;
+
       this.markerFormData = {
         id: null,
         type: 'HEARTSTARTER',
@@ -137,10 +142,6 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
         latitude: 63.4305,
         longitude: 10.3951
       };
-      this.isCreating = true;
-      this.isEditing = false;
-      this.error = null;
-      this.success = null;
     },
 
     /**
@@ -317,6 +318,15 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
     updateMarkerCoordinates(lat, lng) {
       this.markerFormData.latitude = lat;
       this.markerFormData.longitude = lng;
+
+      // If we're in edit mode, update the current marker's position
+      if (this.isEditing) {
+        const marker = this.markers.find(m => m.id === this.markerFormData.id);
+        if (marker) {
+          marker.latitude = this.markerFormData.latitude;
+          marker.longitude = this.markerFormData.longitude;
+        }
+      }
     },
 
     /**

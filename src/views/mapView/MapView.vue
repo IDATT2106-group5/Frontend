@@ -78,14 +78,17 @@
 </template>
 
 <script>
-import { onMounted, ref, onUnmounted, computed } from 'vue';
-import { useMapStore } from '@/stores/map/mapStore';
-import { storeToRefs } from 'pinia';
-import MarkerFilter from '@/components/map/MarkerFilter.vue';
-import Button from '@/components/ui/button/Button.vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { useMapStore } from '@/stores/map/mapStore'
+import { storeToRefs } from 'pinia'
+import MarkerFilter from '@/components/map/MarkerFilter.vue'
+import Button from '@/components/ui/button/Button.vue'
+import 'leaflet/dist/leaflet.css'
+import useWebSocket from '@/service/websocketComposable.js'
+import L from 'leaflet'
+import ClosestFacilityFinder from '@/components/map/ClosestFacilityFinder.vue'
+import { useUserStore } from '@/stores/UserStore.js'
 import MapSearchBar from '@/components/map/MapSearchBar.vue';
-import 'leaflet/dist/leaflet.css';
-import ClosestFacilityFinder from "@/components/map/ClosestFacilityFinder.vue";
 
 export default {
   name: 'EmergencyMap',
@@ -352,7 +355,6 @@ export default {
 </script>
 
 <style scoped>
-/* No changes to the styles */
 .map-container {
   width: 100%;
   height: calc(100vh - 60px);
@@ -468,18 +470,10 @@ export default {
 }
 
 @keyframes fade-in-out {
-  0% {
-    opacity: 0;
-  }
-  15% {
-    opacity: 1;
-  }
-  85% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
 /* Layer Control Container */
