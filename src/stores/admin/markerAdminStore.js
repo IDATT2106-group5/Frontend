@@ -15,6 +15,7 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
     markerFormData: {
       id: null,
       type: 'HEARTSTARTER',
+      name: '',
       address: '',
       postalCode: '',
       city: '',
@@ -61,6 +62,7 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
         this.markers = markers.map(marker => ({
             id: marker.id,
             type: marker.type,
+            name: marker.name || '',
             address: marker.address || '',
             postalCode: marker.postalCode || '',
             city: marker.city || '',
@@ -87,6 +89,7 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
       this.filteredMarkers = this.markers.filter(marker => {
         const matchesSearch =
           this.searchTerm === '' ||
+          (marker.name && marker.name.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
           (marker.address && marker.address.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
           (marker.postalCode && marker.postalCode.toString().includes(this.searchTerm)) ||
           (marker.city && marker.city.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
@@ -133,6 +136,7 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
       this.markerFormData = {
         id: null,
         type: 'HEARTSTARTER',
+        name: '',
         address: '',
         postalCode: '',
         city: '',
@@ -153,6 +157,7 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
       this.markerFormData = {
         id: marker.id,
         type: marker.type,
+        name: marker.name || '',
         address: street || '',
         postalCode: postal || '',
         city: city || '',
