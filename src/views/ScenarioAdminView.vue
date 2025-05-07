@@ -11,6 +11,14 @@ import {
 export default {
   name: 'ScenarioView',
   components: {
+    AlertTriangle,
+    AlertOctagon,
+    Droplets,
+    Flame,
+    Wind,
+    Thermometer,
+    Zap,
+    ShieldAlert,
     Trash2
   },
 
@@ -31,7 +39,6 @@ export default {
       { name: 'Flame', component: Flame },
       { name: 'Wind', component: Wind },
       { name: 'Thermometer', component: Thermometer },
-      { name: 'Virus', component: Virus },
       { name: 'Zap', component: Zap },
       { name: 'ShieldAlert', component: ShieldAlert }
     ]
@@ -158,263 +165,103 @@ export default {
 </script>
 
 <template>
-  <div class="scenario-view">
-    <h1 class="page-title">{{ isEditing ? 'Rediger scenario' : 'Legg til nytt scenario' }}</h1>
+  <div class="max-w-3xl mx-auto px-4 py-6">
+    <h1 class="text-4xl font-bold text-black mb-6">{{ isEditing ? 'Rediger scenario' : 'Legg til nytt scenario' }}</h1>
 
-    <div v-if="loading" class="loading">
+    <div v-if="loading" class="text-center py-6">
       <p>Laster...</p>
     </div>
 
-    <div v-else-if="error" class="error">
+    <div v-else-if="error" class="text-center py-6 text-red-600">
       <p>Det oppstod en feil: {{ error }}</p>
-      <button @click="goBack" class="primary-button">Tilbake</button>
+      <button @click="goBack" class="mt-3 bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded">Tilbake</button>
     </div>
 
-    <form v-else @submit.prevent="saveScenario" class="scenario-form">
-      <div class="form-group">
-        <label for="name">Tittel på scenario</label>
+    <form v-else @submit.prevent="saveScenario" class="bg-white p-6 rounded-lg shadow-md">
+      <div class="mb-4">
+        <label for="name" class="block mb-1 font-medium">Tittel på scenario</label>
         <input
           id="name"
           v-model="scenarioForm.name"
           type="text"
           required
           placeholder="Skriv inn scenarionavn"
+          class="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
         />
       </div>
 
-      <div class="form-group">
-        <label>Om dette scenarioet</label>
+      <div class="mb-4">
+        <label class="block mb-1 font-medium">Om dette scenarioet</label>
         <textarea
           v-model="scenarioForm.description"
-          rows="6"
+          rows="4"
           required
           placeholder="Beskriv scenarioet"
+          class="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
         ></textarea>
       </div>
 
-      <div class="form-group">
-        <label>Hva du bør gjøre</label>
+      <div class="mb-4">
+        <label class="block mb-1 font-medium">Hva du bør gjøre</label>
         <textarea
           v-model="scenarioForm.actions"
-          rows="6"
+          rows="4"
           required
-          placeholder="• Punkt 1&#10;• Punkt 2&#10;• Punkt 3&#10;• Punkt 4&#10;• Punkt 5"
+          class="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
         ></textarea>
       </div>
 
-      <div class="form-group">
-        <label>Pakkeliste</label>
+      <div class="mb-4">
+        <label class="block mb-1 font-medium">Pakkeliste</label>
         <textarea
           v-model="scenarioForm.checklist"
-          rows="6"
+          rows="4"
           required
-          placeholder="• Punkt 1&#10;• Punkt 2&#10;• Punkt 3&#10;• Punkt 4&#10;• Punkt 5"
+          class="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
         ></textarea>
       </div>
 
-      <div class="form-group">
-        <label>Velg ikon</label>
-        <div class="icon-selector">
+      <div class="mb-4">
+        <label class="block mb-1 font-medium">Velg ikon</label>
+        <div class="flex flex-wrap gap-2 mt-2">
           <div
             v-for="icon in availableIcons"
             :key="icon.name"
-            :class="['icon-option', { 'selected': scenarioForm.icon === icon.name }]"
+            :class="['flex flex-col items-center p-2 border rounded cursor-pointer transition-all duration-200',
+                    scenarioForm.icon === icon.name ? 'bg-blue-50 border-blue-500' : 'border-gray-200 hover:bg-gray-50']"
             @click="selectIcon(icon.name)"
           >
-            <component :is="icon.component" size="24" />
-            <span>{{ icon.name }}</span>
+            <component :is="icon.component" size="20" />
+            <span class="mt-1 text-xs">{{ icon.name }}</span>
           </div>
         </div>
       </div>
 
-      <div class="form-actions">
-        <button type="button" @click="goBack" class="secondary-button">Avbryt</button>
+      <div class="flex justify-end gap-2 mt-5">
+        <button type="button" @click="goBack" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-3 rounded border border-gray-300 text-sm">Avbryt</button>
         <button
           v-if="isEditing"
           type="button"
           @click="confirmDelete"
-          class="delete-button"
+          class="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-3 rounded flex items-center gap-1 text-sm"
         >
-          <Trash2 size="16" />
+          <Trash2 size="14" />
           Slett
         </button>
-        <button type="submit" class="primary-button">Lagre</button>
+        <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-3 rounded text-sm">Lagre</button>
       </div>
     </form>
 
     <!-- Delete confirmation modal -->
-    <div v-if="showDeleteModal" class="modal-overlay">
-      <div class="modal">
-        <h3>Bekreft sletting</h3>
+    <div v-if="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+      <div class="bg-white p-5 rounded-lg shadow-lg max-w-sm w-full">
+        <h3 class="text-lg font-bold mb-3">Bekreft sletting</h3>
         <p>Er du sikker på at du vil slette "{{ scenarioForm.name }}"?</p>
-        <div class="modal-actions">
-          <button @click="showDeleteModal = false" class="secondary-button">Avbryt</button>
-          <button @click="deleteScenario" class="delete-button">Slett</button>
+        <div class="flex justify-end gap-3 mt-5">
+          <button @click="showDeleteModal = false" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-1.5 px-3 rounded border border-gray-300 text-sm">Avbryt</button>
+          <button @click="deleteScenario" class="bg-red-500 hover:bg-red-600 text-white font-medium py-1.5 px-3 rounded text-sm">Slett</button>
         </div>
       </div>
     </div>
   </div>
 </template>
-
-<style scoped>
-.scenario-view {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.page-title {
-  margin-bottom: 30px;
-  font-size: 24px;
-  color: #333;
-}
-
-.loading, .error {
-  text-align: center;
-  padding: 40px 0;
-}
-
-.error {
-  color: #d32f2f;
-}
-
-.scenario-form {
-  background: white;
-  padding: 30px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-}
-
-input[type="text"], textarea {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 16px;
-}
-
-.icon-selector {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 15px;
-  margin-top: 10px;
-}
-
-.icon-option {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 10px;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.icon-option.selected {
-  background-color: #e3f2fd;
-  border-color: #2196f3;
-}
-
-.icon-option span {
-  margin-top: 5px;
-  font-size: 12px;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 15px;
-  margin-top: 30px;
-}
-
-.primary-button {
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.secondary-button {
-  background-color: #f0f0f0;
-  color: #333;
-  border: 1px solid #ccc;
-  padding: 12px 20px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.delete-button {
-  background-color: #f44336;
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.primary-button:hover {
-  background-color: #45a049;
-}
-
-.secondary-button:hover {
-  background-color: #e0e0e0;
-}
-
-.delete-button:hover {
-  background-color: #d32f2f;
-}
-
-/* Modal styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal {
-  background-color: white;
-  padding: 30px;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  max-width: 500px;
-  width: 100%;
-}
-
-.modal h3 {
-  margin-top: 0;
-  margin-bottom: 15px;
-}
-
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 15px;
-  margin-top: 30px;
-}
-</style>
