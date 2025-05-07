@@ -47,42 +47,6 @@ onMounted(async () => {
   }
 })
 
-async function acceptInvitation(invitationId) {
-  try {
-    await householdStore.acceptInvitation(invitationId)
-
-    toast({
-      title: 'Invitasjon akseptert',
-      description: 'Du har blitt med i husstanden.',
-      variant: 'success'
-    })
-  } catch (err) {
-    toast({
-      title: 'Feil',
-      description: 'Kunne ikke akseptere invitasjonen.',
-      variant: 'destructive'
-    })
-  }
-}
-
-async function declineInvitation(invitationId) {
-  try {
-    await householdStore.declineInvitation(invitationId)
-
-    toast({
-      title: 'Invitasjon avslått',
-      description: 'Du har avslått invitasjonen.',
-      variant: 'default'
-    })
-  } catch (err) {
-    toast({
-      title: 'Feil',
-      description: 'Kunne ikke avslå invitasjonen.',
-      variant: 'destructive'
-    })
-  }
-}
-
 async function copyHouseholdId() {
   try {
     await navigator.clipboard.writeText(householdId.value)
@@ -170,38 +134,6 @@ const goJoin = () => router.push('/household/join')
               <User class="w-5 h-5" />
               Bli med i husstand
             </button>
-          </div>
-        </div>
-
-        <!-- Invitasjoner mottatt fra store -->
-        <div class="mt-12">
-          <h3 class="text-xl font-semibold text-center mb-4">Invitasjoner mottatt</h3>
-          <div v-if="householdStore.receivedInvitations.length === 0" class="text-center text-gray-500 italic">
-            Ingen invitasjoner mottatt
-          </div>
-          <div
-            v-for="invitasjon in householdStore.receivedInvitations"
-            :key="invitasjon.id"
-            class="bg-white rounded-md p-4 max-w-md mx-auto border border-gray-200 mb-4"
-          >
-            <div class="text-sm space-y-1 mb-4">
-              <p><strong>Husstands-ID:</strong> {{ invitasjon.householdId }}</p>
-              <p><strong>Navn:</strong> {{ invitasjon.householdName }}</p>
-            </div>
-            <div class="flex gap-2 justify-end">
-              <button
-                @click="acceptInvitation(invitasjon.id)"
-                class="px-4 py-1 rounded bg-primary text-white hover:opacity-90"
-              >
-                Aksepter
-              </button>
-              <button
-                @click="declineInvitation(invitasjon.id)"
-                class="px-4 py-1 rounded border border-gray-400 hover:bg-gray-100"
-              >
-                Avslå
-              </button>
-            </div>
           </div>
         </div>
       </div>

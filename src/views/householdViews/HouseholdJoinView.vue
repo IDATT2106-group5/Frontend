@@ -107,10 +107,10 @@ const sendJoinRequest = async () => {
       </div>
 
       <!-- Display found household info -->
-      <div v-if="foundHousehold && !requestSent" class="p-4 bg-white border rounded shadow-sm">
-        <h3 class="font-medium text-lg">Husstand funnet!</h3>
-        <p class="mb-2">{{ foundHousehold.name || 'Husstand ' + foundHousehold.id }}</p>
-        <p v-if="foundHousehold.address" class="text-sm text-gray-600 mb-4">{{ foundHousehold.address }}</p>
+      <div v-if="foundHousehold && !requestSent" class="p-4 bg-white border rounded shadow-sm space-y-2">
+      <h3 class="text-lg font-semibold mb-2">Husstand funnet!</h3>
+      <p class="text-sm text-gray-700">Husstandsnavn: <span class="text-gray-900">{{ foundHousehold.name || 'Ukjent navn' }}</span></p>
+      <p class="text-sm text-gray-700">Husstands-ID: <span class="text-gray-900">{{ foundHousehold.id }}</span></p>
         
         <button
           @click="sendJoinRequest"
