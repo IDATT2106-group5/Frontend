@@ -69,11 +69,7 @@ export default {
 </script>
 
 <template>
-  <div class="p-6 bg-gray-100 min-h-screen">
-    <div class="flex justify-center">
-      <h2 class="text-3xl font-semibold text-black mb-6">Administratorer</h2>
-    </div>
-
+  <div class="bg-white rounded shadow">
     <div v-if="adminStore.isLoading" class="text-center py-4">
       <p class="text-gray-600">Laster administratorer...</p>
     </div>
@@ -82,7 +78,7 @@ export default {
       {{ adminStore.error }}
     </div>
 
-    <div v-else class="bg-white rounded shadow">
+    <div v-else>
       <div v-for="admin in adminStore.admins" :key="admin.email"
            class="flex items-center justify-between p-4 border-b border-gray-200 last:border-b-0">
         <div class="text-black">{{ admin.email }}</div>
