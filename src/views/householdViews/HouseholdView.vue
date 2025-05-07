@@ -61,6 +61,74 @@ function copyHouseholdId() {
     .catch(() => alert('Kunne ikke kopiere ID'))
 }
 
+// Force input to be numbers only
+function restrictToNumbersOnly(e) {
+  // Only allow direct input of numbers
+  const key = e.key;
+  
+  // Allow: navigation keys, delete, backspace, tab, escape, enter
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || 
+      e.key === 'ArrowUp' || e.key === 'ArrowDown' ||
+      e.key === 'Home' || e.key === 'End' ||
+      e.key === 'Delete' || e.key === 'Backspace' || 
+      e.key === 'Tab' || e.key === 'Escape' || e.key === 'Enter' ||
+      // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+      (e.ctrlKey === true && (e.key === 'a' || e.key === 'c' || e.key === 'v' || e.key === 'x'))) {
+    return; // Let it happen
+  }
+  
+  // Block everything that's not a number
+  if (!/^\d$/.test(key)) {
+    e.preventDefault();
+  }
+}
+
+// Clean input value to ensure it contains only numbers
+function cleanInputValue(inputElement) {
+  if (!inputElement) return;
+  // Replace any non-numeric characters with empty string
+  inputElement.value = inputElement.value.replace(/[^\d]/g, '');
+}
+
+// Handle paste events to only allow numbers
+function handlePaste(e) {
+  // Prevent the default paste behavior
+  e.preventDefault();
+  
+  // Get pasted data
+  const pastedData = (e.clipboardData || window.clipboardData).getData('text');
+  
+  // Extract only numbers from pasted content
+  const numbersOnly = pastedData.replace(/[^\d]/g, '');
+  
+  // Get the current input value
+  const input = e.target;
+  const currentValue = input.value;
+  const selectionStart = input.selectionStart;
+  const selectionEnd = input.selectionEnd;
+  
+  // Insert the cleaned pasted content at cursor position
+  const newValue = currentValue.substring(0, selectionStart) + 
+                  numbersOnly + 
+                  currentValue.substring(selectionEnd);
+  
+  // Update the input value and v-model
+  input.value = newValue;
+  // Trigger input event to update v-model
+  input.dispatchEvent(new Event('input'));
+  
+  // Set cursor position after the pasted content
+  setTimeout(() => {
+    input.selectionStart = input.selectionEnd = selectionStart + numbersOnly.length;
+  }, 0);
+}
+
+// Input blur handler to clean up any non-numeric characters that might have gotten in
+function onInputBlur(e) {
+  cleanInputValue(e.target);
+  e.target.dispatchEvent(new Event('input'));
+}
+
 async function handleLeave() {
   confirmLeaveOpen.value = false
   try {
@@ -224,8 +292,13 @@ const declineInvitation = async (invId) => {
               <input
                 v-model="joinHouseholdId"
                 id="joinHouseholdId"
-                type="number"
-                min="1"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                @keydown="restrictToNumbersOnly"
+                @paste="handlePaste"
+                @input="$event.target.value = $event.target.value.replace(/[^\d]/g, '')"
+                @blur="onInputBlur"
                 class="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
               />
             </div>
@@ -339,8 +412,13 @@ const declineInvitation = async (invId) => {
                   <input
                     v-model="joinHouseholdId"
                     id="joinHouseholdId"
-                    type="number"
-                    min="1"
+                    type="text"
+                    inputmode="numeric"
+                    pattern="[0-9]*"
+                    @keydown="restrictToNumbersOnly"
+                    @paste="handlePaste"
+                    @input="$event.target.value = $event.target.value.replace(/[^\d]/g, '')"
+                    @blur="onInputBlur"
                     class="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>

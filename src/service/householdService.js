@@ -285,18 +285,31 @@ class HouseholdService extends BaseService {
    */
   async searchHouseholdById(data) {
     try {
-      const householdId = Number(data.householdId);
-      
+      const householdId = Number(data.householdId)
+  
       if (isNaN(householdId) || householdId <= 0) {
-        throw new Error('Ugyldig husstands-ID');
+        throw new Error('Ugyldig husstands-ID')
       }
-      
-      return await this.post('search', { householdId });
+  
+      const response = await this.post('search', { householdId })
+  
+      // If backend returns null or empty object when not found
+      if (!response || !response.id) {
+        return null
+      }
+  
+      return response
     } catch (error) {
-      console.error("Error searching for household:", error);
-      throw error;
+      // ✅ If it's a 404 response, just return null
+      if (error.response && error.response.status === 404) {
+        return null
+      }
+  
+      console.error('Error searching for household:', error)
+      return null // ✅ Don't throw here
     }
   }
+  
 }
 
 export default new HouseholdService();
