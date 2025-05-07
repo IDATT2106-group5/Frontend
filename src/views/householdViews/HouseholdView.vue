@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Copy, Edit, User, Home } from 'lucide-vue-next'
+import { Copy, Edit, Home } from 'lucide-vue-next'
 import { toast } from '@/components/ui/toast'
 
 import { useHouseholdStore } from '@/stores/HouseholdStore'
@@ -11,6 +11,7 @@ import AddMemberModal from '@/components/householdMainView/modals/AddMemberModal
 import InviteMemberModal from '@/components/householdMainView/modals/InviteMemberModal.vue'
 import EditHouseholdModal from '@/components/householdMainView/modals/EditHouseholdModal.vue'
 import ConfirmModal from '@/components/householdMainView/modals/ConfirmModal.vue'
+import NoHouseholdView from '@/views/householdViews/NoHouseholdView.vue'
 
 const router = useRouter()
 const houseStore = useHouseholdStore()
@@ -80,6 +81,24 @@ function restrictToNumbersOnly(e) {
   }
 }
 
+const acceptInvitation = async (invId) => {
+  try {
+    await houseStore.acceptInvitation(invId)
+    await houseStore.loadHouseholdData()
+    toast({ title: 'Invitasjon akseptert', description: 'Du har blitt med i husstanden.', variant: 'success' })
+  } catch {
+    toast({ title: 'Feil', description: 'Kunne ikke akseptere invitasjonen.', variant: 'destructive' })
+  }
+}
+const declineInvitation = async (invId) => {
+  try {
+    await houseStore.declineInvitation(invId)
+    toast({ title: 'Invitasjon avslått', description: 'Du har avslått invitasjonen.', variant: 'default' })
+  } catch {
+    toast({ title: 'Feil', description: 'Kunne ikke avslå invitasjonen.', variant: 'destructive' })
+  }
+}
+
 // Clean input value to ensure it contains only numbers
 function cleanInputValue(inputElement) {
   if (!inputElement) return;
@@ -137,8 +156,6 @@ async function handleDelete() {
   }
 }
 
-const goCreate = () => router.push('/household/create')
-
 // Join household functionality
 const searchForHousehold = async () => {
   joinError.value = ''
@@ -159,6 +176,13 @@ const searchForHousehold = async () => {
   if (isNaN(Number(joinHouseholdId.value)) || Number(joinHouseholdId.value) <= 0) {
     console.warn('⚠️ householdId is not a number or <= 0')
     joinError.value = 'Husstands-ID må være et positivt tall'
+    joinIsLoading.value = false
+    return
+  }
+
+  if (Number(joinHouseholdId.value) === Number(householdId.value)) {
+    console.warn('⚠️ User searched for their own household')
+    joinError.value = 'Dette er din nåværende husstand'
     joinIsLoading.value = false
     return
   }
@@ -196,6 +220,12 @@ const sendJoinRequest = async () => {
   joinError.value = ''
   joinSuccess.value = ''
 
+  if (isOwner.value) {
+    joinIsLoading.value = false
+    joinError.value = 'Du er eier av en husstand. Du må forlate din nåværende husstand før du kan bli med i en annen.'
+    return
+  }
+
   try {
     await houseStore.sendJoinRequest(foundHousehold.value.id)
     joinSuccess.value = 'Forespørsel om å bli med i husstand sendt!'
@@ -203,35 +233,13 @@ const sendJoinRequest = async () => {
     foundHousehold.value = null
   } catch (err) {
     console.error('Error sending join request:', err)
-    joinError.value = houseStore.error || 'Kunne ikke sende forespørsel om å bli med i husstand'
+    joinError.value = err.message || houseStore.error || 'Kunne ikke sende forespørsel om å bli med i husstand'
   } finally {
     joinIsLoading.value = false
   }
 }
-
-// Accept/decline invitation handlers
-const acceptInvitation = async (invId) => {
-  if (isOwner.value) {
-    return toast({ title: 'Ikke tillatt', description: 'Husstandseiere kan ikke akseptere invitasjoner.', variant: 'destructive' })
-  }
-  try {
-    await houseStore.acceptInvitation(invId)
-    await houseStore.loadHouseholdData()
-    toast({ title: 'Invitasjon akseptert', description: 'Du har blitt med i husstanden.', variant: 'success' })
-  } catch {
-    toast({ title: 'Feil', description: 'Kunne ikke akseptere invitasjonen.', variant: 'destructive' })
-  }
-}
-
-const declineInvitation = async (invId) => {
-  try {
-    await houseStore.declineInvitation(invId)
-    toast({ title: 'Invitasjon avslått', description: 'Du har avslått invitasjonen.', variant: 'default' })
-  } catch {
-    toast({ title: 'Feil', description: 'Kunne ikke avslå invitasjonen.', variant: 'destructive' })
-  }
-}
 </script>
+
 <template>
   <div class="min-h-screen bg-gray-100">
     <div class="max-w-3xl mx-auto p-6 space-y-4">
@@ -246,103 +254,8 @@ const declineInvitation = async (invId) => {
         {{ error }}
       </div>
 
-      <!-- No household: create/join + invitations -->
-      <div v-else-if="!hasHousehold" class="text-center py-16 bg-base">
-        <h2 class="text-3xl font-bold text-black mb-4">
-          Du er ikke medlem i en<br />
-          eksisterende husstand
-        </h2>
-        <p class="text-primary mb-8 font-medium">
-          Velg om du vil opprette en ny husstand<br />
-          eller bli med i en eksisterende
-        </p>
-
-        <div class="flex justify-center gap-12">
-          <div>
-            <h3 class="font-semibold text-lg mb-2">Opprett ny husstand</h3>
-            <button @click="goCreate" class="flex items-center gap-2 px-5 py-2 rounded-md bg-primary text-white font-medium shadow hover:opacity-90">
-              <span class="text-xl">+</span> Opprett husstand
-            </button>
-          </div>
-        </div>
-
-        <!-- Join Household Section -->
-        <div class="mt-10 max-w-md mx-auto">
-          <h2 class="text-xl font-bold mb-2">Søk om å bli med i et annet husstand</h2>
-          <p class="text-teal-800 mb-4">Skriv inn husstands-ID for å søke etter husstand:</p>
-          
-          <div class="space-y-4">
-            <div>
-              <label for="joinHouseholdId" class="block text-sm font-medium text-gray-700 mb-1">
-                Husstands ID
-              </label>
-              <input
-                v-model="joinHouseholdId"
-                id="joinHouseholdId"
-                type="text"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                @keydown="restrictToNumbersOnly"
-                @paste="handlePaste"
-                @input="$event.target.value = $event.target.value.replace(/[^\d]/g, '')"
-                @blur="onInputBlur"
-                class="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
-            </div>
-            
-            <button
-              @click="searchForHousehold"
-              class="w-full bg-teal-600 text-white py-2 rounded hover:bg-teal-700 transition"
-              :disabled="joinIsLoading"
-            >
-              <span v-if="joinIsLoading">Søker...</span>
-              <span v-else>Søk</span>
-            </button>
-
-            <div v-if="joinError" class="p-2 bg-red-50 border border-red-200 rounded">
-              <p class="text-red-600 text-sm">{{ joinError }}</p>
-            </div>
-            
-            <!-- Display found household info -->
-            <div v-if="foundHousehold && !requestSent" class="p-4 bg-white border rounded shadow-sm space-y-2">
-              <h3 class="text-lg font-semibold mb-2">Husstand funnet!</h3>
-              <p class="text-sm text-gray-700">Husstandsnavn: <span class="text-gray-900">{{ foundHousehold.name || 'Ukjent navn' }}</span></p>
-              <p class="text-sm text-gray-700">Husstands-ID: <span class="text-gray-900">{{ foundHousehold.id }}</span></p>
-
-              <button
-                @click="sendJoinRequest"
-                class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
-                :disabled="joinIsLoading"
-              >
-                <span v-if="joinIsLoading">Sender forespørsel...</span>
-                <span v-else>Send forespørsel om å bli med</span>
-              </button>
-            </div>
-
-            <div v-if="joinSuccess" class="p-2 bg-green-50 border border-green-200 rounded">
-              <p class="text-green-600 text-sm">{{ joinSuccess }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Invitations -->
-        <div class="max-w-md mx-auto mt-10">
-          <h3 class="text-xl font-semibold text-center mb-4">Invitasjoner mottatt</h3>
-          <div v-if="houseStore.receivedInvitations.length === 0" class="text-center text-gray-500 italic">
-            Ingen invitasjoner mottatt
-          </div>
-          <div v-for="inv in houseStore.receivedInvitations" :key="inv.id" class="bg-white rounded-md p-4 border border-gray-200 mb-4">
-            <div class="text-sm space-y-1 mb-2">
-              <p><strong>Husstands-ID:</strong> {{ inv.householdId }}</p>
-              <p><strong>Navn:</strong> {{ inv.householdName }}</p>
-            </div>
-            <div class="flex gap-2 justify-end">
-              <button @click="acceptInvitation(inv.id)" class="px-4 py-1 rounded bg-primary text-white hover:opacity-90">Aksepter</button>
-              <button @click="declineInvitation(inv.id)" class="px-4 py-1 rounded border border-gray-400 hover:bg-gray-100">Avslå</button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- No household view component -->
+      <NoHouseholdView v-else-if="!hasHousehold" />
 
       <!-- Household main content -->
       <div v-else>
@@ -374,116 +287,143 @@ const declineInvitation = async (invId) => {
 
         <hr class="border-gray-300 my-4" />
         <div class="flex space-x-4 border-b border-gray-200 mb-4">
-          <button @click="activeTab = 'members'" :class="activeTab === 'members' ? 'text-blue-600 border-b-2 border-blue-500 pb-2' : 'text-gray-500 pb-2 hover:text-gray-700'">
+          <button
+            @click="activeTab = 'members'"
+            :class="activeTab === 'members' ? 'text-blue-600 border-b-2 border-blue-500 pb-2' : 'text-gray-500 pb-2 hover:text-gray-700'"
+          >
             Se medlemmer
           </button>
-          <button @click="activeTab = 'search'" :class="activeTab === 'search' ? 'text-blue-600 border-b-2 border-blue-500 pb-2' : 'text-gray-500 pb-2 hover:text-gray-700'">
+          <button
+            @click="activeTab = 'search'"
+            :class="activeTab === 'search' ? 'text-blue-600 border-b-2 border-blue-500 pb-2' : 'text-gray-500 pb-2 hover:text-gray-700'"
+          >
             Søk husstand
           </button>
         </div>
 
-        <!-- Tab content with better spacing -->
+        <!-- Tab content -->
         <div class="mt-6">
-          <MembersTab v-if="activeTab === 'members'" @open-add="openAddMemberForm" @open-invite="openInviteForm" />
-          <div v-else-if="activeTab === 'search'" class="p-6 rounded-lg">
-            <!-- Join Household UI -->
-            <div class="flex flex-col items-center justify-center">
-              <h1 class="text-xl font-bold mb-2">Søk om å bli med i et annet husstand</h1>
-              <p class="text-teal-800 mb-4">Skriv inn husstands-ID for å søke etter husstand:</p>
-              
-              <div class="w-full max-w-md space-y-4">
-                <div>
-                  <label for="joinHouseholdId" class="block text-sm font-medium text-gray-700 mb-1">
-                    Husstands ID
-                  </label>
-                  <input
-                    v-model="joinHouseholdId"
-                    id="joinHouseholdId"
-                    type="text"
-                    inputmode="numeric"
-                    pattern="[0-9]*"
-                    @keydown="restrictToNumbersOnly"
-                    @paste="handlePaste"
-                    @input="$event.target.value = $event.target.value.replace(/[^\d]/g, '')"
-                    @blur="onInputBlur"
-                    class="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  />
-                </div>
-                
+          <MembersTab
+            v-if="activeTab === 'members'"
+            @open-add="openAddMemberForm"
+            @open-invite="openInviteForm"
+          />
+
+          <!-- SEARCH TAB (only when in a household) -->
+          <div v-else-if="activeTab === 'search'" class="p-6 rounded-lgspace-y-6">
+            <div class="text-center">
+              <h2 class="text-xl font-bold mb-2">Søk om å bli med i et annet husstand</h2>
+              <p class="text-teal-800 mb-4">Skriv inn husstands‑ID for å søke etter husstand:</p>
+              <!-- Warning for household owners -->
+              <p v-if="isOwner" class="text-orange-600 mb-4 font-medium">
+                Obs! Som hustandseier må du først forlate din nåværende husstand før du kan bli med i en annen.
+              </p>
+            </div>
+            <div class="max-w-md mx-auto space-y-4">
+              <div>
+                <label for="joinHouseholdId" class="block text-sm font-medium text-gray-700 mb-1">
+                  Husstands ID
+                </label>
+                <input
+                  v-model="joinHouseholdId"
+                  id="joinHouseholdId"
+                  type="text"
+                  inputmode="numeric"
+                  pattern="[0-9]*"
+                  @keydown="restrictToNumbersOnly"
+                  @paste="handlePaste"
+                  @input="$event.target.value = $event.target.value.replace(/[^\d]/g, '')"
+                  @blur="onInputBlur"
+                  class="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+              <button
+                @click="searchForHousehold"
+                class="w-full bg-gray-700 text-white py-2 rounded hover:bg-gray-800 transition"
+                :disabled="joinIsLoading"
+              >
+                <span v-if="joinIsLoading">Søker...</span>
+                <span v-else>Søk</span>
+              </button>
+              <div v-if="joinError" class="p-2 bg-red-50 border border-red-200 rounded">
+                <p class="text-red-600 text-sm">{{ joinError }}</p>
+              </div>
+
+              <div v-if="foundHousehold && !requestSent" class="p-4 bg-white border rounded shadow-sm space-y-2">
+                <h3 class="text-lg font-semibold mb-2">Husstand funnet!</h3>
+                <p class="text-sm text-gray-700">
+                  Husstandsnavn: <span class="text-gray-900">{{ foundHousehold.name || 'Ukjent navn' }}</span>
+                </p>
+                <p class="text-sm text-gray-700">
+                  Husstands‑ID: <span class="text-gray-900">{{ foundHousehold.id }}</span>
+                </p>
                 <button
-                  @click="searchForHousehold"
-                  class="w-full bg-teal-600 text-white py-2 rounded hover:bg-teal-700 transition"
-                  :disabled="joinIsLoading"
+                  @click="sendJoinRequest"
+                  class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
+                  :disabled="joinIsLoading || isOwner"
                 >
-                  <span v-if="joinIsLoading">Søker...</span>
-                  <span v-else>Søk</span>
+                  <span v-if="joinIsLoading">Sender forespørsel...</span>
+                  <span v-else-if="isOwner">Kan ikke sende forespørsel som eier</span>
+                  <span v-else>Send forespørsel om å bli med</span>
                 </button>
+              </div>
 
-                <div v-if="joinError" class="p-2 bg-red-50 border border-red-200 rounded">
-                  <p class="text-red-600 text-sm">{{ joinError }}</p>
+              <div v-if="joinSuccess" class="p-2 bg-green-50 border border-green-200 rounded">
+                <p class="text-green-600 text-sm">{{ joinSuccess }}</p>
+              </div>              
+              <!-- Invitations -->
+              <div class="max-w-md mx-auto">
+                <h3 class="text-xl font-semibold text-center mb-4">Invitasjoner mottatt</h3>
+                <div v-if="houseStore.receivedInvitations.length === 0" class="text-center text-gray-500 italic">
+                  Ingen invitasjoner mottatt
                 </div>
-                
-                <!-- Display found household info -->
-                <div v-if="foundHousehold && !requestSent" class="p-4 bg-white border rounded shadow-sm space-y-2">
-                  <h3 class="text-lg font-semibold mb-2">Husstand funnet!</h3>
-                  <p class="text-sm text-gray-700">Husstandsnavn: <span class="text-gray-900">{{ foundHousehold.name || 'Ukjent navn' }}</span></p>
-                  <p class="text-sm text-gray-700">Husstands-ID: <span class="text-gray-900">{{ foundHousehold.id }}</span></p>
-
-                  <button
-                    @click="sendJoinRequest"
-                    class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
-                    :disabled="joinIsLoading"
-                  >
-                    <span v-if="joinIsLoading">Sender forespørsel...</span>
-                    <span v-else>Send forespørsel om å bli med</span>
-                  </button>
-                </div>
-
-                <div v-if="joinSuccess" class="p-2 bg-green-50 border border-green-200 rounded">
-                  <p class="text-green-600 text-sm">{{ joinSuccess }}</p>
+                <div
+                  v-for="inv in houseStore.receivedInvitations"
+                  :key="inv.id"
+                  class="bg-white rounded-md p-4 border border-gray-200 mb-4"
+                >
+                  <div class="text-sm space-y-1 mb-2">
+                    <p><strong>Husstands‑ID:</strong> {{ inv.householdId }}</p>
+                    <p><strong>Navn:</strong> {{ inv.householdName }}</p>
+                  </div>
+                  <div class="flex gap-2 justify-end">
+                    <button
+                      @click="acceptInvitation(inv.id)"
+                      class="px-4 py-1 rounded bg-primary text-white hover:opacity-90"
+                    >Aksepter</button>
+                    <button
+                      @click="declineInvitation(inv.id)"
+                      class="px-4 py-1 rounded border border-gray-400 hover:bg-gray-100"
+                    >Avslå</button>
+                  </div>
                 </div>
               </div>
             </div>
-            
-            <!-- Invitations Received -->
-            <div class="mt-10">
-              <h3 class="text-xl font-semibold text-center mb-4">Invitasjoner mottatt</h3>
-              <div v-if="houseStore.receivedInvitations.length === 0" class="text-center text-gray-500 italic">
-                Ingen invitasjoner mottatt
-              </div>
-              <div
-                v-for="invitasjon in houseStore.receivedInvitations"
-                :key="invitasjon.id"
-                class="bg-white rounded-md p-4 max-w-md mx-auto border border-gray-200 mb-4"
-              >
-                <div class="text-sm space-y-1 mb-4">
-                  <p><strong>Husstands-ID:</strong> {{ invitasjon.householdId }}</p>
-                  <p><strong>Navn:</strong> {{ invitasjon.householdName }}</p>
-                </div>
-                <div class="flex gap-2 justify-end">
-                  <button
-                    @click="acceptInvitation(invitasjon.id)"
-                    class="px-4 py-1 rounded bg-primary text-white hover:opacity-90"
-                  >
-                    Aksepter
-                  </button>
-                  <button
-                    @click="declineInvitation(invitasjon.id)"
-                    class="px-4 py-1 rounded border border-gray-400 hover:bg-gray-100"
-                  >
-                    Avslå
-                  </button>
-                </div>
+          </div>
+
+          <!-- Received invitations -->
+          <div v-if="houseStore.receivedInvitations.length > 0" class="mt-8">
+            <h3 class="text-xl font-semibold text-center mb-4">Invitasjoner mottatt</h3>
+            <div
+              v-for="inv in houseStore.receivedInvitations"
+              :key="inv.id"
+              class="bg-white rounded-md p-4 border border-gray-200 mb-4"
+            >
+              <p><strong>Husstands‑ID:</strong> {{ inv.householdId }}</p>
+              <p><strong>Navn:</strong> {{ inv.householdName }}</p>
+              <div class="flex gap-2 justify-end mt-2">
+                <button @click="acceptInvitation(inv.id)" class="px-4 py-1 rounded bg-primary text-white hover:opacity-90">Aksepter</button>
+                <button @click="declineInvitation(inv.id)" class="px-4 py-1 rounded border border-gray-400 hover:bg-gray-100">Avslå</button>
               </div>
             </div>
           </div>
         </div>
 
+        <!-- Modals -->
         <AddMemberModal v-if="showAddForm" @close="showAddForm = false" />
         <InviteMemberModal v-if="showInviteForm" @close="showInviteForm = false" />
         <EditHouseholdModal v-if="showEditForm" @close="showEditForm = false" />
 
-        <!-- Confirmation Modals -->
         <ConfirmModal
           v-if="confirmDeleteOpen"
           title="Slett husstand"
