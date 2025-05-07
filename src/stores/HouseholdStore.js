@@ -541,27 +541,33 @@ export const useHouseholdStore = defineStore('household', {
      * @param {'ACCEPTED'|'REJECTED'} action - Action to perform.
      * @returns {Promise<void>}
      */
+    // in useHouseholdStore.actions
     async updateJoinRequestStatus(requestId, action) {
       try {
-        this.isLoading = true;
-        this._verifyOwnership();
+        this.isLoading = true
+        this._verifyOwnership()
 
         if (action === 'ACCEPTED') {
-          await RequestService.acceptJoinRequest(requestId);
-        } else if (action === 'REJECTED') {
-          await RequestService.declineJoinRequest(requestId);
+          // tell backend to accept
+          await RequestService.acceptJoinRequest(requestId)
         } else {
-          throw new Error('Ugyldig handling for forespørsel');
+          await RequestService.declineJoinRequest(requestId)
         }
 
-        const request = this.ownershipRequests.find(r => r.id === requestId);
-        if (request) request.status = action;
+        // update local status
+        const req = this.ownershipRequests.find(r => r.id === requestId)
+        if (req) req.status = action
+
+        // if they accepted, also add them as a member
+        if (action === 'ACCEPTED' && req.userId) {
+          await this.addUserToHousehold(req.userId)
+        }
+
       } catch (err) {
-        const actionText = action === 'ACCEPTED' ? 'godta' : 'avslå';
-        this.error = err.response?.data?.error || err.message || `Kunne ikke ${actionText} forespørsel`;
-        throw err;
+        this.error = err.message || `Kunne ikke ${action==='ACCEPTED'?'godta':'avslå'} forespørsel`
+        throw err
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
       }
     },
     /**

@@ -30,6 +30,24 @@ export default function useHousehold() {
   const openInviteForm = () => { showInviteForm.value = true }
   const openEditHouseholdForm = () => { showEditForm.value = true }
 
+  const deleteHousehold = async () => {
+    if (!confirm('Er du sikker på at du vil slette husstanden? Dette kan ikke angres.')) return
+    try {
+      await householdStore.deleteHousehold()
+      await householdStore.loadHouseholdData()
+    } catch (e) {
+    }
+  }
+
+  const leaveHousehold = async () => {
+    if (!confirm('Er du sikker på at du vil forlate husstanden?')) return
+    try {
+      await householdStore.leaveHousehold()
+      alert('Du har forlatt husstanden')
+      await householdStore.loadHouseholdData()
+    } catch (e) {
+    }
+  }
 
   return {
     isLoading,
@@ -44,6 +62,8 @@ export default function useHousehold() {
     showEditForm,
     openAddMemberForm,
     openInviteForm,
-    openEditHouseholdForm
+    openEditHouseholdForm,
+    deleteHousehold,
+    leaveHousehold
   }
 }

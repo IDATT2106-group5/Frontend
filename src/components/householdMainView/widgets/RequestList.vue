@@ -19,19 +19,14 @@ const displayedRequests = computed(() => {
   return store.ownershipRequests.slice(start, start + perPage)
 })
 
-const acceptRequestAndAddUser = async (request) => {
+const acceptRequestAndAddUser = async request => {
   try {
-    await store.updateJoinRequestStatus(request.id, 'ACCEPTED');
-
-    if (request.userId) {
-      await store.addUserToHousehold(request.userId);
-    } else {
-      console.warn('Bruker-ID mangler – kunne ikke legge til bruker i husstand.');
-    }
+    await store.updateJoinRequestStatus(request.id, 'ACCEPTED')
   } catch (err) {
-    console.error('Feil under godkjenning/legge til bruker:', err);
+    console.error('Feil under godkjenning/legge til bruker:', err)
   }
-};
+}
+
 </script>
 
 <template>
