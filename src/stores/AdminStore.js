@@ -51,22 +51,22 @@ export const useAdminStore = defineStore('admin', {
     },
 
     async inviteNewAdmin(adminData) {
-      this.userStore.isLoading = true
-      this.userStore.error = null
+      this.isLoading = true
+      this.error = null
       try {
         const response = await RegisterAdminService.inviteAdmin(adminData)
 
         if (response) {
-          console.log("[Response from Invite] ", response);
-          return true
+          console.log("[Response from Invite] ", response)
+          return response
         }
-        return false
+        return null
       } catch (error) {
-        console.error('[AdminStore] Failed to invite new admin:', err)
-        this.error = err.message || 'Noe gikk galt ved invitasjon av ny admin'
-        return false;
+        console.error('[AdminStore] Failed to invite new admin:', error)
+        this.error = error.message || 'Noe gikk galt ved invitasjon av ny admin'
+        throw error
       } finally {
-        this.userStore.isLoading = false
+        this.isLoading = false
       }
     }
   }
