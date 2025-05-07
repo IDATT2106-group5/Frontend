@@ -10,12 +10,12 @@
     </transition>
 
     <!-- Add the search bar -->
-    <div class="map-search-container">
+    <div class="map-search-container" v-if="!isAdminMode">
       <MapSearchBar />
     </div>
 
     <!-- Existing components with proper condition checks -->
-    <div class="closest-facility-container" v-if="!isLoadingMarkers && !markersLoadError">
+    <div class="closest-facility-container" v-if="!isLoadingMarkers && !markersLoadError && !isAdminMode">
       <ClosestFacilityFinder />
     </div>
 
@@ -34,7 +34,7 @@
     </div>
 
     <!-- Custom Layer Controls -->
-    <div class="layer-control-container" :class="{ collapsed: isLayerCollapsed }">
+    <div class="layer-control-container" :class="{ collapsed: isLayerCollapsed }" v-if="!isAdminMode">
       <Button
         v-if="isMobileView"
         @click="toggleLayerCollapse"
@@ -60,7 +60,7 @@
     </div>
 
     <!-- Marker Filter -->
-    <div class="marker-filter-container" :class="{ collapsed: isFilterCollapsed }">
+    <div class="marker-filter-container" :class="{ collapsed: isFilterCollapsed }" v-if="!isAdminMode">
       <Button
         v-if="isMobileView"
         @click="toggleFilterCollapse"
@@ -74,6 +74,7 @@
         <MarkerFilter v-if="!isLoadingMarkers && !markersLoadError" :isMobileView="isMobileView" />
       </div>
     </div>
+
   </div>
 </template>
 
@@ -91,14 +92,29 @@ import { useUserStore } from '@/stores/UserStore.js'
 import MapSearchBar from '@/components/map/MapSearchBar.vue';
 
 export default {
-  name: 'EmergencyMap',
+  name: 'MapView',
   components: {
     ClosestFacilityFinder,
     MarkerFilter,
     Button,
     MapSearchBar
   },
-  setup() {
+  props: {
+    center: {
+      type: Array,
+      default: () => [63.4305, 10.3951]
+    },
+    zoom: {
+      type: Number,
+      default: 13
+    },
+    isAdminMode: {
+      type: Boolean,
+      default: false
+    }
+  },
+  emits: ['map-ready', 'map-click'],
+  setup(props, { emit }) {
     const mapContainer = ref(null)
     const mapStore = useMapStore()
     const windowWidth = ref(window.innerWidth)
@@ -134,30 +150,43 @@ export default {
           console.log('Map initialized successfully')
           mapInitialized.value = true
 
-          // Process any stored positions that came in before map initialization
-          userPositions.value.forEach((position, userId) => {
-            const isCurrentUser = userId === 29
-            updateUserMarker(userId, position.longitude, position.latitude, isCurrentUser)
-          })
+          // Emit the map-ready event with the map instance
+          emit('map-ready', map.value);
 
-          // Only subscribe and fetch positions after map is ready
-          const householdId = 5
-          if (connected.value) {
-            console.log('Subscribing to household positions')
-            subscribeToPosition(householdId, handlePositionUpdate)
-          }
+          // If in admin mode, set up click handler directly on the Leaflet map
+          if (props.isAdminMode) {
+            console.log("Setting up admin mode click handler");
+            map.value.on('click', (e) => {
+              console.log("Leaflet map click:", e.latlng);
+              emit('map-click', e);
+            });
+          } else {
+            // Only process user positions if not in admin mode
+            // Process any stored positions that came in before map initialization
+            userPositions.value.forEach((position, userId) => {
+              const isCurrentUser = userId === userStore.user.id
+              updateUserMarker(userId, position.longitude, position.latitude, isCurrentUser)
+            })
 
-          // Fetch initial positions after map is ready
-          try {
-            const positions = await fetchHouseholdPositions()
-            if (Array.isArray(positions)) {
-              console.log(`Received ${positions.length} initial positions`)
-              positions.forEach((pos) => handlePositionUpdate(pos))
-            } else {
-              console.warn('Expected positions array but received:', positions)
+            // Only subscribe and fetch positions after map is ready
+            const householdId = 5
+            if (connected.value) {
+              console.log('Subscribing to household positions')
+              subscribeToPosition(householdId, handlePositionUpdate)
             }
-          } catch (error) {
-            console.error('Error fetching household positions:', error)
+
+            // Fetch initial positions after map is ready
+            try {
+              const positions = await fetchHouseholdPositions()
+              if (Array.isArray(positions)) {
+                console.log(`Received ${positions.length} initial positions`)
+                positions.forEach((pos) => handlePositionUpdate(pos))
+              } else {
+                console.warn('Expected positions array but received:', positions)
+              }
+            } catch (error) {
+              console.error('Error fetching household positions:', error)
+            }
           }
         }
       } catch (error) {
@@ -169,7 +198,7 @@ export default {
     })
 
     watch(connected, (isConnected) => {
-      if (isConnected) {
+      if (isConnected && !props.isAdminMode) {
         const householdId = 5
         subscribeToPosition(householdId, handlePositionUpdate)
       }
@@ -182,7 +211,7 @@ export default {
       // Remove all markers
       userMarkers.value.forEach((marker) => {
         if (map.value) {
-          map.removeLayer(marker)
+          map.value.removeLayer(marker)
         }
       })
 
@@ -191,6 +220,9 @@ export default {
     })
 
     const handlePositionUpdate = (positionData) => {
+      // Skip if in admin mode
+      if (props.isAdminMode) return;
+
       console.log('Handling position update:', positionData)
 
       if (!positionData) {
@@ -231,6 +263,9 @@ export default {
     }
 
     function updateUserMarker(userId, longitude, latitude, isCurrentUser = false) {
+      // Skip if in admin mode
+      if (props.isAdminMode) return;
+
       // First check if marker already exists
       if (userMarkers.value.has(userId)) {
         const marker = userMarkers.value.get(userId)
@@ -349,6 +384,7 @@ export default {
       map,
       userMarkers,
       userPositions,
+      isAdminMode: props.isAdminMode
     }
   },
 }

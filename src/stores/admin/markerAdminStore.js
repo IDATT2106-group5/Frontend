@@ -273,12 +273,20 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
      * Save marker (create or update)
      */
     async saveMarker() {
+      let success = false;
+
       if (this.isCreating) {
-        return await this.createMarker();
+        success = await this.createMarker();
       } else if (this.isEditing) {
-        return await this.updateMarker();
+        success = await this.updateMarker();
       }
-      return false;
+
+      if (success) {
+        // Refresh markers after saving to ensure we have the latest data
+        await this.fetchMarkers();
+      }
+
+      return success;
     },
 
     /**

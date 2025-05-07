@@ -54,7 +54,7 @@ class MarkerAdminService extends BaseService {
     try {
       // Format the request based on API expectations
       // Remove the id from the payload if it's included
-      const {  ...dataToUpdate } = markerData;
+      const { ...dataToUpdate } = markerData;
 
       // Format the request matching the MapIconRequestDto on the backend
       const requestData = {

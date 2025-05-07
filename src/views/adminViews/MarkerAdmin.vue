@@ -315,7 +315,9 @@
         ref="mapView"
         :center="mapCenter"
         :zoom="mapZoom"
+        :is-admin-mode="true"
         @map-ready="onMapReady"
+        @map-click="onMapClick"
       />
     </div>
   </div>
@@ -406,23 +408,37 @@ export default {
       map.value.on('click', onMapClick);
     };
 
+    // In MarkerAdmin.vue in the setup function
     const onMapClick = (e) => {
-      if (!isEditing.value && !isCreating.value) return;
+      console.log("Map click handler called:", e.latlng);
+
+      // Only proceed if in edit or create mode
+      if (!isEditing.value && !isCreating.value) {
+        console.log("Click ignored: not in edit or create mode");
+        return;
+      }
 
       const { lat, lng } = e.latlng;
 
-      // Update form data
+      console.log("Updating coordinates to:", lat, lng);
+
+      // Update form data with the new coordinates
+      markerFormData.value.latitude = lat;
+      markerFormData.value.longitude = lng;
+
+      // Also update through the store to ensure reactivity
       markerAdminStore.updateMarkerCoordinates(lat, lng);
 
       // Update or create temporary marker
       if (tempMarker.value) {
         tempMarker.value.setLatLng([lat, lng]);
+        console.log("Updated existing marker position");
       } else {
         const icon = createMarkerIcon(markerFormData.value.type);
         tempMarker.value = L.marker([lat, lng], { icon }).addTo(map.value);
+        console.log("Created new temporary marker");
       }
     };
-
     const createMarkerIcon = (type) => {
       // Get configuration for this marker type
       const config = markerConfigs[type];
@@ -508,6 +524,45 @@ export default {
         if (tempMarker.value) {
           tempMarker.value.remove();
           tempMarker.value = null;
+        }
+
+        // If we've successfully saved the marker, add it to the map immediately
+        if (map.value) {
+          // Get the marker data we just saved
+          const savedMarkerData = {
+            id: markerFormData.value.id,
+            type: markerFormData.value.type,
+            name: markerFormData.value.name || '',
+            address: `${markerFormData.value.address}, ${markerFormData.value.postalCode}, ${markerFormData.value.city}`,
+            lat: markerFormData.value.latitude,
+            lng: markerFormData.value.longitude,
+            description: markerFormData.value.description,
+            contactInfo: markerFormData.value.contactInfo,
+            openingHours: markerFormData.value.openingHours
+          };
+
+          // Find the marker type configuration
+          const markerType = markerTypes.value.find(t => t.id === savedMarkerData.type);
+
+          if (markerType) {
+            // Create icon for the saved marker
+            const icon = createMarkerIcon(savedMarkerData.type);
+
+            // Create and add the marker to the map
+            const marker = L.marker([savedMarkerData.lat, savedMarkerData.lng], { icon });
+
+            // Create popup for the marker
+            const popupContent = MarkerConfigService.createMarkerPopupContent(savedMarkerData);
+            marker.bindPopup(popupContent);
+
+            // Add the marker to the map
+            marker.addTo(map.value);
+
+            // Optionally: flash or highlight the marker to show it was saved
+            setTimeout(() => {
+              marker.openPopup();
+            }, 300);
+          }
         }
       }
     };
@@ -1057,7 +1112,6 @@ textarea.form-control {
   cursor: pointer;
 }
 
-/* Make the dropdown a bit wider to accommodate the icons */
 .filter-options {
   position: absolute;
   top: 100%;
