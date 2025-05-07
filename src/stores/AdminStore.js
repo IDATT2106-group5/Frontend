@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { useUserStore } from '@/stores/UserStore'
 import AdminService from '@/service/adminService'
-import IncidentService from '@/service/incidentService'
+import IncidentAdminService from '@/service/admin/incidentAdminService.js'
 
 export const useAdminStore = defineStore('admin', {
   state: () => ({
@@ -39,7 +39,7 @@ export const useAdminStore = defineStore('admin', {
       }
       try {
         this.isLoading = true
-        const data = await IncidentService.getAllIncidents()
+        const data = await IncidentAdminService.fetchAllIncidentsForAdmin()
         this.incidents = data
       } catch (err) {
         console.error('[AdminStore] Failed to fetch incidents:', err)

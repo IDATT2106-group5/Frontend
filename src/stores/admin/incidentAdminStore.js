@@ -1,10 +1,19 @@
-// src/stores/admin/incidentAdminStore.js
 import { defineStore } from 'pinia';
 import IncidentAdminService from '@/service/admin/incidentAdminService';
 import IncidentConfigService from '@/service/map/incidentConfigService';
 import ScenarioService from '@/service/scenarioService';
 
+/**
+ * @function useIncidentAdminStore
+ * @description Pinia store for managing incidents in the admin interface
+ * @returns {Object} Store instance with state, getters, and actions
+ */
 export const useIncidentAdminStore = defineStore('incidentAdmin', {
+  /**
+   * @property {Function} state
+   * @description Initial state of the store
+   * @returns {Object} State object containing incidents, form data, and UI state
+   */
   state: () => ({
     incidents: [],
     filteredIncidents: [],
@@ -15,24 +24,36 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
     isLoading: false,
     error: null,
     success: null,
+
+    /**
+     * @type {Incident} Form data for creating or editing an incident
+     */
     incidentFormData: {
       id: null,
       name: '',
       description: '',
-      severity: 'RED', // Default to critical level
+      severity: 'RED',
       latitude: 63.4305,
       longitude: 10.3951,
-      impactRadius: 7, // Default radius in km
+      impactRadius: 7,
       startedAt: new Date().toISOString(),
-      endedAt: null
+      endedAt: null,
+      scenarioId: null
     },
+
+    /** @type {boolean} Flag indicating if an incident is being edited */
     isEditing: false,
+
+    /** @type {boolean} Flag indicating if a new incident is being created */
     isCreating: false
   }),
 
+
   getters: {
     /**
-     * Get severity levels for the dropdown
+     * @function severityLevels
+     * @description Get severity levels for the dropdown
+     * @returns {Array<SeverityLevel>} Array of severity level objects with id and name
      */
     severityLevels() {
       const configs = IncidentConfigService.getSeverityLevels();
@@ -43,7 +64,9 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
     },
 
     /**
-     * Check if we have incidents
+     * @function hasIncidents
+     * @description Check if there are incidents in the store
+     * @returns {boolean} True if incidents exist, false otherwise
      */
     hasIncidents() {
       return this.incidents.length > 0;
@@ -52,7 +75,10 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
 
   actions: {
     /**
-     * Fetch all incidents for admin interface
+     * @async
+     * @function fetchIncidents
+     * @description Fetch all incidents for admin interface
+     * @returns {Promise<void>}
      */
     async fetchIncidents() {
       this.isLoading = true;
@@ -62,6 +88,7 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
         const incidents = await IncidentAdminService.fetchAllIncidentsForAdmin();
         this.incidents = incidents.map(incident => ({
           id: incident.id,
+          scenarioId: incident.scenarioId || incident.scenario_id || incident.scenario || null,
           name: incident.name || '',
           description: incident.description || '',
           severity: incident.severity || 'RED',
@@ -81,7 +108,9 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
     },
 
     /**
-     * Apply search and filters to incidents
+     * @function applyFilters
+     * @description Apply search and filters to incidents
+     * @returns {void}
      */
     applyFilters() {
       this.filteredIncidents = this.incidents.filter(incident => {
@@ -99,7 +128,10 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
     },
 
     /**
-     * Set search term and apply filters
+     * @function setSearchTerm
+     * @description Set search term and apply filters
+     * @param {string} term - The search term to set
+     * @returns {void}
      */
     setSearchTerm(term) {
       this.searchTerm = term;
@@ -107,7 +139,10 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
     },
 
     /**
-     * Set filter severity and apply filters
+     * @function setFilterSeverity
+     * @description Set filter severity and apply filters
+     * @param {string} severity - The severity level to filter by
+     * @returns {void}
      */
     setFilterSeverity(severity) {
       this.filterSeverity = severity;
@@ -115,11 +150,14 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
     },
 
     /**
-     * Reset form data for creating a new incident
+     * @function initNewIncident
+     * @description Reset form data for creating a new incident
+     * @returns {void}
      */
     initNewIncident() {
       this.incidentFormData = {
         id: null,
+        scenarioId: null,
         name: '',
         description: '',
         severity: 'RED',
@@ -136,11 +174,17 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
     },
 
     /**
-     * Load incident data into form for editing
+     * @function editIncident
+     * @description Load incident data into form for editing
+     * @param {Incident} incident - The incident to edit
+     * @returns {void}
      */
     editIncident(incident) {
+      const scenarioId = incident.scenarioId || null;
+
       this.incidentFormData = {
         id: incident.id,
+        scenarioId: scenarioId,
         name: incident.name || '',
         description: incident.description || '',
         severity: incident.severity || 'RED',
@@ -158,7 +202,10 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
     },
 
     /**
-     * Create a new incident
+     * @async
+     * @function createIncident
+     * @description Create a new incident
+     * @returns {Promise<boolean>} True if creation was successful, false otherwise
      */
     async createIncident() {
       this.isLoading = true;
@@ -184,7 +231,10 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
     },
 
     /**
-     * Update an existing incident
+     * @async
+     * @function updateIncident
+     * @description Update an existing incident
+     * @returns {Promise<boolean>} True if update was successful, false otherwise
      */
     async updateIncident() {
       this.isLoading = true;
@@ -210,7 +260,10 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
     },
 
     /**
-     * Save incident (create or update)
+     * @async
+     * @function saveIncident
+     * @description Save incident (create or update based on current mode)
+     * @returns {Promise<boolean>} True if save was successful, false otherwise
      */
     async saveIncident() {
       if (this.isCreating) {
@@ -222,7 +275,11 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
     },
 
     /**
-     * Delete an incident
+     * @async
+     * @function deleteIncident
+     * @description Delete an incident
+     * @param {string} id - ID of the incident to delete
+     * @returns {Promise<boolean>} True if deletion was successful, false otherwise
      */
     async deleteIncident(id) {
       this.isLoading = true;
@@ -253,7 +310,10 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
     },
 
     /**
-     * Fetch all scenarios
+     * @async
+     * @function fetchScenarios
+     * @description Fetch all scenarios
+     * @returns {Promise<void>}
      */
     async fetchScenarios() {
       try {
@@ -262,16 +322,26 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
         console.error('Kunne ikke hente scenarier:', error);
       }
     },
-    
+
     /**
-     * Set selected scenario ID
+     * @function setSelectedScenario
+     * @description Set selected scenario ID
+     * @param {string} id - ID of the selected scenario
+     * @returns {void}
      */
     setSelectedScenario(id) {
       this.selectedScenarioId = id;
+      if (this.incidentFormData) {
+        this.incidentFormData.scenarioId = id;
+      }
     },
 
     /**
-     * Update incident coordinates
+     * @function updateIncidentCoordinates
+     * @description Update incident coordinates
+     * @param {number} lat - Latitude value
+     * @param {number} lng - Longitude value
+     * @returns {void}
      */
     updateIncidentCoordinates(lat, lng) {
       this.incidentFormData.latitude = lat;
@@ -279,14 +349,19 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
     },
 
     /**
-     * Update incident radius
+     * @function updateIncidentRadius
+     * @description Update incident radius
+     * @param {number} radius - Radius value in kilometers
+     * @returns {void}
      */
     updateIncidentRadius(radius) {
       this.incidentFormData.impactRadius = radius;
     },
 
     /**
-     * Cancel editing/creating
+     * @function cancelEdit
+     * @description Cancel editing/creating
+     * @returns {void}
      */
     cancelEdit() {
       this.isEditing = false;
@@ -296,14 +371,18 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
     },
 
     /**
-     * Clear success message
+     * @function clearSuccess
+     * @description Clear success message
+     * @returns {void}
      */
     clearSuccess() {
       this.success = null;
     },
 
     /**
-     * Clear error message
+     * @function clearError
+     * @description Clear error message
+     * @returns {void}
      */
     clearError() {
       this.error = null;
