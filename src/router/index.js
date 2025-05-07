@@ -129,7 +129,7 @@ const router = createRouter({
     },
     {
       path: '/admin-scenarios',
-      name: 'ScenarioList',
+      name: 'AdminScenarioList',
       component: EditScenarioList
     },
     {
@@ -141,6 +141,11 @@ const router = createRouter({
       path: '/admin-scenarios/:id',
       name: 'EditScenario',
       component: ScenarioAdminView
+    },
+    {
+      path: '/scenarios',
+      name: 'ScenarioList',
+      component: ScenarioList
     },
     {
       path: '/before',
