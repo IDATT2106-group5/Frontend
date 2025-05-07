@@ -4,13 +4,16 @@ import InviteNewAdmin from "@/components/adminComponents/InviteNewAdmin.vue";
 import AdminUserOverview from "@/components/adminComponents/AdminUsersOverview.vue";
 import { useUserStore } from '@/stores/UserStore'
 import { useRouter } from 'vue-router'
+import { useAdminStore } from "@/stores/AdminStore";
 
 const router = useRouter()
 const userStore = useUserStore()
+const adminStore = useAdminStore()
 
 function handleInvite(adminData) {
   console.log('New admin invitation:', adminData);
-  // TODO: Add API logic here
+  const response = adminStore.inviteNewAdmin(adminData)
+  console.log(response)
 }
 
 onMounted(async () => {
