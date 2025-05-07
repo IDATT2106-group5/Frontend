@@ -2,10 +2,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useScenarioStore } from '@/stores/ScenarioStore'
-// Import Lucide icons
 import {
   AlertTriangle, AlertOctagon, Droplets, Flame, Wind,
-  Thermometer, Zap, ShieldAlert, Trash2
+  Thermometer, Zap, ShieldAlert, Trash2, Bomb, Waves
 } from 'lucide-vue-next'
 
 export default {
@@ -19,7 +18,9 @@ export default {
     Thermometer,
     Zap,
     ShieldAlert,
-    Trash2
+    Trash2,
+    Bomb,
+    Waves
   },
 
   setup() {
@@ -40,7 +41,9 @@ export default {
       { name: 'Wind', component: Wind },
       { name: 'Thermometer', component: Thermometer },
       { name: 'Zap', component: Zap },
-      { name: 'ShieldAlert', component: ShieldAlert }
+      { name: 'ShieldAlert', component: ShieldAlert },
+      { name: 'Bomb', component: Bomb },
+      { name: 'Wave', component: Waves },
     ]
 
     const scenarioId = computed(() => {
@@ -56,7 +59,7 @@ export default {
       description: '',
       toDo: '',
       packingList: '',
-      icon: 'AlertTriangle'
+      iconName: 'AlertTriangle',
     })
 
     // Load scenario data if editing
@@ -79,7 +82,7 @@ export default {
               description: selectedScenario.description,
               toDo: selectedScenario.toDo || '',
               packingList: selectedScenario.packingList || '',
-              icon: selectedScenario.icon || 'AlertTriangle'
+              iconName: selectedScenario.iconName || 'AlertTriangle'
             }
           } else {
             error.value = 'Scenario ikke funnet'
@@ -93,7 +96,7 @@ export default {
     })
 
     const selectIcon = (iconName) => {
-      scenarioForm.value.icon = iconName
+      scenarioForm.value.iconName = iconName
     }
 
     // Save or update scenario
@@ -107,7 +110,7 @@ export default {
           description: scenarioForm.value.description,
           toDo: scenarioForm.value.toDo,
           packingList: scenarioForm.value.packingList,
-          icon: scenarioForm.value.icon
+          iconName: scenarioForm.value.iconName
         }
 
         if (isEditing.value) {
@@ -225,7 +228,7 @@ export default {
             v-for="icon in availableIcons"
             :key="icon.name"
             :class="['flex flex-col items-center p-2 border rounded cursor-pointer transition-all duration-200',
-                    scenarioForm.icon === icon.name ? 'bg-blue-50 border-blue-500' : 'border-gray-200 hover:bg-gray-50']"
+                    scenarioForm.iconName === icon.name ? 'bg-blue-50 border-blue-500' : 'border-gray-200 hover:bg-gray-50']"
             @click="selectIcon(icon.name)"
           >
             <component :is="icon.component" size="20" />

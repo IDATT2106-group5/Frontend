@@ -151,7 +151,8 @@ const router = createRouter({
     {
       path: '/scenarios/:id',
       name: 'ScenarioInfo',
-      component: ScenarioInfo
+      component: ScenarioInfo,
+      props: true
     },
     {
       path: '/before',

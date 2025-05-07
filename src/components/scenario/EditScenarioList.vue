@@ -15,6 +15,7 @@ import {
   CirclePlus,
   Pencil,
   Map,
+  Bomb
 } from 'lucide-vue-next'
 
 export default {
@@ -44,6 +45,7 @@ export default {
       Thermometer,
       Zap,
       ShieldAlert,
+      Bomb
     }
 
     // Get the appropriate icon component
@@ -137,7 +139,7 @@ export default {
           </Button>
         </div>
         <div class="flex flex-col items-center justify-center h-full p-5 gap-2.5">
-          <component :is="getIconComponent(scenario.icon)" size="32" class="text-blue-500" />
+          <component :is="getIconComponent(scenario.iconName)" size="32" class="text-blue-500" />
           <h2 class="text-lg font-medium text-center m-0">{{ scenario.name }}</h2>
         </div>
       </div>
