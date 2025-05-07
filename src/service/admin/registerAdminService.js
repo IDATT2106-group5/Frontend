@@ -35,26 +35,28 @@ class RegisterAdminService extends BaseService {
       console.log('[RESPONSE] Admin invitation was successful');
       return response;
     } catch (error) {
-        if (error.response) {
-          const status = error.response.status;
-          const data = error.response.data;
+        if (error.status) {
 
-          if (status === 400) {
-            console.error('[ERROR] Invalid admin invitation data:', data.message || 'Validation failed');
-            throw new Error(data.message || 'Ugyldig invitasjonsdata. Vennligst sjekk informasjonen og prøv igjen.');
+          if (error.status === 400) {
+            if (error.message && error.message.includes('already exists')) {
+              console.error('[ERROR] User already exists');
+              throw new Error('En bruker med denne e-postadressen eksisterer allerede.');
+            } else {
+              throw new Error(error.message || 'Ugyldig invitasjonsdata. Vennligst sjekk informasjonen og prøv igjen.');
+            }
           }
 
-          if (status === 401 || status === 403) {
+          if (error.status === 401 || error.status === 403) {
             console.error('[ERROR] Unauthorized admin invitation attempt');
             throw new Error('Ugyldig token eller manglende rettigheter for invitasjon.');
           }
 
-          if (status === 409) {
+          if (error.status === 409) {
             console.error('[ERROR] User already exists');
             throw new Error('En bruker med denne e-postadressen eksisterer allerede.');
           }
 
-          if (status === 500) {
+          if (error.status === 500) {
             console.error('[ERROR] Server error during admin invitation:', error);
             throw new Error('En serverfeil oppstod. Vennligst prøv igjen senere.');
           }
