@@ -52,7 +52,7 @@ const adminButtons = computed(() => {
     { label: 'Aktive kriser' },
     { label: 'Kart markører' },
     { label: 'Nyhetshåndtering' },
-    { label: 'Scenarier', route: 'scenarios' },
+    { label: 'Scenarier', route: 'admin-scenarios' },
     { label: 'Gamification' },
   ]
 

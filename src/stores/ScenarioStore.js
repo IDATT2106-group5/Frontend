@@ -9,7 +9,7 @@ export const useScenarioStore = defineStore('scenario', {
     scenarios: [],
     loading: false,
     error: null,
-    selectedScenario: null
+    selectedScenario: null,
   }),
 
   getters: {
@@ -35,7 +35,7 @@ export const useScenarioStore = defineStore('scenario', {
      * Returns any error that occurred during scenario operations
      * @returns {Error|null} The error or null if no error occurred
      */
-    getError: (state) => state.error
+    getError: (state) => state.error,
   },
 
   actions: {
@@ -48,13 +48,35 @@ export const useScenarioStore = defineStore('scenario', {
       this.error = null
 
       try {
-        const response = await ScenarioService.getAllScenarios()
-        this.scenarios = response
+        this.scenarios = await ScenarioService.getAllScenarios()
       } catch (error) {
         console.error('[ScenarioStore] Failed to fetch scenarios:', error)
         this.error = error
       } finally {
         this.loading = false
+      }
+    },
+    /**
+     * Fetches a single scenario by its ID from the API
+     * @async
+     * @param {number} id - The ID of the scenario to fetch
+     * @returns {Promise<Object>} The fetched scenario
+     */
+    async fetchScenarioById(id) {
+      this.loading = true;
+      this.error = null;
+
+      try {
+        const scenario = await ScenarioService.getScenarioById(id);
+        // Update the selected scenario with the fetched data
+        this.selectedScenario = scenario;
+        return scenario;
+      } catch (error) {
+        console.error('[ScenarioStore] Failed to fetch scenario by ID:', error);
+        this.error = error;
+        throw error;
+      } finally {
+        this.loading = false;
       }
     },
 
@@ -63,7 +85,7 @@ export const useScenarioStore = defineStore('scenario', {
      * @param {number} id - The ID of the scenario to select
      */
     selectScenario(id) {
-      this.selectedScenario = this.scenarios.find(scenario => scenario.id === id) || null
+      this.selectedScenario = this.scenarios.find((scenario) => scenario.id === id) || null
     },
 
     /**
@@ -127,6 +149,6 @@ export const useScenarioStore = defineStore('scenario', {
       this.loading = false
       this.error = null
       this.selectedScenario = null
-    }
-  }
+    },
+  },
 })

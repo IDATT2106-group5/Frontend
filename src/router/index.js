@@ -29,6 +29,8 @@ import MarkerAdmin from '@/views/adminViews/MarkerAdmin.vue'
 import IncidentAdmin from '@/views/adminViews/IncidentAdmin.vue'
 import ScenarioList from '@/components/scenario/ScenarioList.vue'
 import ScenarioAdminView from '@/views/ScenarioAdminView.vue'
+import EditScenarioList from '@/components/scenario/EditScenarioList.vue'
+import ScenarioInfo from '@/components/scenario/ScenarioInfo.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -129,19 +131,30 @@ const router = createRouter({
       meta:{hideNavbar: true, hideFooter: true },
     },
     {
+      path: '/admin-scenarios',
+      name: 'AdminScenarioList',
+      component: EditScenarioList
+    },
+    {
+      path: '/admin-scenarios/new',
+      name: 'CreateScenario',
+      component: ScenarioAdminView
+    },
+    {
+      path: '/admin-scenarios/:id',
+      name: 'EditScenario',
+      component: ScenarioAdminView
+    },
+    {
       path: '/scenarios',
       name: 'ScenarioList',
       component: ScenarioList
     },
     {
-      path: '/scenarios/new',
-      name: 'CreateScenario',
-      component: ScenarioAdminView
-    },
-    {
       path: '/scenarios/:id',
-      name: 'EditScenario',
-      component: ScenarioAdminView
+      name: 'ScenarioInfo',
+      component: ScenarioInfo,
+      props: true
     },
     {
       path: '/before',

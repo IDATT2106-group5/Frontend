@@ -7,6 +7,8 @@ export default function useWebSocket() {
   const notifications = ref([])
   const notificationCount = ref(0)
   const connected = ref(false)
+  const showIncidentPopup = ref(false)
+  const currentIncident = ref(null)
   const webSocketService = new WebSocketService()
   const userStore = useUserStore()
   const householdStore = useHouseholdStore()
@@ -17,7 +19,6 @@ export default function useWebSocket() {
     }
   })
 
-  // Watch for user data to become available
   watch(
     () => userStore.user,
     (newUser) => {
@@ -27,11 +28,10 @@ export default function useWebSocket() {
     },
   )
 
-
   async function initWebSocket() {
     try {
       if (!householdStore.currentHousehold) {
-        await householdStore.checkCurrentHousehold();
+        await householdStore.checkCurrentHousehold()
       }
 
       webSocketService.init({
@@ -47,17 +47,26 @@ export default function useWebSocket() {
         onDisconnected: () => {
           connected.value = false
         },
-        onNotification: () => {
+        onNotification: (message) => {
+          console.log('Notification received', message)
           if (userStore.user?.id) {
             fetchNotifications(userStore.user.id)
           }
-        },
-        onPositionUpdate: (position) => {
-          console.log('Received position update:', position)
+          if (message.type === 'INCIDENT') {
+            currentIncident.value = message
+            showIncidentPopup.value = true
+          }
         },
       })
     } catch (error) {
       console.error('Failed to initialize WebSocket:', error)
+    }
+  }
+
+  function closeIncidentPopup() {
+    showIncidentPopup.value = false;
+    if (currentIncident.value) {
+      currentIncident.value = null;
     }
   }
 
@@ -153,5 +162,8 @@ export default function useWebSocket() {
     subscribeToPosition,
     updatePosition,
     fetchHouseholdPositions,
+    showIncidentPopup,
+    currentIncident,
+    closeIncidentPopup,
   }
 }

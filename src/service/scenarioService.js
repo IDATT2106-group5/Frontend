@@ -26,6 +26,21 @@ class ScenarioService extends BaseService {
       throw error
     }
   }
+  /**
+   * Retrieves a specific scenario by its ID
+   * @async
+   * @param {number} id - The unique identifier of the scenario to retrieve
+   * @returns {Promise<Object>} Promise resolving to the scenario object
+   * @throws {Error} If the API request fails
+   */
+  async getScenarioById(id) {
+    try {
+      return await this.get(`${id}`)
+    } catch (error) {
+      console.error('[ScenarioService] Failed to fetch scenario by ID:', error)
+      throw error
+    }
+  }
 
   /**
    * Creates a new scenario in the system
@@ -53,7 +68,7 @@ class ScenarioService extends BaseService {
    */
   async updateScenario(id, scenarioData) {
     try {
-      return await this.put(`/${id}`, scenarioData)
+      return await this.put(`${id}`, scenarioData)
     } catch (error) {
       console.error('[ScenarioService] Failed to update scenario:', error)
       throw error
