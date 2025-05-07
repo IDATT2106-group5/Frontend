@@ -11,19 +11,28 @@ const error = ref('')
 const loading = ref(false)
 
 async function invite() {
-  if (!email.value.trim()) {
+  error.value = ''
+
+  if (!email.value.trim() || !validateEmail(email.value)) {
     error.value = 'Vennligst oppgi en gyldig e-postadresse'
     return
   }
 
-  if (!validateEmail(email.value)) {
-    error.value = 'Vennligst oppgi en gyldig e-postadresse'
+  const alreadyInvited = store.sentInvitations
+    .some(inv => inv.email.toLowerCase() === email.value.trim().toLowerCase() && inv.status === 'PENDING')
+  if (alreadyInvited) {
+    error.value = 'Du har allerede sendt en invitasjon til denne e‑posten'
+    return
+  }
+
+  const alreadyMember = store.members.registered
+    .some(m => m.email.toLowerCase() === email.value.trim().toLowerCase())
+  if (alreadyMember) {
+    error.value = 'Denne brukeren er allerede medlem av husstanden'
     return
   }
 
   loading.value = true
-  error.value = ''
-
   try {
     await store.inviteMember(email.value)
 
@@ -33,15 +42,15 @@ async function invite() {
       variant: 'success'
     })
 
-    emit('close')
+    const emit = defineEmits(['close','invite-error'])
   } catch (e) {
-    const message = String(e)
-
-    if (message.includes('User with email not found')) {
-      error.value = 'Invitasjonen feilet. Det finnes ingen registrert bruker med denne e-postadressen.'
+    const backendMsg = e.response?.data || ''
+    if (backendMsg.includes('User with email not found')) {
+      error.value = 'Invitasjonen feilet. Det finnes ingen registrert bruker med denne e‑postadressen.'
     } else {
-      error.value = 'Invitasjonen feilet. Det finnes ingen registrert bruker med denne e-postadressen'
+      error.value = 'Invitasjonen feilet. Prøv igjen senere.'
     }
+    emit('invite-error', error.value)
   } finally {
     loading.value = false
   }
