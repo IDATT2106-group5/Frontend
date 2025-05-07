@@ -12,7 +12,14 @@ class MarkerService extends BaseService {
   defaultLng = 10.3951;
   defaultRadius = 10; // 10 km radius if no map bounds
 
-  // Calculate distance between two points in km (Haversine formula)
+  /**
+   * Calculate distance between two points using the Haversine formula
+   * @param {number} lat1 - First point latitude
+   * @param {number} lon1 - First point longitude
+   * @param {number} lat2 - Second point latitude
+   * @param {number} lon2 - Second point longitude
+   * @returns {number} Distance in kilometers
+   */
   calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371; // Radius of the earth in km
     const dLat = this.deg2rad(lat2 - lat1);
@@ -22,8 +29,7 @@ class MarkerService extends BaseService {
       Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) *
       Math.sin(dLon/2) * Math.sin(dLon/2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const distance = R * c; // Distance in km
-    return distance;
+    return R * c; // Distance in km
   }
 
   deg2rad(deg) {
@@ -121,6 +127,52 @@ class MarkerService extends BaseService {
     } catch (error) {
       console.error('Error fetching all markers:', error);
       throw error; // Re-throw to let caller handle the error
+    }
+  }
+
+  /**
+   * Find the closest marker of a specific type
+   * @param {number} lat - User's current latitude
+   * @param {number} lng - User's current longitude
+   * @param {string} type - Optional marker type (e.g., 'SHELTER')
+   * @returns {Promise<Object>} - The closest marker data
+   */
+  async findClosestMarker(lat, lng, type = null) {
+    try {
+      const params = {
+        latitude: lat,
+        longitude: lng
+      };
+
+      if (type) {
+        params.type = type;
+      }
+
+      const response = await this.get('closest', { params });
+
+      if (response) {
+        // Get marker configurations to access Norwegian names
+        const markerConfigService = await import('./markerConfigService').then(m => m.default);
+        const markerConfigs = markerConfigService.getMarkerConfigs();
+
+        // Transform response to match marker format expected by the UI
+        return {
+          id: response.id,
+          name: markerConfigs[response.type]?.norwegianName || response.type,
+          address: response.address || '',
+          lat: response.latitude,
+          lng: response.longitude,
+          description: response.description || '',
+          opening_hours: response.openingHours || '',
+          contact_info: response.contactInfo || '',
+          type: response.type,
+          distance: this.calculateDistance(lat, lng, response.latitude, response.longitude)
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Error finding closest marker:', error);
+      throw error;
     }
   }
 

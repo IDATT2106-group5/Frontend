@@ -1,9 +1,10 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { Apple, Droplet, Hammer, Hourglass, Package, Pill } from 'lucide-vue-next'
+import { Apple, Droplet, Hammer, Hourglass, Package, Pill, CircleAlert } from 'lucide-vue-next'
 import { RouterLink, useRouter } from 'vue-router'
 import { useStorageStore } from '@/stores/StorageStore'
 import { useHouseholdStore } from '@/stores/HouseholdStore'
+import StorageAdvice from '@/components/storageComponents/StorageAdvice.vue'
 
 /**
  * Storage Dashboard Component
@@ -12,20 +13,18 @@ import { useHouseholdStore } from '@/stores/HouseholdStore'
  * showing available resources, self-sufficiency days, and expiration dates.
  */
 
-// Access stores
 const storageStore = useStorageStore()
 const householdStore = useHouseholdStore()
 const router = useRouter()
 
-// State to track loading state
 const isLoading = ref(true)
 const hasValidHousehold = ref(false)
 
 /**
  * Constants for daily needs per person according to emergency preparedness standards
  */
-const DAILY_CALORIES_NEEDED = 2000 // calories per day per person
-const DAILY_WATER_NEEDED = 3 // liters per day per person
+const DAILY_CALORIES_NEEDED = 2000
+const DAILY_WATER_NEEDED = 3
 
 /**
  * Computed values based on household size
@@ -103,7 +102,7 @@ const remainingDays = computed(() => Math.min(foodDays.value, waterDays.value))
  */
 const overallProgress = computed(() => {
   const progress = (remainingDays.value / 7) * 100
-  return Math.min(Math.round(progress), 100) // Cap at 100%
+  return Math.min(Math.round(progress), 100)
 })
 
 /**
@@ -112,7 +111,7 @@ const overallProgress = computed(() => {
 const progressColor = computed(() => {
   if (overallProgress.value >= 100) return 'bg-green-500'
   if (overallProgress.value >= 70) return 'bg-yellow-500'
-  return 'bg-primary' // Default color
+  return 'bg-primary'
 })
 
 /**
@@ -239,7 +238,6 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error('Error initializing storage dashboard:', error)
-    // Handle error case, redirect if no household is found
     await router.replace('/household')
   } finally {
     isLoading.value = false
@@ -304,7 +302,9 @@ onMounted(async () => {
           <span class="md:hidden font-medium">Selvforsynt i:</span>
           <div class="flex items-center">
             <span>{{ item.selfSufficient }}</span>
-            <span v-if="item.alert" class="text-red-500 ml-2">•</span>
+            <span v-if="item.alert" class="text-red-500 ml-2">
+              <CircleAlert class="h-4 w-4 md:h-5 md:w-5" />
+            </span>
           </div>
         </div>
 
@@ -328,13 +328,23 @@ onMounted(async () => {
     <div class="border rounded-lg p-4 md:p-6">
       <h2 class="text-lg md:text-xl font-semibold mb-4 border-b pb-2 text-left">Beredskapsråd</h2>
       <p class="text-sm md:text-base text-left">
-        DSB anbefaler at alle husstander bør være selvforsynte i minst 7 dager. Basert på ditt
-        lager, har du beredskap for <strong>{{ remainingDays }} dager</strong>.
-        <span v-if="remainingDays < 7" class="text-red-500">
-          Du bør vurdere å fylle på ditt lager av
-          {{ foodDays.value <= waterDays.value ? 'mat' : 'vann' }}.
+          DSB anbefaler at alle husstander bør være selvforsynte i minst 7 dager. Basert på ditt
+          lager, har du beredskap for <strong>{{ remainingDays }} dager</strong>.
+        <span v-if="foodDays < 7 || waterDays < 7" class="text-red-500 font-bold">
+          Du bør fylle på ditt lager av
+          {{
+            foodDays < 7 && waterDays < 7
+              ? 'vann og mat'
+              : foodDays < 7
+                ? 'mat'
+                : 'vann'
+          }}.
         </span>
       </p>
+      <h3 class="text-sm md:text-base font-medium text-left mt-8 mb-4">
+        DSB anbefaler at alle husstander bør ha følgende i sitt lager:
+      </h3>
+      <StorageAdvice />
     </div>
   </div>
 </template>

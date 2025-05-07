@@ -1,6 +1,6 @@
 <script setup>
 import { inject, ref } from 'vue'
-import { useHouseholdStore } from '@/stores/HouseholdStore'
+import { useHouseholdStore } from '@/stores/HouseholdStore.js'
 import { ShoppingBasket, Apple, Droplet, Pill, Package, Hammer, UsersRound, Menu } from 'lucide-vue-next'
 
 /**
@@ -43,7 +43,6 @@ const onNavItemClick = (category) => {
 <template>
   <header class="bg-white text-black px-4 sm:px-8 py-4 sm:py-6 shadow-md">
     <nav class="flex justify-between items-center relative">
-      <!-- Left side: Main navigation (desktop) -->
       <div class="hidden sm:flex gap-6 items-center text-sm font-medium">
         <a href="#" @click.prevent="onNavItemClick('all')" class="flex items-center gap-2 hover:underline transition-transform transform hover:scale-105 active:scale-95">
           <ShoppingBasket class="w-5 h-5 transition-colors duration-300"
@@ -77,18 +76,15 @@ const onNavItemClick = (category) => {
         </a>
       </div>
 
-      <!-- Right side: Medlemmer -->
       <div class="flex items-center gap-2 font-small">
         <UsersRound class="w-5 h-5 sm:w-5 sm:h-5 text-black" />
           Antall medlemmer i husstand: {{ householdStore.totalMemberCount }}
       </div>
 
-      <!-- Hamburger menu (mobile) - now on right side -->
       <button @click="isMenuOpen = !isMenuOpen" class="sm:hidden focus:outline-none ml-auto">
         <Menu class="w-6 h-6 text-black" />
       </button>
 
-      <!-- Mobile menu - full dropdown with all options -->
       <div v-if="isMenuOpen" class="absolute top-full right-0 w-full bg-white shadow-md sm:hidden z-50">
         <div class="flex flex-col px-4 py-4 gap-4 text-sm font-medium">
           <a href="#" @click.prevent="onNavItemClick('all')" class="flex items-center gap-2 hover:underline">

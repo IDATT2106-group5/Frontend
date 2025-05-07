@@ -157,20 +157,25 @@ class MarkerConfigService {
   }
 
   /**
-   * Create HTML content for marker popup
+   * Create marker popup content with a route button
    * @param {Object} markerData - Marker data
-   * @returns {string} HTML content for the popup
+   * @returns {string} HTML content for popup
    */
   createMarkerPopupContent(markerData) {
     return `
-      <div class="marker-popup">
-        <h3><strong>${markerData.name || ''}</strong></h3>
-        ${markerData.address ? `<p><strong>Adresse:</strong> ${markerData.address}</p>` : ''}
-        ${markerData.opening_hours ? `<p><strong>Åpningstider:</strong> ${markerData.opening_hours}</p>` : ''}
-        ${markerData.contact_info ? `<p><strong>Kontakt:</strong> ${markerData.contact_info}</p>` : ''}
-        ${markerData.description ? `<p><strong>Beskrivelse:</strong> ${markerData.description}</p>` : ''}
+    <div class="marker-popup">
+      <h3><strong>${markerData.name || ''}</strong></h3>
+      ${markerData.address ? `<p><strong>Adresse:</strong> ${markerData.address}</p>` : ''}
+      ${markerData.opening_hours ? `<p><strong>Åpningstider:</strong> ${markerData.opening_hours}</p>` : ''}
+      ${markerData.contact_info ? `<p><strong>Kontakt:</strong> ${markerData.contact_info}</p>` : ''}
+      ${markerData.description ? `<p><strong>Beskrivelse:</strong> ${markerData.description}</p>` : ''}
+      <div class="marker-popup-actions">
+        <button class="marker-route-button" onclick="window.createRouteToMarker(${JSON.stringify(markerData).replace(/"/g, '&quot;')})">
+          Vis rute hit
+        </button>
       </div>
-    `;
+    </div>
+  `;
   }
 }
 

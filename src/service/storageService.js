@@ -1,11 +1,25 @@
 import BaseService from '@/service/baseService';
 
+/**
+ * Service for handling storage related API operations such as
+ * fetching, adding, updating, and deleting household storage items.
+ * Extends the BaseService class to use pre defined HTTP methods.
+ */
 class StorageService extends BaseService {
+  /**
+   * Initializes the storage service with the '/storage' base path.
+   */
   constructor() {
     super('/storage');
   }
 
-  // Get all storage items for a household
+  /**
+   * Fetches all storage items for a specific household.
+   *
+   * @param {string} householdId  The ID of the household.
+   * @returns {Promise<Array<Object>>} Promise resolving to list of storage items.
+   * @throws {Error} If the request fails.
+   */
   async getStorageItemsByHousehold(householdId) {
     try {
       const response = await this.get(`household/${householdId}`);
@@ -16,7 +30,14 @@ class StorageService extends BaseService {
     }
   }
 
-  // Get storage items by household and type
+  /**
+   * Fetches storage items for a household filtered by item type.
+   *
+   * @param {string} householdId  The ID of the household.
+   * @param {string} itemType  The type of items to fetch (e.g. FOOD, LIQUIDS).
+   * @returns {Promise<Array<Object>>} Promise resolving to filtered storage items.
+   * @throws {Error} If the request fails.
+   */
   async getStorageItemsByType(householdId, itemType) {
     try {
       const response = await this.get(`household/${householdId}/type/${itemType}`);
@@ -27,10 +48,17 @@ class StorageService extends BaseService {
     }
   }
 
-  // Get items that are expiring soon
+  /**
+   * Fetches items that expire before a specified date.
+   *
+   * @param {string} householdId  The ID of the household.
+   * @param {Date} beforeDate  Date before which items expire.
+   * @returns {Promise<Array<Object>>} Promise resolving to expiring items.
+   * @throws {Error} If the request fails.
+   */
   async getExpiringItems(householdId, beforeDate) {
     try {
-      // Format date as ISO string for the API
+
       const formattedDate = beforeDate.toISOString();
       const response = await this.get(`household/${householdId}/expiring?before=${formattedDate}`);
       return response;
@@ -40,10 +68,18 @@ class StorageService extends BaseService {
     }
   }
 
-  // Add a new item to storage
+  /**
+   * Adds a new item to the household's storage.
+   *
+   * @param {string} householdId  The ID of the household.
+   * @param {string} itemId  The ID of the item to add.
+   * @param {{ unit: string, amount: number, expirationDate?: string }} data  Item data.
+   * @returns {Promise<Object>} Promise resolving to the added item response.
+   * @throws {Error} If the request fails.
+   */
   async addItemToStorage(householdId, itemId, data) {
     try {
-      // Create a properly formatted date string that the backend can parse
+
       let formattedDate = null;
       if (data.expirationDate) {
         const date = new Date(data.expirationDate);
@@ -59,8 +95,6 @@ class StorageService extends BaseService {
         expirationDate: formattedDate
       };
 
-      console.log('Sending formatted data to backend:', payload);
-
       const response = await this.post(`household/${householdId}/item/${itemId}`, payload);
       return response;
     } catch (error) {
@@ -69,7 +103,13 @@ class StorageService extends BaseService {
     }
   }
 
-  // Remove an item from storage
+  /**
+   * Removes an item from storage.
+   *
+   * @param {string} storageItemId  ID of the storage item to remove.
+   * @returns {Promise<Object>} Promise resolving to the delete response.
+   * @throws {Error} If the request fails.
+   */
   async removeItemFromStorage(storageItemId) {
     try {
       const response = await this.post(`${storageItemId}`);
@@ -80,36 +120,21 @@ class StorageService extends BaseService {
     }
   }
 
-  // Update a storage item
+    /**
+   * Updates an existing storage item with new data.
+   *
+   * @param {string} storageItemId  ID of the storage item to update.
+   * @param {{ unit: string, amount: number, expirationDate: string }} data  Updated item data.
+   * @returns {Promise<Object>} Promise resolving to the updated item response.
+   * @throws {Error} If the request fails.
+   */
   async updateStorageItem(storageItemId, data) {
     try {
-      // Create a formatted date string that Java's LocalDateTime.parse() can understand
-      let formattedDate = null;
-      if (data.expirationDate) {
-        // Check if it's already a Date object or needs to be converted
-        const date = data.expirationDate instanceof Date ?
-          data.expirationDate :
-          new Date(data.expirationDate);
-
-        // Format in a way that Java's LocalDateTime.parse() can handle
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        const seconds = String(date.getSeconds()).padStart(2, '0');
-
-        // Format without timezone info, as LocalDateTime expects
-        formattedDate = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-      }
-
       const payload = {
         unit: data.unit,
         amount: data.amount,
-        expirationDate: formattedDate
+        expirationDate: data.expirationDate
       };
-
-      console.log("Data: ", payload);
 
       const response = await this.put(`${storageItemId}`, payload);
       return response;

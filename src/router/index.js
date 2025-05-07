@@ -18,11 +18,13 @@ import BeforeView from '@/views/informationViews/BeforeView.vue'
 import UnderView from '@/views/informationViews/UnderView.vue'
 import AfterView from '@/views/informationViews/AfterView.vue'
 import MapView from '@/views/mapView/MapView.vue'
+import AdminRegisterView from '@/views/adminViews/AdminRegisterView.vue'
 import RequestPasswordView from '@/views/login/RequestResetView.vue'
 import ResetPasswordConfirmView from '@/views/login/ResetPasswordConfirmView.vue'
 import AdminDashboardView from '@/views/adminViews/AdminDashboardView.vue'
 import notAuthorizedView from '@/views/mainViews/notAuthorizedView.vue'
 import PersonVern from '@/views/mainViews/PersonVern.vue'
+import AdminUserView from '@/views/adminViews/AdminUsersView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -65,6 +67,12 @@ const router = createRouter({
       path: '/admin-dashboard',
       name: 'admin-dashboard',
       component: AdminDashboardView,
+      meta: { requiresAdmin: true },
+    },
+    {
+      path: '/admin-users',
+      name: 'admin-users',
+      component: AdminUserView,
       meta: { requiresAdmin: true },
     },
     {
@@ -146,14 +154,28 @@ const router = createRouter({
         }
         return { email: route.query.email };
       },
-      meta:{hideNavbar: true },
-
+      meta:{hideNavbar: true, hideFooter: true },
     },
     {
       path: '/map',
       name: 'map',
       component: MapView,
-    }
+    },
+    {
+      path: '/admin-registration',
+      name: 'admin-registration',
+      component: AdminRegisterView,
+      props: (route) => {
+        if (!route.query.email) {
+          return { emailMissing: true };
+        }
+        if (!route.query.token) {
+          return { tokenMissing: true }
+        }
+        return { email: route.query.email, token: route.query.token };
+      },
+      meta:{hideNavbar: true, hideFooter: true },
+    },
   ],
 })
 
@@ -165,7 +187,7 @@ router.beforeEach(async (to, from, next) => {
       await userStore.fetchUser()
     } catch (error) {
       console.error('Feil ved henting av brukerdata:', error)
-      userStore.logout() 
+      userStore.logout()
       return next('/login')
     }
   }
