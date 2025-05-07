@@ -88,14 +88,7 @@ import useWebSocket from '@/service/websocketComposable.js'
 import L from 'leaflet'
 import ClosestFacilityFinder from '@/components/map/ClosestFacilityFinder.vue'
 import { useUserStore } from '@/stores/UserStore.js'
-import { onMounted, ref, onUnmounted, computed } from 'vue';
-import { useMapStore } from '@/stores/map/mapStore';
-import { storeToRefs } from 'pinia';
-import MarkerFilter from '@/components/map/MarkerFilter.vue';
-import Button from '@/components/ui/button/Button.vue';
 import MapSearchBar from '@/components/map/MapSearchBar.vue';
-import 'leaflet/dist/leaflet.css';
-import ClosestFacilityFinder from "@/components/map/ClosestFacilityFinder.vue";
 
 export default {
   name: 'EmergencyMap',
