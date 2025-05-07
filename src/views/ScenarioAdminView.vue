@@ -117,7 +117,7 @@ export default {
         }
 
         // Redirect back to scenarios list
-        router.push('/scenarios')
+        router.push('/admin-scenarios')
       } catch (err) {
         error.value = err.message || 'Feil ved lagring av scenario'
         loading.value = false
@@ -126,7 +126,7 @@ export default {
 
     // Navigate back to scenarios list
     const goBack = () => {
-      router.push('/scenarios')
+      router.push('/admin-scenarios')
     }
 
     // Show delete confirmation modal
@@ -139,7 +139,7 @@ export default {
       loading.value = true
       try {
         await scenarioStore.deleteScenario(scenarioId.value)
-        router.push('/scenarios')
+        router.push('/admin-scenarios')
       } catch (err) {
         error.value = err.message || 'Feil ved sletting av scenario'
         loading.value = false

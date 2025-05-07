@@ -25,8 +25,9 @@ import AdminDashboardView from '@/views/adminViews/AdminDashboardView.vue'
 import notAuthorizedView from '@/views/mainViews/notAuthorizedView.vue'
 import PersonVern from '@/views/mainViews/PersonVern.vue'
 import AdminUserView from '@/views/adminViews/AdminUsersView.vue'
-import EditScenarioList from '@/components/scenario/EditScenarioList.vue'
+import ScenarioList from '@/components/scenario/ScenarioList.vue'
 import ScenarioAdminView from '@/views/ScenarioAdminView.vue'
+import EditScenarioList from '@/components/scenario/EditScenarioList.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -127,17 +128,17 @@ const router = createRouter({
       meta:{hideNavbar: true, hideFooter: true },
     },
     {
-      path: '/scenarios',
-      name: 'EditScenarioList',
+      path: '/admin-scenarios',
+      name: 'ScenarioList',
       component: EditScenarioList
     },
     {
-      path: '/scenarios/new',
+      path: '/admin-scenarios/new',
       name: 'CreateScenario',
       component: ScenarioAdminView
     },
     {
-      path: '/scenarios/:id',
+      path: '/admin-scenarios/:id',
       name: 'EditScenario',
       component: ScenarioAdminView
     },

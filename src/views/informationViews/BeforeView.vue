@@ -41,6 +41,11 @@ const router = useRouter()
 const goToUnder = () => {
   router.push('/under')
 }
+
+const goToScenarios = () => {
+  router.push('/scenarios') // Assumes /scenarios shows ScenarioList.vue
+}
+
 </script>
 
 <template>
