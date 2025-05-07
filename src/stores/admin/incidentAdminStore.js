@@ -2,7 +2,7 @@
 import { defineStore } from 'pinia';
 import IncidentAdminService from '@/service/admin/incidentAdminService';
 import IncidentConfigService from '@/service/map/incidentConfigService';
-import ScenarioService from '@/service/admin/scenarioService';
+import ScenarioService from '@/service/scenarioService';
 
 export const useIncidentAdminStore = defineStore('incidentAdmin', {
   state: () => ({
@@ -257,7 +257,7 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
      */
     async fetchScenarios() {
       try {
-        this.scenarios = await ScenarioService.fetchAllScenarios();
+        this.scenarios = await ScenarioService.getAllScenarios();
       } catch (error) {
         console.error('Kunne ikke hente scenarier:', error);
       }
