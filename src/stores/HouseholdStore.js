@@ -466,14 +466,12 @@ export const useHouseholdStore = defineStore('household', {
       try {
         this.isLoading = true;
     
-        await RequestService.acceptJoinRequest(invitationId); 
+        await RequestService.acceptInvitationRequest(invitationId); 
     
         const invitation = this.receivedInvitations.find(inv => inv.id === invitationId);
         if (invitation) {
           invitation.status = 'ACCEPTED';
         }
-    
-        // Optionally refresh household membership if needed
         await this.checkCurrentHousehold();
     
         return true;
@@ -541,28 +539,21 @@ export const useHouseholdStore = defineStore('household', {
      * @param {'ACCEPTED'|'REJECTED'} action - Action to perform.
      * @returns {Promise<void>}
      */
-    // in useHouseholdStore.actions
     async updateJoinRequestStatus(requestId, action) {
+      this._verifyOwnership()
+      this.isLoading = true
       try {
-        this.isLoading = true
-        this._verifyOwnership()
-
         if (action === 'ACCEPTED') {
-          // tell backend to accept
           await RequestService.acceptJoinRequest(requestId)
-        } else {
+          await this.checkCurrentHousehold()
+        }
+        else {
           await RequestService.declineJoinRequest(requestId)
         }
-
-        // update local status
+    
         const req = this.ownershipRequests.find(r => r.id === requestId)
         if (req) req.status = action
-
-        // if they accepted, also add them as a member
-        if (action === 'ACCEPTED' && req.userId) {
-          await this.addUserToHousehold(req.userId)
-        }
-
+    
       } catch (err) {
         this.error = err.message || `Kunne ikke ${action==='ACCEPTED'?'godta':'avslå'} forespørsel`
         throw err
@@ -570,6 +561,7 @@ export const useHouseholdStore = defineStore('household', {
         this.isLoading = false
       }
     },
+    
     /**
      * Transfers ownership of the household to another user.
      * @param {string} userId - ID of the new owner.
@@ -712,7 +704,6 @@ export const useHouseholdStore = defineStore('household', {
           throw new Error('Bruker må være logget inn');
         }
     
-        // Prevent household owners from sending join requests
         if (this.currentHousehold?.ownerId === userStore.user.id) {
           throw new Error('Husstandseiere kan ikke sende forespørsler om å bli med i en annen husstand');
         }

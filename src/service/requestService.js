@@ -139,12 +139,28 @@ class RequestService extends BaseService {
    */
   async acceptJoinRequest(requestId) {
     try {
-      return await this.post('accept', { requestId });
+      return await this.post('accept-join-request', { requestId });
     } catch (error) {
       console.error('[ERROR] Accepting join request:', error);
       throw error;
     }
   }
+
+    /**
+   * Accepts a join request by its ID.
+   *
+   * @param {string} requestId - The ID of the join request to accept.
+   * @returns {Promise<Object>} API response.
+   * @throws {Error} If the request fails.
+   */
+    async acceptInvitationRequest(requestId) {
+      try {
+        return await this.post('accept-invitation-request', { requestId });
+      } catch (error) {
+        console.error('[ERROR] Accepting join request:', error);
+        throw error;
+      }
+    }
   
   /**
    * Declines a join request by its ID.
