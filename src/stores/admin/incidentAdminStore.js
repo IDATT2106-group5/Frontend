@@ -163,7 +163,7 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
         severity: 'RED',
         latitude: 63.4305,
         longitude: 10.3951,
-        impactRadius: 7,
+        impactRadius: 1,
         startedAt: new Date().toISOString(),
         endedAt: null
       };
@@ -187,10 +187,10 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
         scenarioId: scenarioId,
         name: incident.name || '',
         description: incident.description || '',
-        severity: incident.severity || 'RED',
+        severity: incident.severity,
         latitude: incident.latitude,
         longitude: incident.longitude,
-        impactRadius: incident.impactRadius || 7,
+        impactRadius: incident.impactRadius || 1,
         startedAt: incident.startedAt,
         endedAt: incident.endedAt
       };
@@ -286,7 +286,7 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
       this.error = null;
 
       try {
-        await IncidentAdminService.deleteIncident(id);
+        await IncidentAdminService.deleteIncident(parseInt(id));
         this.success = 'Krisesituasjon slettet.';
         this.incidents = this.incidents.filter(incident => incident.id !== id);
         this.applyFilters();
