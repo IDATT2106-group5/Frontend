@@ -25,7 +25,7 @@ import AdminDashboardView from '@/views/adminViews/AdminDashboardView.vue'
 import notAuthorizedView from '@/views/mainViews/notAuthorizedView.vue'
 import PersonVern from '@/views/mainViews/PersonVern.vue'
 import AdminUserView from '@/views/adminViews/AdminUsersView.vue'
-import ScenarioList from '@/components/scenario/ScenarioList.vue'
+import EditScenarioList from '@/components/scenario/EditScenarioList.vue'
 import ScenarioAdminView from '@/views/ScenarioAdminView.vue'
 
 const router = createRouter({
@@ -128,8 +128,8 @@ const router = createRouter({
     },
     {
       path: '/scenarios',
-      name: 'ScenarioList',
-      component: ScenarioList
+      name: 'EditScenarioList',
+      component: EditScenarioList
     },
     {
       path: '/scenarios/new',
