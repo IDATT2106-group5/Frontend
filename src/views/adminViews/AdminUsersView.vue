@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, computed, watch } from "vue";
+import { ref, onMounted, computed } from "vue";
 import InviteNewAdmin from "@/components/adminComponents/InviteNewAdmin.vue";
 import AdminUserOverview from "@/components/adminComponents/AdminUsersOverview.vue";
 import { useUserStore } from '@/stores/UserStore'
@@ -17,6 +17,14 @@ const clearSuccessTimeout = ref(null);
 const inviteFormRef = ref(null);
 
 
+/**
+ * Handles the process of inviting a new admin user.
+ *
+ * @param {Object} adminData - The data of the admin user to be invited.
+ * @param {string} adminData.email - The email address of the admin user.
+ * @param {string} adminData.fullName - The name of the admin user.
+ * @returns {Promise<void>} - A promise that resolves when the invite process is complete.
+ */
 async function handleInvite(adminData) {
   console.log('New admin invitation:', adminData);
 
@@ -74,7 +82,6 @@ onMounted(async () => {
         <span>{{ adminStore.error }}</span>
       </div>
     </div>
-
 
     <div class="max-w-6xl mx-auto flex flex-col md:flex-row gap-6">
       <div class="md:w-1/3 flex flex-col">
