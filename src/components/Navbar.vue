@@ -36,7 +36,9 @@ const {
   resetNotificationCount,
   connected,
   updatePosition,
-  subscribeToPosition,
+  showIncidentPopup,
+  currentIncident,
+  closeIncidentPopup,
 } = useWebSocket()
 
 function toggleNotifications() {
@@ -121,9 +123,7 @@ function togglePositionSharing() {
   localStorage.setItem('isSharing', isSharing.value)
 }
 
-onBeforeUnmount(() => {
-  stopPositionSharing()
-})
+onBeforeUnmount(() => {})
 
 const notificationIcons = {
   INVITATION: Mail,
@@ -136,6 +136,54 @@ const notificationIcons = {
 </script>
 
 <template>
+  <!-- Incident Popup -->
+  <transition name="fade">
+    <div
+      v-if="showIncidentPopup && currentIncident"
+      class="fixed inset-0 flex items-center justify-center z-[2000] bg-black bg-opacity-50"
+    >
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
+        <div class="bg-blue-600 p-4 text-white flex justify-between items-center">
+          <div class="flex items-center">
+            <AlarmCheck class="w-6 h-6 mr-2" />
+            <h3 class="text-lg font-bold">EMERGENCY ALERT</h3>
+          </div>
+          <button @click="closeIncidentPopup" class="text-white hover:text-gray-200">
+            <span class="text-2xl">×</span>
+          </button>
+        </div>
+        <div class="p-6">
+          <p class="text-lg mb-4">{{ currentIncident.message }}</p>
+          <p v-show="!isSharing" class="text-sm text-gray-500 mb-4">
+            Del posisjon for å tillate husstanden din til å se posisjonen din
+          </p>
+          <p v-show="isSharing" class="text-sm text-gray-500 mb-4">
+            Din posisjon er delt med husstanden din, gå til kartet for å se om de er i faresonen
+          </p>
+          <p class="text-sm text-gray-500 mb-6">
+            {{ formatTimestamp(currentIncident.timestamp) }}
+          </p>
+          <div class="flex justify-end">
+            <Button
+              v-show="!isSharing"
+              @click="startPositionSharing"
+              variant="default"
+              class="ml-2 bg-blue-600 hover:bg-blue-700"
+            >
+              Del posisjon
+            </Button>
+            <Button
+              @click="closeIncidentPopup"
+              variant="default"
+              class="bg-red-600 hover:bg-red-700"
+            >
+              Lukk
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </transition>
   <header class="bg-[#2c3e50] text-white px-6 py-4 shadow">
     <div class="flex items-center justify-between">
       <RouterLink to="/" class="flex items-center gap-3">
@@ -270,7 +318,7 @@ const notificationIcons = {
   <!-- Notifications Panel -->
   <div
     v-if="showNotifications"
-    class="fixed right-4 top-16 w-72 bg-white shadow-lg rounded-md border border-gray-200 z-50"
+    class="fixed right-4 top-16 w-72 bg-white shadow-lg rounded-md border border-gray-200 z-[1001]"
   >
     <div class="p-3 border-b border-gray-200 flex justify-between items-center">
       <div class="flex items-center">
@@ -293,15 +341,14 @@ const notificationIcons = {
       >
         <div class="flex">
           <div class="mr-3 text-gray-700">
-            <component
-              :is="notificationIcons[notification.type] || Bell"
-              class="w-5 h-5"
-            />
+            <component :is="notificationIcons[notification.type] || Bell" class="w-5 h-5" />
           </div>
           <div class="flex-1">
             <div class="flex justify-between items-start">
               <span class="font-medium">{{ notification.message }}</span>
-              <span class="text-xs text-gray-500">{{ formatTimestamp(notification.timestamp) }}</span>
+              <span class="text-xs text-gray-500">{{
+                formatTimestamp(notification.timestamp)
+              }}</span>
             </div>
           </div>
         </div>
