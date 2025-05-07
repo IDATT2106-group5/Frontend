@@ -13,7 +13,7 @@ export const useHouseholdStore = defineStore('household', {
   state: () => ({
     /** @type {object|null} */
     currentHousehold: null,
-
+    
     /** @type {{ registered: Array<object>, unregistered: Array<object> }} */
     members: {
       registered: [],
@@ -303,40 +303,42 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
-    /**
-     * Sends an invitation to a user by email.
-     * @param {string} email - Email address to invite.
-     * @returns {Promise<boolean>} True if successful.
-     */
-    async inviteMember(email) {
+     async inviteMember(email) {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husholdning');
       }
-
+    
       try {
         this.isLoading = true;
         this._verifyOwnership();
-
+    
         const request = {
           email: email,
           householdId: this.currentHousehold.id
         };
-
+    
         await RequestService.sendInvitation(request);
         await this.fetchSentInvitations();
-
+    
         return true;
       } catch (err) {
-        if (err.status === 400 && err.message?.includes('User with email not found')) {
-          this.error = 'Ingen registrert bruker med denne e-posten.';
-        } else {
-          this.error = err.message || 'Kunne ikke sende invitasjon';
+        let message = 'Kunne ikke sende invitasjon';
+    
+        if (err?.response?.status === 400 && err?.response?.data?.includes('User with email not found')) {
+          message = 'User with email not found';
+        } else if (err?.message) {
+          message = err.message;
         }
-        throw err;
+    
+        throw {
+          response: {
+            data: message
+          }
+        };
       } finally {
         this.isLoading = false;
       }
-    },
+    },  
 
     /**
      * Cancels a previously sent invitation.
