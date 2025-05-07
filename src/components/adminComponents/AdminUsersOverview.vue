@@ -18,11 +18,15 @@ export default {
     const adminStore = useAdminStore()
     const userStore = useUserStore()
 
-    // Add state for the modal
     const showDeleteModal = ref(false)
     const adminToDelete = ref(null)
+    const showPasswordModal = ref(false)
+    const adminEmailForPassword = ref('')
+
     const errorMessage = ref('')
+    const passwordSuccessMessage = ref('')
     const isDeleting = ref(false)
+    const isResettingPassword = ref(false)
 
     if (userStore.isSuperAdmin) {
       adminStore.fetchAdmins()
@@ -33,25 +37,58 @@ export default {
       userStore,
       showDeleteModal,
       adminToDelete,
+      showPasswordModal,
+      adminEmailForPassword,
       errorMessage,
-      isDeleting
+      passwordSuccessMessage,
+      isDeleting,
+      isResettingPassword
     }
   },
 
   methods: {
     /**
-     * Sends a password reset request for an administrator
-     * @async
-     * @param {string} email - The email address of the administrator
-     * @returns {Promise<void>}
+     * Opens password reset confirmation modal
+     * @param {string} email - Email of the admin to reset password for
      */
-    async sendNewPassword(email) {
+    openPasswordModal(email) {
+      this.adminEmailForPassword = email
+      this.showPasswordModal = true
+    },
+
+    /**
+     * Cancels the password reset operation
+     */
+    cancelPasswordReset() {
+      this.showPasswordModal = false
+      this.adminEmailForPassword = ''
+    },
+
+    /**
+     * Confirms and executes the password reset
+     * @async
+     */
+    async confirmPasswordReset() {
+      if (!this.adminEmailForPassword) return
+
+      this.isResettingPassword = true
+      this.passwordSuccessMessage = ''
+      this.errorMessage = ''
+      this.showPasswordModal = false
+
       try {
-        await AdminService.resetPassword(email)
-        alert(`Nytt passord sendt til: ${email}`)
+        await AdminService.resetPassword(this.adminEmailForPassword)
+        this.passwordSuccessMessage = `Nytt passord sendt til: ${this.adminEmailForPassword}`
+
+        setTimeout(() => {
+          this.passwordSuccessMessage = ''
+        }, 5000)
       } catch (error) {
         console.error('Kunne ikke tilbakestille passord:', error)
-        alert('Kunne ikke sende nytt passord: ' + (error.message || 'Ukjent feil'))
+        this.errorMessage = `Kunne ikke sende nytt passord: ${error.message || 'Ukjent feil'}`
+      } finally {
+        this.isResettingPassword = false
+        this.adminEmailForPassword = ''
       }
     },
 
@@ -82,7 +119,7 @@ export default {
 
       this.isDeleting = true
       this.errorMessage = ''
-      this.showDeleteModal = false
+      this.showPasswordModal = false
 
       try {
         await AdminService.deleteAdmin(this.adminToDelete.id)
@@ -102,8 +139,18 @@ export default {
 <template>
   <div class="bg-white rounded shadow">
     <div v-if="adminStore.isLoading" class="text-center py-4">
-      <p class="text-gray-600">Loading administrators...</p>
+      <p class="text-gray-600">Laster administratorer...</p>
     </div>
+
+    <!-- Success message for password reset
+    <div v-if="passwordSuccessMessage" class="p-3 bg-green-100 text-green-700 rounded m-4">
+      {{ passwordSuccessMessage }}
+    </div> -->
+
+    <!-- Error message -->
+    <!-- <div v-if="errorMessage" class="p-3 bg-red-100 text-red-700 rounded m-4">
+      {{ errorMessage }}
+    </div> -->
 
     <div v-else>
       <div v-for="admin in adminStore.admins" :key="admin.email"
@@ -114,7 +161,7 @@ export default {
           <div v-if="admin.role === 'SUPERADMIN'" class="text-black mr-4">Super Admin</div>
 
           <template v-if="admin.role !== 'SUPERADMIN'">
-            <button @click="sendNewPassword(admin.email)"
+            <button @click="openPasswordModal(admin.email)"
                     class="text-blue-600 hover:text-blue-800 mr-4 font-medium">
               Send nytt passord
             </button>
@@ -130,17 +177,23 @@ export default {
 
     <ConfirmModal
       v-if="showDeleteModal && adminToDelete"
-      title="Confirm deletion"
+      title="Bekreft sletting"
       :description="`Er du sikker på at du vil slette ${adminToDelete.email}?`"
       confirmText="Slett"
-      cancelText="Tilbake"
+      cancelText="Avbryt"
       @confirm="confirmDelete"
       @cancel="cancelDelete"
     />
 
-    <div v-if="errorMessage" class="p-3 bg-red-100 text-red-700 rounded m-4">
-      Kunne ikke slette administrator: {{ errorMessage }}
-    </div>
+    <ConfirmModal
+      v-if="showPasswordModal && adminEmailForPassword"
+      title="Bekreft passordtilbakestilling"
+      :description="`Er du sikker på at du vil sende nytt passord til ${adminEmailForPassword}?`"
+      confirmText="Send"
+      cancelText="Avbryt"
+      @confirm="confirmPasswordReset"
+      @cancel="cancelPasswordReset"
+    />
   </div>
 </template>
 
