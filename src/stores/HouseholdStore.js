@@ -303,43 +303,37 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
-     async inviteMember(email) {
-      if (!this.currentHousehold?.id) {
-        throw new Error('Ingen aktiv husholdning');
-      }
-    
+    async inviteMember(email) {
       try {
-        this.isLoading = true;
         this._verifyOwnership();
-    
-        const request = {
+        const response = await RequestService.sendInvitation({
           email: email,
           householdId: this.currentHousehold.id
-        };
+        });
     
-        await RequestService.sendInvitation(request);
         await this.fetchSentInvitations();
+        return response;
+      } catch (error) {
+        let message = 'Ingen registrerte brukere eksisterer med denne e-posten';
+        
+        const backendData = error.response?.data || {};
+        const backendMessage = backendData.message || backendData.error || error.message;
     
-        return true;
-      } catch (err) {
-        let message = 'Kunne ikke sende invitasjon';
-    
-        if (err?.response?.status === 400 && err?.response?.data?.includes('User with email not found')) {
-          message = 'User with email not found';
-        } else if (err?.message) {
-          message = err.message;
+        if (backendMessage.includes('User with email not found')) {
+          message = backendMessage.replace('User with email not found:', 'Fant ingen bruker med e-post:');
         }
     
         throw {
           response: {
-            data: message
+            data: {
+              message: message,
+              details: backendMessage
+            }
           }
         };
-      } finally {
-        this.isLoading = false;
       }
-    },  
-
+    },
+    
     /**
      * Cancels a previously sent invitation.
      * @param {string} email - Email of the invited user.
