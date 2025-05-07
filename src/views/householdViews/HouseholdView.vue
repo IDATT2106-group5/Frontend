@@ -180,6 +180,13 @@ const searchForHousehold = async () => {
     return
   }
 
+  if (Number(joinHouseholdId.value) === Number(householdId.value)) {
+    console.warn('⚠️ User searched for their own household')
+    joinError.value = 'Dette er din nåværende husstand'
+    joinIsLoading.value = false
+    return
+  }
+
   try {
     const found = await houseStore.searchHouseholdById(joinHouseholdId.value)
     console.log('✅ Found household:', found)
@@ -213,6 +220,12 @@ const sendJoinRequest = async () => {
   joinError.value = ''
   joinSuccess.value = ''
 
+  if (isOwner.value) {
+    joinIsLoading.value = false
+    joinError.value = 'Du er eier av en husstand. Du må forlate din nåværende husstand før du kan bli med i en annen.'
+    return
+  }
+
   try {
     await houseStore.sendJoinRequest(foundHousehold.value.id)
     joinSuccess.value = 'Forespørsel om å bli med i husstand sendt!'
@@ -220,7 +233,7 @@ const sendJoinRequest = async () => {
     foundHousehold.value = null
   } catch (err) {
     console.error('Error sending join request:', err)
-    joinError.value = houseStore.error || 'Kunne ikke sende forespørsel om å bli med i husstand'
+    joinError.value = err.message || houseStore.error || 'Kunne ikke sende forespørsel om å bli med i husstand'
   } finally {
     joinIsLoading.value = false
   }
@@ -301,6 +314,10 @@ const sendJoinRequest = async () => {
             <div class="text-center">
               <h2 class="text-xl font-bold mb-2">Søk om å bli med i et annet husstand</h2>
               <p class="text-teal-800 mb-4">Skriv inn husstands‑ID for å søke etter husstand:</p>
+              <!-- Warning for household owners -->
+              <p v-if="isOwner" class="text-orange-600 mb-4 font-medium">
+                Obs! Som hustandseier må du først forlate din nåværende husstand før du kan bli med i en annen.
+              </p>
             </div>
             <div class="max-w-md mx-auto space-y-4">
               <div>
@@ -343,9 +360,10 @@ const sendJoinRequest = async () => {
                 <button
                   @click="sendJoinRequest"
                   class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition"
-                  :disabled="joinIsLoading"
+                  :disabled="joinIsLoading || isOwner"
                 >
                   <span v-if="joinIsLoading">Sender forespørsel...</span>
+                  <span v-else-if="isOwner">Kan ikke sende forespørsel som eier</span>
                   <span v-else>Send forespørsel om å bli med</span>
                 </button>
               </div>
