@@ -2,6 +2,29 @@
   <div class="map-container">
     <div id="map" ref="mapContainer"></div>
 
+    <!-- Location Services Control -->
+    <div class="location-services-container">
+      <Button
+        @click="togglePositionSharing"
+        variant="default"
+        class="location-services-button"
+        :class="{ 'services-active': isSharing }"
+      >
+        <div class="relative">
+          <LocateFixed class="w-5 h-5" />
+          <div v-if="!isSharing" class="absolute inset-0 flex items-center justify-center">
+            <div class="w-5 h-0.5 bg-red-500 -rotate-45 rounded-full"></div>
+          </div>
+        </div>
+        <span>
+          {{ isSharing ? 'Stedstjenester på' : 'Stedstjenester av' }}
+        </span>
+      </Button>
+      <div v-if="locationError" class="location-error-message">
+        {{ locationError }}
+      </div>
+    </div>
+
     <!-- Add notification display with proper v-if check -->
     <transition name="fade">
       <div v-if="notification" class="map-notification">
@@ -84,6 +107,8 @@ import L from 'leaflet'
 import ClosestFacilityFinder from '@/components/map/ClosestFacilityFinder.vue'
 import { useUserStore } from '@/stores/UserStore.js'
 import { useHouseholdStore } from '@/stores/HouseholdStore.js'
+import { useLocationStore } from '@/stores/map/LocationStore.js' // Import the new store
+import { LocateFixed } from 'lucide-vue-next' // Import the icon
 
 export default {
   name: 'EmergencyMap',
@@ -91,6 +116,7 @@ export default {
     ClosestFacilityFinder,
     MarkerFilter,
     Button,
+    LocateFixed, // Add the icon component
   },
   setup() {
     const mapContainer = ref(null)
@@ -104,44 +130,46 @@ export default {
     const mapInitialized = ref(false)
     const userStore = useUserStore()
     const householdStore = useHouseholdStore()
+    const locationStore = useLocationStore() // Use the location store
+    const householdId = householdStore.currentHousehold?.id || null
 
-    const householdId = householdStore.currentHousehold.id
+    // Get location related state from the location store
+    const isSharing = computed(() => locationStore.isSharing)
+    const locationError = computed(() => locationStore.locationError)
 
     const { subscribeToPosition, fetchHouseholdPositions, connected } = useWebSocket()
 
-    // Use storeToRefs for reactive properties
     const { layerOptions, activeLayerId, isLoadingMarkers, markersLoadError, notification } =
       storeToRefs(mapStore)
 
-    // Determine if we're in mobile view
     const isMobileView = computed(() => {
       return windowWidth.value < 768 // Common breakpoint for mobile
     })
+
+    function togglePositionSharing() {
+      locationStore.togglePositionSharing()
+    }
 
     onMounted(async () => {
       isFilterCollapsed.value = isMobileView.value
       isLayerCollapsed.value = isMobileView.value
 
       try {
-        // Wait for map initialization to complete
         map.value = await mapStore.initMap(mapContainer.value)
 
-        // Only set flag and process positions when map is fully initialized
         if (map.value) {
           console.log('Map initialized successfully')
           mapInitialized.value = true
 
-          // Process any stored positions that came in before map initialization
           userPositions.value.forEach((position, userId) => {
             const isCurrentUser = userId === userStore.user.id
-            updateUserMarker(userId, position.longitude, position.latitude, isCurrentUser)
+            updateUserMarker(userId, position.fullName, position.longitude, position.latitude, isCurrentUser)
           })
 
-          if (connected.value) {
+          if (connected.value && householdId) {
             subscribeToPosition(householdId, handlePositionUpdate)
           }
 
-          // Fetch initial positions after map is ready
           try {
             const positions = await fetchHouseholdPositions()
             if (Array.isArray(positions)) {
@@ -158,28 +186,24 @@ export default {
         console.error('Map initialization failed:', error)
       }
 
-      // Add resize event listener
       window.addEventListener('resize', handleResize)
     })
 
-    watch(connected, (isConnected) => {
-      if (isConnected) {
+    watch(() => connected.value && householdId, (isConnected) => {
+      if (isConnected && householdId) {
         subscribeToPosition(householdId, handlePositionUpdate)
       }
     })
 
     onUnmounted(() => {
-      // Clean up event listener
       window.removeEventListener('resize', handleResize)
 
-      // Remove all markers
       userMarkers.value.forEach((marker) => {
         if (map.value) {
           map.value.removeLayer(marker)
         }
       })
 
-      // Clean up map
       mapStore.cleanupMap()
     })
 
@@ -193,7 +217,6 @@ export default {
 
       const { userId, fullName, longitude, latitude } = positionData
 
-      // Validate coordinates before processing
       if (
         !userId ||
         longitude === null ||
@@ -209,13 +232,12 @@ export default {
       const parsedLong = parseFloat(longitude)
       const parsedLat = parseFloat(latitude)
 
-      // Store the updated position
       userPositions.value.set(userId, {
         latitude: parsedLat,
         longitude: parsedLong,
+        fullName: fullName
       })
 
-      // If map is initialized, update marker immediately
       if (mapInitialized.value && map.value) {
         const isCurrentUser = userId === userStore.user.id
         const name = fullName.split(' ')[0]
@@ -342,13 +364,16 @@ export default {
       map,
       userMarkers,
       userPositions,
+      isSharing, // Expose from location store
+      locationError, // Expose from location store
+      togglePositionSharing, // Expose from location store
     }
   },
 }
 </script>
 
 <style scoped>
-/* No changes to the styles */
+/* Original styles */
 .map-container {
   width: 100%;
   height: calc(100vh - 60px);
@@ -356,6 +381,55 @@ export default {
   overflow: hidden;
 }
 
+/* Location Services Styling */
+.location-services-container {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 1000;
+}
+
+.location-services-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: white;
+  color: #333;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.location-services-button.services-active {
+  background-color: #0088ff;
+  color: white;
+}
+
+.location-error-message {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background-color: #ffdddd;
+  border: 1px solid #ff4d4f;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #ff4d4f;
+}
+
+/* Moving the marker filter below location services */
+.marker-filter-container {
+  position: absolute;
+  top: 70px; /* Moved down to account for location services */
+  left: 16px;
+  z-index: 1000;
+  transition: all 0.3s ease;
+  max-width: 100%;
+  width: auto;
+}
+
+/* Rest of the original styles */
 .closest-facility-container {
   position: absolute;
   top: 16px;
@@ -368,6 +442,12 @@ export default {
     top: auto;
     bottom: 16px;
     right: 16px;
+  }
+
+  /* Adjust location services on mobile */
+  .location-services-button {
+    padding: 6px 10px;
+    font-size: 12px;
   }
 }
 
@@ -568,16 +648,6 @@ export default {
   font-size: 11px;
   color: #333;
   font-weight: 500;
-}
-
-.marker-filter-container {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  z-index: 1000;
-  transition: all 0.3s ease;
-  max-width: 100%;
-  width: auto;
 }
 
 .filter-toggle-button {

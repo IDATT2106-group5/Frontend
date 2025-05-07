@@ -52,9 +52,7 @@ export default function useWebSocket() {
           if (userStore.user?.id) {
             fetchNotifications(userStore.user.id)
           }
-          console.log(message.type)
           if (message.type === 'INCIDENT') {
-            console.log('Incident received:', message)
             currentIncident.value = message
             showIncidentPopup.value = true
           }

@@ -7,7 +7,6 @@ import {
   Info,
   Lock,
   Mail,
-  Map,
   Menu,
   Newspaper,
   Package,
@@ -15,31 +14,30 @@ import {
   User,
 } from 'lucide-vue-next'
 
-import { onBeforeUnmount, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/UserStore'
 import useWebSocket from '@/service/websocketComposable.js'
+import { useLocationStore } from '@/stores/map/LocationStore.js'
 
 const userStore = useUserStore()
 const router = useRouter()
 const mobileMenuOpen = ref(false)
 const showNotifications = ref(false)
-const isSharing = ref(localStorage.getItem('isSharing') === 'true')
-const locationError = ref(null)
-let positionUpdateInterval = null
 
 const {
   notifications,
   notificationCount,
   markAsRead,
   resetNotificationCount,
-  connected,
-  updatePosition,
   showIncidentPopup,
   currentIncident,
   closeIncidentPopup,
+  connected,
 } = useWebSocket()
+
+const { isSharing, startPositionSharing } = useLocationStore()
 
 function toggleNotifications() {
   showNotifications.value = !showNotifications.value
@@ -67,61 +65,22 @@ function handleLogout() {
   router.push('/login')
 }
 
-function updateUserPosition() {
-  if (!connected.value) return
-
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      const { latitude, longitude } = position.coords
-      const userId = userStore.userId || 44
-      console.log('User ID:', userId)
-      updatePosition(userId, longitude.toString(), latitude.toString())
-      locationError.value = null
-    },
-    (error) => {
-      console.error('Geolocation error:', error)
-      locationError.value = 'Could not access your location'
-      stopPositionSharing()
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 30000,
-    },
-  )
-}
-
-function startPositionSharing() {
-  if (!navigator.geolocation) {
-    locationError.value = 'Geolocation is not supported by your browser'
-    return
-  }
-
-  updateUserPosition()
-  positionUpdateInterval = setInterval(updateUserPosition, 10000)
-  isSharing.value = true
-  localStorage.setItem('isSharing', true)
-  console.log('Position sharing allowed:', localStorage.getItem('isSharing'))
-}
-
-function stopPositionSharing() {
-  if (positionUpdateInterval) {
-    clearInterval(positionUpdateInterval)
-    positionUpdateInterval = null
-  }
-  isSharing.value = false
-  localStorage.setItem('isSharing', false)
-  console.log('Position sharing allowed:', localStorage.getItem('isSharing'))
-}
-
-function togglePositionSharing() {
-  if (isSharing.value) {
-    stopPositionSharing()
-  } else {
+onMounted(() => {
+  if (connected.value && isSharing) {
     startPositionSharing()
+  } else {
+    console.log('WebSocket not connected')
   }
-  localStorage.setItem('isSharing', isSharing.value)
-}
+})
+
+watch(
+  () => connected.value,
+  (isConnected) => {
+    if (isSharing && isConnected) {
+      startPositionSharing()
+    }
+  },
+)
 
 onBeforeUnmount(() => {})
 
@@ -242,6 +201,7 @@ const notificationIcons = {
           </span>
         </div>
 
+        <!-- Login/Logout Button -->
         <template v-if="userStore.token">
           <Button
             @click="handleLogout"
@@ -301,19 +261,6 @@ const notificationIcons = {
       </RouterLink>
     </div>
   </header>
-
-  <!-- Add this button next to the notifications button in the Auth and notifications div -->
-  <Button
-    @click="togglePositionSharing"
-    variant="outline"
-    :class="[
-      'text-white border-white bg-[#2c3e50]',
-      isSharing ? 'hover:bg-red-600' : 'hover:bg-green-600',
-    ]"
-  >
-    <Map class="w-4 h-4 mr-2" />
-    {{ isSharing ? 'Stop deling' : 'Del posisjon' }}
-  </Button>
 
   <!-- Notifications Panel -->
   <div
