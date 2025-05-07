@@ -195,7 +195,6 @@ export default {
         <textarea
           v-model="scenarioForm.description"
           rows="4"
-          required
           placeholder="Beskriv scenarioet"
           class="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
         ></textarea>
@@ -206,7 +205,6 @@ export default {
         <textarea
           v-model="scenarioForm.actions"
           rows="4"
-          required
           class="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
         ></textarea>
       </div>
@@ -216,7 +214,6 @@ export default {
         <textarea
           v-model="scenarioForm.checklist"
           rows="4"
-          required
           class="w-full p-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
         ></textarea>
       </div>
