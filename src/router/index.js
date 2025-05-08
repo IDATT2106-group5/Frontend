@@ -9,7 +9,6 @@ import StorageDetailView from '@/views/storageViews/StorageDetailView.vue'
 import VerifyEmailView from '@/views/mainViews/VerifyEmailView.vue'
 import RegisterSuccessView from '@/views/mainViews/RegisterSucessView.vue'
 import RegisterFailedView from '@/views/mainViews/RegisterFailedView.vue'
-import HouseholdInviteView from '@/views/householdViews/HouseholdInviteView.vue'
 import StorageView from '@/views/storageViews/StorageView.vue'
 import HouseholdCreateView from '@/views/householdViews/HouseholdCreateView.vue'
 import HouseholdJoinView from '@/views/householdViews/HouseholdJoinView.vue'
@@ -108,11 +107,6 @@ const router = createRouter({
       path: '/household/join',
       name: 'household-join',
       component: HouseholdJoinView,
-    },
-    {
-      path: '/household/invite',
-      name: 'household-invite',
-      component: HouseholdInviteView,
     },
     {
       path: '/verify-email',
