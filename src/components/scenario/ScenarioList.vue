@@ -12,23 +12,62 @@ import {
   ShieldAlert,
 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
+import BeforeStepIndicator from '@/components/BeforeStepIndicator.vue'
 
 export default {
   name: 'ScenarioList',
-
+  components: {
+    BeforeStepIndicator
+  },
   setup() {
     const scenarioStore = useScenarioStore()
     const router = useRouter()
 
+    /**
+     * Indicates whether scenario data is currently being loaded.
+     * 
+     * @type {import('vue').ComputedRef<boolean>}
+     */
     const loading = computed(() => scenarioStore.isLoading)
+
+    /**
+     * Stores any error that occurred during scenario fetching.
+     * 
+     * @type {import('vue').ComputedRef<string | null>}
+     */
     const error = computed(() => scenarioStore.getError)
+
+     /**
+     * Contains all fetched scenarios.
+     * 
+     * @type {import('vue').ComputedRef<Array>}
+     */
     const scenarios = computed(() => scenarioStore.getAllScenarios)
 
+    /**
+     * Navigates to a specific scenario's detail page using its ID.
+     *
+     * @param {string|number} id - The scenario ID.
+     * @returns {void}
+     */
     const goToScenarioPage = (id) => {
       router.push(`/scenarios/${id}`)
     }
 
-    // Map icon names to components
+    /**
+     * Navigates to the "Before Crisis" overview page.
+     *
+     * @returns {void}
+     */
+    const goToOverview = () => {
+      router.push('/before')
+    }
+
+    /**
+     * Maps icon names to their corresponding component from lucide-vue-next.
+     *
+     * @type {Record<string, object>}
+     */
     const iconMap = {
       AlertTriangle,
       AlertOctagon,
@@ -40,16 +79,25 @@ export default {
       ShieldAlert,
     }
 
-    // Get the appropriate icon component
+    /**
+     * Returns the icon component matching a given name.
+     *
+     * @param {string} iconName - The name of the icon to resolve.
+     * @returns {object} The Vue component for the icon.
+     */
     const getIconComponent = (iconName) => {
-      return iconMap[iconName] || AlertTriangle // Default to AlertTriangle if icon not found
+      return iconMap[iconName] || AlertTriangle
     }
 
-    // Fetch scenarios when component mounts
     onMounted(() => {
       fetchScenarios()
     })
-
+    
+    /**
+     * Fetches all scenarios from the store.
+     *
+     * @returns {Promise<void>}
+     */
     const fetchScenarios = async () => {
       await scenarioStore.fetchAllScenarios()
     }
@@ -60,7 +108,8 @@ export default {
       scenarios,
       getIconComponent,
       fetchScenarios,
-      goToScenarioPage
+      goToScenarioPage,
+      goToOverview
     }
   },
 }
@@ -89,13 +138,24 @@ export default {
         v-for="scenario in scenarios"
         :key="scenario.id"
         @click="goToScenarioPage(scenario.id)"
-        class="bg-white rounded-lg shadow-md border border-gray-200 h-[150px] relative"
+        class="bg-white rounded-lg shadow-md border border-gray-200 h-[150px] relative cursor-pointer hover:shadow-lg transition"
       >
         <div class="flex flex-col items-center justify-center h-full p-5 gap-2.5">
           <component :is="getIconComponent(scenario.iconName)" size="32" class="text-blue-500" />
           <h2 class="text-lg font-medium text-center m-0">{{ scenario.name }}</h2>
         </div>
       </div>
+    </div>
+
+    <!-- Step indicator and Oversikt button at bottom -->
+    <div class="mt-16 flex flex-col items-center gap-4">
+      <BeforeStepIndicator :currentStep="1" />
+      <button
+        @click="goToOverview"
+        class="flex items-center gap-2 text-[#2c3e50] hover:underline text-sm"
+      >
+        <span class="text-xl">←</span> Oversikt
+      </button>
     </div>
   </div>
 </template>

@@ -29,15 +29,30 @@ import useWebSocket from '@/service/websocketComposable.js'
 import { useLocationStore } from '@/stores/map/LocationStore.js'
 import notificationSoundFile from '@/assets/bell-notification-337658.mp3'
 
-// Initialize user and location stores
+// Stores and router
 const userStore = useUserStore()
 const router = useRouter()
-const mobileMenuOpen = ref(false) // State for mobile menu visibility
-const showNotifications = ref(false) // State for notifications panel visibility
 const locationStore = useLocationStore()
+
+// Reactive state
+const mobileMenuOpen = ref(false)
+const showNotifications = ref(false)
 
 // State for notification sound
 const notificationSound = ref(null)
+
+/**
+ * WebSocket state and methods.
+ * @typedef {Object} WebSocketState
+ * @property {Ref<Object[]>} notifications - List of received notifications.
+ * @property {Ref<number>} notificationCount - Count of unread notifications.
+ * @property {Function} markAsRead - Marks a notification as read.
+ * @property {Function} resetNotificationCount - Resets the notification count.
+ * @property {Ref<boolean>} showIncidentPopup - Whether to show the incident alert popup.
+ * @property {Ref<Object|null>} currentIncident - Current incident details.
+ * @property {Function} closeIncidentPopup - Closes the incident popup.
+ * @property {Ref<boolean>} connected - WebSocket connection state.
+ */
 
 // Destructure WebSocket composable for notification handling
 const {
@@ -85,17 +100,17 @@ function toggleNotifications() {
 }
 
 /**
- * Marks a specific notification as read.
- * @param {string} notificationId - The ID of the notification to mark as read.
+ * Marks a single notification as read by ID.
+ * @param {number|string} notificationId - The ID of the notification to mark as read.
  */
 function handleMarkAsRead(notificationId) {
   markAsRead(notificationId)
 }
 
 /**
- * Formats a timestamp into a readable string.
- * @param {number} timestamp - The timestamp to format.
- * @returns {string} - Formatted timestamp in "HH:mm, DD.MM.YYYY" format.
+ * Formats a timestamp into human-readable format.
+ * @param {string|number|Date} timestamp - The timestamp to format.
+ * @returns {string} Formatted timestamp string.
  */
 function formatTimestamp(timestamp) {
   const date = new Date(timestamp)
@@ -110,7 +125,7 @@ function formatTimestamp(timestamp) {
 }
 
 /**
- * Logs out the user and redirects to the login page.
+ * Logs the user out and redirects to the login page.
  */
 function handleLogout() {
   userStore.logout()
@@ -182,7 +197,8 @@ function getNotificationRoute(notification) {
 }
 
 /**
- * Maps notification types to their respective icons.
+ * Mapping of notification types to icon components.
+ * @type {Record<string, object>}
  */
 const notificationIcons = {
   INVITATION: Mail,

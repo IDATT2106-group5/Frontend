@@ -11,7 +11,7 @@ import AddMemberModal from '@/components/householdMainView/modals/AddMemberModal
 import InviteMemberModal from '@/components/householdMainView/modals/InviteMemberModal.vue'
 import EditHouseholdModal from '@/components/householdMainView/modals/EditHouseholdModal.vue'
 import ConfirmModal from '@/components/householdMainView/modals/ConfirmModal.vue'
-import NoHouseholdView from '@/views/householdViews/NoHouseholdView.vue'
+import NoHouseholdView from '@/components/householdMainView/NoHouseholdView.vue'
 
 const router = useRouter()
 const houseStore = useHouseholdStore()
@@ -299,7 +299,7 @@ const sendJoinRequest = async () => {
                     @input="onJoinHouseholdIdInput"
                     id="joinHouseholdId"
                     type="text"
-                    placeholder="A1234CDE"
+                    placeholder="ABCD1234"
                     inputmode="text"
                     pattern="[A-Z0-9]*"
                     maxlength="8"
@@ -366,23 +366,6 @@ const sendJoinRequest = async () => {
                     >Avslå</button>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Received invitations -->
-          <div v-if="houseStore.receivedInvitations.length > 0" class="mt-8">
-            <h3 class="text-xl font-semibold text-center mb-4">Invitasjoner mottatt</h3>
-            <div
-              v-for="inv in houseStore.receivedInvitations"
-              :key="inv.id"
-              class="bg-white rounded-md p-4 border border-gray-200 mb-4"
-            >
-              <p><strong>Husstands‑ID:</strong> {{ inv.householdId }}</p>
-              <p><strong>Navn:</strong> {{ inv.householdName }}</p>
-              <div class="flex gap-2 justify-end mt-2">
-                <button @click="acceptInvitation(inv.id)" class="px-4 py-1 rounded bg-primary text-white hover:opacity-90">Aksepter</button>
-                <button @click="declineInvitation(inv.id)" class="px-4 py-1 rounded border border-gray-400 hover:bg-gray-100">Avslå</button>
               </div>
             </div>
           </div>
