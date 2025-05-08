@@ -21,12 +21,27 @@ import { useUserStore } from '@/stores/UserStore'
 import useWebSocket from '@/service/websocketComposable.js'
 import { useLocationStore } from '@/stores/map/LocationStore.js'
 
+// Stores and router
 const userStore = useUserStore()
 const router = useRouter()
-const mobileMenuOpen = ref(false)
-const showNotifications = ref(false)
 const locationStore = useLocationStore()
 
+// Reactive state
+const mobileMenuOpen = ref(false)
+const showNotifications = ref(false)
+
+/**
+ * WebSocket state and methods.
+ * @typedef {Object} WebSocketState
+ * @property {Ref<Object[]>} notifications - List of received notifications.
+ * @property {Ref<number>} notificationCount - Count of unread notifications.
+ * @property {Function} markAsRead - Marks a notification as read.
+ * @property {Function} resetNotificationCount - Resets the notification count.
+ * @property {Ref<boolean>} showIncidentPopup - Whether to show the incident alert popup.
+ * @property {Ref<Object|null>} currentIncident - Current incident details.
+ * @property {Function} closeIncidentPopup - Closes the incident popup.
+ * @property {Ref<boolean>} connected - WebSocket connection state.
+ */
 const {
   notifications,
   notificationCount,
@@ -40,6 +55,9 @@ const {
 
 const { isSharing, startPositionSharing } = useLocationStore()
 
+/**
+ * Toggles the notification panel and marks unread notifications as read.
+ */
 function toggleNotifications() {
   showNotifications.value = !showNotifications.value
   if (showNotifications.value) {
@@ -54,10 +72,19 @@ function toggleNotifications() {
   }
 }
 
+/**
+ * Marks a single notification as read by ID.
+ * @param {number|string} notificationId - The ID of the notification to mark as read.
+ */
 function handleMarkAsRead(notificationId) {
   markAsRead(notificationId)
 }
 
+/**
+ * Formats a timestamp into human-readable format.
+ * @param {string|number|Date} timestamp - The timestamp to format.
+ * @returns {string} Formatted timestamp string.
+ */
 function formatTimestamp(timestamp) {
   const date = new Date(timestamp)
 
@@ -70,11 +97,15 @@ function formatTimestamp(timestamp) {
   return `${hours}:${minutes}, ${day}.${month}.${year}`
 }
 
+/**
+ * Logs the user out and redirects to the login page.
+ */
 function handleLogout() {
   userStore.logout()
   router.push('/login')
 }
 
+// Lifecycle hooks
 onMounted(() => {
   if (connected.value && isSharing) {
     startPositionSharing()
@@ -94,6 +125,10 @@ watch(
 
 onBeforeUnmount(() => {})
 
+/**
+ * Mapping of notification types to icon components.
+ * @type {Record<string, object>}
+ */
 const notificationIcons = {
   INVITATION: Mail,
   MEMBERSHIP_REQUEST: User,
@@ -255,11 +290,11 @@ const notificationIcons = {
         class="flex items-center gap-2 hover:underline"
       >
         <ShoppingCart class="w-5 h-5 text-white" />
-        Min beholdning
+        Beholdning
       </RouterLink>
       <RouterLink to="/household" class="flex items-center gap-2 hover:underline">
         <User class="w-5 h-5 text-white" />
-        Min husstand
+        Husstand
       </RouterLink>
       <RouterLink
         v-if="userStore.isAdmin"

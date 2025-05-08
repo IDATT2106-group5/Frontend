@@ -42,6 +42,33 @@ const router = useRouter()
 const goToUnder = () => {
   router.push('/under')
 }
+
+/**
+ * Navigates to the "Talk About It" page at "/talk".
+ *
+ * @returns {void}
+ */
+const goToTalkAboutIt = () => {
+  router.push('/talk')
+}
+
+/**
+ * Navigates to the "Mental Health" page at "/mental".
+ *
+ * @returns {void}
+ */
+const goToMentalHealth = () => {
+  router.push('/mental')
+}
+
+/**
+* Navigates to the "Improve" page at "/improve".
+ *
+ * @returns {void}
+ */
+const goToImprove = () => {
+  router.push('/improve')
+}
 </script>
 
 <template>
@@ -74,7 +101,8 @@ const goToUnder = () => {
     >
       <div class="space-y-8 text-left">
         <!-- Card 1 -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-6 min-h-[160px] max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-6 min-h-[160px] max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition"
+        @click="goToTalkAboutIt">
           <InfoBox
             title="1. Snakk om det"
             description="Del erfaringer med andre, snakk om det som har skjedd"
@@ -91,7 +119,8 @@ const goToUnder = () => {
         </div>
 
         <!-- Card 2 -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-6 min-h-[160px] max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-6 min-h-[160px] max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition"
+        @click="goToMentalHealth">
           <InfoBox
             title="2. Mental helse"
             description="Råd for å håndtere stress og etterreaksjoner"
@@ -116,7 +145,8 @@ const goToUnder = () => {
         </div>
 
         <!-- Card 3 -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-6 min-h-[160px] max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-6 min-h-[160px] max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition"
+        @click="goToImprove">
           <InfoBox
             title="3. Lær og forbedre"
             description="Evaluer beredskapen og gjør nødvendige endringer"
