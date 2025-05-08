@@ -9,8 +9,8 @@ class GeolocationService {
    */
   async getUserLocation(options = {}) {
     try {
-      // Try browser geolocation first
       const position = await this.getBrowserLocation(options);
+      this._lastKnownPosition = [position.coords.latitude, position.coords.longitude];
       return [position.coords.latitude, position.coords.longitude];
     } catch (error) {
       console.warn("Browser geolocation failed, falling back to IP geolocation:", error);
@@ -49,14 +49,23 @@ class GeolocationService {
     });
   }
 
-  /**
-   * Get user location using browser's geolocation API without IP fallback
-   * @param {Object} options - Geolocation options
-   * @returns {Promise<Array>} - [latitude, longitude] coordinates
-   */
-  async getBrowserLocationOnly(options = {}) {
-    const position = await this.getBrowserLocation(options);
-    return [position.coords.latitude, position.coords.longitude];
+  async getCachedLocation() {
+    // If we already have a cached position, return it immediately
+    if (this._lastKnownPosition) {
+      return this._lastKnownPosition;
+    }
+
+    // Try to get a position with a short timeout and using cached positions
+    try {
+      return await this.getUserLocation({
+        enableHighAccuracy: false,
+        timeout: 3000, // Short timeout
+        maximumAge: 60000 // Accept positions up to 1 minute old
+      });
+    } catch (error) {
+      console.warn("Could not get cached location:", error);
+      return null;
+    }
   }
 
   /**

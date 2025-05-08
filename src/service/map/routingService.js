@@ -7,16 +7,16 @@ class RoutingService extends BaseService {
   constructor() {
     super('routing');
     this.routingControl = null;
+    this.routingContainer = null;
   }
 
   /**
-   * Generate and display a route on the map
-   *
-   * @param {L.Map} map - The Leaflet map instance
+   * Show route on the map between two coordinates.
+   * @param {L.Map} map - The map instance
    * @param {Array} startCoords - Starting coordinates [lat, lng]
-   * @param {Array} endCoords - Destination coordinates [lat, lng]
-   * @param {Object} options - Additional routing options
-   * @returns {L.Routing.Control} The routing control instance
+   * @param {Array} endCoords - Ending coordinates [lat, lng]
+   * @param {Object} options - Optional configuration
+   * @returns {L.Routing.Control} The routing control
    */
   showRoute(map, startCoords, endCoords, options = {}) {
     console.log("RoutingService.showRoute called with:", { startCoords, endCoords });
@@ -46,9 +46,14 @@ class RoutingService extends BaseService {
           ]
         },
         createMarker: function() {
-          // Return null to hide the default markers since we already have our own
-          return null;
-        }
+          return null; // Don't show default markers
+        },
+        // These are the key settings to completely remove the instructions panel:
+        show: false,
+        collapsible: false,
+        containerClassName: 'hide-completely', // This will be used to hide via CSS
+        addWaypoints: false,
+        draggableWaypoints: false
       };
 
       const mergedOptions = { ...defaultOptions, ...options };
@@ -63,16 +68,27 @@ class RoutingService extends BaseService {
     }
   }
 
+
   /**
    * Clear any existing route from the map
    */
   clearRoute() {
+    console.log("Clearing existing route");
+
     if (this.routingControl) {
-      console.log("Clearing existing route");
-      this.routingControl.remove();
+      try {
+        // First detach any event listeners
+        if (this.routingControl._map) {
+          this.routingControl._map.off('zoomend', this.routingControl._onZoomEnd);
+          this.routingControl._map.off('zoomstart', this.routingControl._onZoomStart);
+        }
+
+        this.routingControl.remove();
+      } catch (error) {
+        console.warn("Error removing routing control:", error);
+      }
       this.routingControl = null;
     }
   }
 }
-
 export default new RoutingService();
