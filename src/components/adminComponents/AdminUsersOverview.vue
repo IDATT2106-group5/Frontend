@@ -1,127 +1,113 @@
-<script>
+<script setup>
 import ConfirmModal from '@/components/householdMainView/modals/ConfirmModal.vue'
 import { ref, reactive } from 'vue'
 
-export default {
-  components: {
-    ConfirmModal
+const props = defineProps({
+  admins: {
+    type: Array,
+    required: true
   },
+  isLoading: {
+    type: Boolean,
+    default: false
+  }
+})
 
-  props: {
-    admins: {
-      type: Array,
-      required: true
-    },
-    isLoading: {
-      type: Boolean,
-      default: false
-    }
-  },
+const emit = defineEmits(['reset-password', 'delete-admin'])
 
-  setup() {
-    const showDeleteModal = ref(false)
-    const adminToDelete = ref(null)
-    const showPasswordModal = ref(false)
-    const adminEmailForPassword = ref('')
-    const successfulResets = reactive({})
-    const isResettingPassword = ref(false)
-    const isDeleting = ref(false)
+const showDeleteModal = ref(false)
+const adminToDelete = ref(null)
+const showPasswordModal = ref(false)
+const adminEmailForPassword = ref('')
+const successfulResets = reactive({})
+const isResettingPassword = ref(false)
+const isDeleting = ref(false)
 
-    return {
-      showDeleteModal,
-      adminToDelete,
-      showPasswordModal,
-      adminEmailForPassword,
-      successfulResets,
-      isDeleting,
-      isResettingPassword
-    }
-  },
+/**
+ * Opens password reset confirmation modal
+ * @param {string} email - Email of the admin to reset password for
+ */
+function openPasswordModal(email) {
+  adminEmailForPassword.value = email
+  showPasswordModal.value = true
+}
 
-  methods: {
-    /**
-     * Opens password reset confirmation modal
-     * @param {string} email - Email of the admin to reset password for
-     */
-    openPasswordModal(email) {
-      this.adminEmailForPassword = email
-      this.showPasswordModal = true
-    },
+/**
+ * Cancels the password reset operation
+ */
+function cancelPasswordReset() {
+  showPasswordModal.value = false
+  adminEmailForPassword.value = ''
+}
 
-    /**
-     * Cancels the password reset operation
-     */
-    cancelPasswordReset() {
-      this.showPasswordModal = false
-      this.adminEmailForPassword = ''
-    },
+/**
+ * Emits reset-password event to parent
+ * @async
+ */
+async function confirmPasswordReset() {
+  if (!adminEmailForPassword.value) return
 
-    /**
-     * Emits reset-password event to parent
-     * @async
-     */
-    async confirmPasswordReset() {
-      if (!this.adminEmailForPassword) return
+  showPasswordModal.value = false
+  isResettingPassword.value = true
 
-      this.showPasswordModal = false
-      this.isResettingPassword = true
+  emit('reset-password', adminEmailForPassword.value)
 
-      this.$emit('reset-password', this.adminEmailForPassword)
+  successfulResets[adminEmailForPassword.value] = true
 
-      this.successfulResets[this.adminEmailForPassword] = true
+  setTimeout(() => {
+    successfulResets[adminEmailForPassword.value] = false
+  }, 60000)
 
-      setTimeout(() => {
-        this.successfulResets[this.adminEmailForPassword] = false
-      }, 60000)
+  isResettingPassword.value = false
+  adminEmailForPassword.value = ''
+}
 
-      this.isResettingPassword = false
-      this.adminEmailForPassword = ''
-    },
+/**
+ * Opens the confirmation modal for deleting an administrator
+ * @param {Object} admin - The administrator to delete
+ */
+function openDeleteModal(admin) {
+  adminToDelete.value = admin
+  showDeleteModal.value = true
+}
 
-    /**
-     * Opens the confirmation modal for deleting an administrator
-     * @param {Object} admin - The administrator to delete
-     */
-    openDeleteModal(admin) {
-      this.adminToDelete = admin
-      this.showDeleteModal = true
-    },
+/**
+ * Cancel the delete operation and close the modal
+ */
+function cancelDelete() {
+  showDeleteModal.value = false
+  adminToDelete.value = null
+}
 
-    /**
-     * Cancel the delete operation and close the modal
-     */
-    cancelDelete() {
-      this.showDeleteModal = false
-      this.adminToDelete = null
-    },
+/**
+ * Emits delete-admin event to parent
+ * @async
+ */
+async function confirmDelete() {
+  if (!adminToDelete.value) return
 
-    /**
-     * Emits delete-admin event to parent
-     * @async
-     */
-    async confirmDelete() {
-      if (!this.adminToDelete) return
+  showPasswordModal.value = false
+  isDeleting.value = true
 
-      this.showPasswordModal = false
-      this.isDeleting = true
+  emit('delete-admin', adminToDelete.value)
 
-      this.$emit('delete-admin', this.adminToDelete)
+  isDeleting.value = false
+  adminToDelete.value = null
+}
 
-      this.isDeleting = false
-      this.adminToDelete = null
-    },
-
-    /**
-     * Marks a reset as failed for UI feedback
-     * @param {string} email - Email address of the admin
-     */
-    markResetFailed(email) {
-      if (this.successfulResets[email]) {
-        this.successfulResets[email] = false
-      }
-    }
+/**
+ * Marks a reset as failed for UI feedback
+ * @param {string} email - Email address of the admin
+ */
+function markResetFailed(email) {
+  if (successfulResets[email]) {
+    successfulResets[email] = false
   }
 }
+
+defineExpose({
+  markResetFailed
+})
 </script>
 
 <template>
