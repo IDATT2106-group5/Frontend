@@ -21,7 +21,7 @@ export default defineConfig([
     'src/components/ui',
     'src/components', // Remove this to start linting non-Shad files
     'src/stores',
-    // 'src/views',
+    'src/views',
   ]),
 
   {
