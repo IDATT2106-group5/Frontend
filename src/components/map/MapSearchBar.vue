@@ -16,6 +16,8 @@ export default {
     const searchInput = ref('');
     const debounceTimeout = ref(null);
     const autoSearchTimeout = ref(null);
+    // Add ref for the search container
+    const searchContainerRef = ref(null);
 
     // Format address components
     const formatAddress = (address) => {
@@ -86,12 +88,8 @@ export default {
 
     // Close search results when clicking outside
     const handleClickOutside = (event) => {
-      // Use the current element instead of searching by class
-      const el = event.target;
-      const searchContainer = el.closest('.relative.w-full.max-w-\\[400px\\]');
-
-      // If click was outside search container
-      if (!searchContainer) {
+      // Use the ref instead of class selector
+      if (searchContainerRef.value && !searchContainerRef.value.contains(event.target)) {
         mapStore.searchResults = [];
       }
     };
@@ -121,6 +119,7 @@ export default {
       searchResults,
       isSearching,
       searchError,
+      searchContainerRef,
       triggerSearch,
       onKeyDown,
       clearSearch,
@@ -132,7 +131,7 @@ export default {
 </script>
 
 <template>
-  <div class="relative w-full max-w-full md:max-w-[400px] z-[1001]">
+  <div ref="searchContainerRef" class="relative w-full max-w-full md:max-w-[400px] z-[1001]">
     <div class="relative flex items-center">
       <input
         v-model="searchInput"
