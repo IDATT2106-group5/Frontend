@@ -25,8 +25,25 @@ export const useNewsStore = defineStore('news', {
 
       try {
         const response = await NewsService.fetchPaginatedNews(page, size)
-        // Append new news items to the existing array
-        this.news = [...this.news, ...(response.news || [])]
+
+        let readIds = []
+        try {
+          const readIdsString = localStorage.getItem('readNewsIds')
+          if (readIdsString) {
+            readIds = JSON.parse(readIdsString)
+          }
+        } catch (e) {
+          console.error('Error parsing read IDs from localStorage:', e)
+        }
+
+        const newNewsItems = (response.news || [])
+          .filter((newItem) => !this.news.some((existingItem) => existingItem.id === newItem.id))
+          .map((item) => ({
+            ...item,
+            read: readIds.includes(item.id),
+          }))
+
+        this.news = [...this.news, ...newNewsItems]
         return response
       } catch (error) {
         console.error('[NewsStore] Failed to fetch news:', error)
@@ -53,11 +70,9 @@ export const useNewsStore = defineStore('news', {
         this.loading = false
       }
     },
-
     selectNews(id) {
       this.selectedNews = this.news.find((newsItem) => newsItem.id === id) || null
     },
-
     async createNews(newsData) {
       this.loading = true
       this.error = null
@@ -74,7 +89,6 @@ export const useNewsStore = defineStore('news', {
         this.loading = false
       }
     },
-
     async updateNews(id, newsData) {
       this.loading = true
       this.error = null
@@ -94,26 +108,25 @@ export const useNewsStore = defineStore('news', {
         this.loading = false
       }
     },
-
     saveReadStatusToLocalStorage() {
       const readIds = this.news.filter((item) => item.read).map((item) => item.id)
       localStorage.setItem('readNewsIds', JSON.stringify(readIds))
     },
-
     loadReadStatusFromLocalStorage() {
       try {
         const readIdsString = localStorage.getItem('readNewsIds')
         if (readIdsString) {
           const readIds = JSON.parse(readIdsString)
           this.news.forEach((item) => {
-            item.read = readIds.includes(item.id)
+            if (readIds.includes(item.id)) {
+              item.read = true
+            }
           })
         }
       } catch (error) {
         console.error('Error loading read status from localStorage:', error)
       }
     },
-
     markAsRead(id) {
       console.log('Marking as read:', id)
       const item = this.news.find((news) => news.id === id)
@@ -122,7 +135,6 @@ export const useNewsStore = defineStore('news', {
         this.saveReadStatusToLocalStorage()
       }
     },
-
     resetState() {
       this.news = []
       this.loading = false

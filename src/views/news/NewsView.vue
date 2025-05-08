@@ -14,6 +14,7 @@ const currentFilter = ref('all') // Current filter for news items ('all', 'unrea
  */
 onMounted(() => {
   fetchPaginatedNews()
+  newsStore.loadReadStatusFromLocalStorage()
 })
 
 /**
