@@ -3,36 +3,75 @@ import HouseholdService from '@/service/householdService';
 import { useUserStore } from '@/stores/UserStore';
 import RequestService from '@/service/requestService';
 
+/**
+ * Pinia store for managing household-related data and actions.
+ */
 export const useHouseholdStore = defineStore('household', {
+  /**
+   * @returns {object} State object for the household store.
+   */
   state: () => ({
+    /** @type {object|null} */
     currentHousehold: null,
+    
+    /** @type {{ registered: Array<object>, unregistered: Array<object> }} */
     members: {
       registered: [],
       unregistered: []
     },
+    /** @type {Array<object>} */
     ownershipRequests: [],
+
+    /** @type {Array<object>} */
     sentInvitations: [],
+
+    /** @type {Array<object>} */
     sentJoinRequests: [],
+
+    /** @type {Array<object>} */
+    receivedInvitations: [],
+
+    /** @type {string|null} */
     error: null,
+
+    /** @type {boolean} */
     isLoading: false,
+
+    /** @type {boolean} */
     hasHousehold: false
   }),
 
   getters: {
+    /**
+     * @returns {Array<object>} All household members (registered + unregistered).
+     */
     allMembers() {
       return [...this.members.registered, ...this.members.unregistered];
     },
+
+    /**
+     * @returns {number} Total count of all household members.
+     */
     totalMemberCount() {
       return this.allMembers.length;
     },
+
+    /**
+     * @returns {boolean} True if current user is the household owner.
+     */
     isCurrentUserOwner() {
       const userStore = useUserStore();
       return userStore.user?.id === this.currentHousehold?.ownerId;
     }
   },
 
-  // Actions to manage household data
   actions: {
+    /**
+     * Verifies if the current user is the household owner.
+     * @private
+     * @throws {Error} If current user is not the owner.
+     * @returns {true}
+     */
     _verifyOwnership() {
       if (!this.isCurrentUserOwner) {
         throw new Error('Kun eier av husstanden kan utføre denne handlingen');
@@ -40,7 +79,11 @@ export const useHouseholdStore = defineStore('household', {
       return true;
     },
 
-    // Method to check if the user has a household and get the information for that household
+    /**
+     * Checks if the current user belongs to a household.
+     * Gets the information for that household.
+     * @returns {Promise<boolean>} True if household is found, otherwise false.
+     */
     async checkCurrentHousehold() {
       try {
         this.isLoading = true;
@@ -79,7 +122,12 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
-    // Method to fetch household details
+    /**
+     * Fetches the current household details.
+     * Updates the current household's name and address.
+     * @param {object} householdData - Contains household id, name, and address.
+     * @returns {Promise<boolean>} True if update was successful.
+     */
     async updateHousehold(householdData) {
       this.isLoading = true;
       try {
@@ -105,7 +153,40 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
-    // Method to add a new unregistered member to the household
+    /**
+     * Loads current household and related data.
+     * @returns {Promise<boolean>} True if household data loaded.
+     */
+    async loadHouseholdData() {
+      this.isLoading = true;
+      this.error = null;
+    
+      try {
+        const hasHousehold = await this.checkCurrentHousehold();
+        this.hasHousehold = !!hasHousehold;
+    
+        if (hasHousehold) {
+          await Promise.all([
+            this.fetchSentInvitations(),
+            this.fetchJoinRequests()
+          ]);
+        }
+    
+        return this.hasHousehold;
+      } catch (e) {
+        this.error = e.response?.data?.error || e.message || 'Kunne ikke laste husholdningsdata';
+        this.hasHousehold = false;
+        return false;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    
+    /**
+     * Adds a new unregistered member to the household.
+     * @param {object} newMember - Member object with name and optional email.
+     * @returns {Promise<object>} The added member object.
+     */
     async addMember(newMember) {
       if (!this.currentHousehold?.id) {
         const hasHousehold = await this.checkCurrentHousehold();
@@ -145,7 +226,13 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
-    // Method to update an unregistered members name
+    /**
+     * Updates an unregistered member's name.
+     * @param {string|number} memberId - ID of the member.
+     * @param {object} data - New data with `name` field.
+     * @param {boolean} isRegistered - Whether the member is registered.
+     * @returns {Promise<object>} Updated member.
+     */
     async updateUnregisteredMember(memberId, data, isRegistered) {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husholdning');
@@ -176,7 +263,12 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
-    // Method to remove a member from the household
+    /**
+     * Removes a member from the household.
+     * @param {object|number} member - Member object or ID.
+     * @param {boolean} isRegistered - Whether the member is registered.
+     * @returns {Promise<void>}
+     */
     async removeMember(member, isRegistered) {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husholdning');
@@ -211,38 +303,48 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
-    // Method to send an invitation to a new member
+    /**
+ * Sends an invitation email & refreshes list.
+ * @param {string} email
+ * @returns {Promise<object>} the raw service response
+ * @throws {object} with `.response.data.message` on failure
+ */
     async inviteMember(email) {
-      if (!this.currentHousehold?.id) {
-        throw new Error('Ingen aktiv husholdning');
-      }
-
       try {
-        this.isLoading = true;
         this._verifyOwnership();
-
-        const request = {
+        const response = await RequestService.sendInvitation({
           email: email,
           householdId: this.currentHousehold.id
-        };
-
-        await RequestService.sendInvitation(request);
+        });
+    
         await this.fetchSentInvitations();
-
-        return true;
-      } catch (err) {
-        if (err.status === 400 && err.message?.includes('User with email not found')) {
-          this.error = 'Ingen registrert bruker med denne e-posten.';
-        } else {
-          this.error = err.message || 'Kunne ikke sende invitasjon';
+        return response;
+      } catch (error) {
+        let message = 'Ingen registrerte brukere eksisterer med denne e-posten';
+        
+        const backendData = error.response?.data || {};
+        const backendMessage = backendData.message || backendData.error || error.message;
+    
+        if (backendMessage.includes('User with email not found')) {
+          message = backendMessage.replace('User with email not found:', 'Fant ingen bruker med e-post:');
         }
-        throw err;
-      } finally {
-        this.isLoading = false;
+    
+        throw {
+          response: {
+            data: {
+              message: message,
+              details: backendMessage
+            }
+          }
+        };
       }
     },
-
-    // Method to cancel an invitation
+    
+    /**
+     * Cancels a previously sent invitation.
+     * @param {string} email - Email of the invited user.
+     * @returns {Promise<void>}
+     */
     async cancelInvitation(email) {
       try {
         this.isLoading = true;
@@ -258,7 +360,10 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
-    // Method to get all sent invitations from the household
+     /**
+     * Fetches all sent invitations from the household.
+     * @returns {Promise<void>}
+     */
     async fetchSentInvitations() {
       if (!this.currentHousehold?.id) {
         console.warn('[FETCH INVITATIONS] No active household');
@@ -287,7 +392,10 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
-    // Method to fetch all join requests received by the household
+    /**
+     * Fetches all join requests received by the household.
+     * @returns {Promise<void>}
+     */
     async fetchJoinRequests() {
       if (!this.currentHousehold?.id) return;
 
@@ -296,6 +404,7 @@ export const useHouseholdStore = defineStore('household', {
         this.ownershipRequests = Array.isArray(requests)
           ? requests.map(req => ({
               id: req.id,
+              userId: req.sender?.id,
               fullName: req.sender?.fullName || 'Ukjent',
               email: req.sender?.email || 'Ukjent',
               status: req.status || 'PENDING'
@@ -306,33 +415,162 @@ export const useHouseholdStore = defineStore('household', {
         this.ownershipRequests = [];
       }
     },
-
-    // Method to update the status of a join request
-    async updateJoinRequestStatus(requestId, action) {
+    
+    /**
+     * Fetches all received invitations for the user.
+     * @returns {Promise<void>}
+     */
+    async fetchReceivedInvitations() {
       try {
         this.isLoading = true;
-        this._verifyOwnership();
-
-        if (action === 'ACCEPTED') {
-          await RequestService.acceptJoinRequest(requestId);
-        } else if (action === 'REJECTED') {
-          await RequestService.declineJoinRequest(requestId);
-        } else {
-          throw new Error('Ugyldig handling for forespørsel');
+        const userStore = useUserStore();
+    
+        if (!userStore.user || !userStore.user.id) {
+          throw new Error('Bruker ikke funnet');
         }
-
-        const request = this.ownershipRequests.find(r => r.id === requestId);
-        if (request) request.status = action;
+    
+        const userId = userStore.user.id;
+  
+    
+        const response = await RequestService.getReceivedInvitationsByUser(userId);
+    
+        
+    
+        this.receivedInvitations = Array.isArray(response)
+          ? response.map(invite => {
+              const mapped = {
+                id: invite.id,
+                householdId: invite.householdId || 'Ukjent',
+                householdName: invite.householdName || 'Ukjent navn',
+                status: invite.status || 'PENDING'
+              };
+          
+              return mapped;
+            })
+          : [];
+    
       } catch (err) {
-        const actionText = action === 'ACCEPTED' ? 'godta' : 'avslå';
-        this.error = err.response?.data?.error || err.message || `Kunne ikke ${actionText} forespørsel`;
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke hente invitasjoner';
+        this.receivedInvitations = [];
+        console.error('[FETCH RECEIVED INVITES] Error:', this.error);
         throw err;
       } finally {
         this.isLoading = false;
       }
     },
 
-    // Method to transfer ownership of the household
+    /**
+     * Accepts a received invitation.
+     * Updates the invitation status to 'ACCEPTED' and refreshes the current household data.
+     * @param {string} invitationId - ID of the invitation.
+     * @returns {Promise<boolean>} True if successful.
+     * @throws {Error} If the request fails or the invitation cannot be processed.
+     */
+    async acceptInvitation(invitationId) {
+      try {
+        this.isLoading = true;
+    
+        await RequestService.acceptInvitationRequest(invitationId); 
+    
+        const invitation = this.receivedInvitations.find(inv => inv.id === invitationId);
+        if (invitation) {
+          invitation.status = 'ACCEPTED';
+        }
+        await this.checkCurrentHousehold();
+    
+        return true;
+      } catch (err) {
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke akseptere invitasjon';
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    
+    /**
+     * Declines a received invitation.
+     * @param {string} invitationId - ID of the invitation.
+     * @returns {Promise<boolean>} True if successful.
+     */
+    async declineInvitation(invitationId) {
+      try {
+        this.isLoading = true;
+    
+        await RequestService.declineJoinRequest(invitationId);
+    
+        const invitation = this.receivedInvitations.find(inv => inv.id === invitationId);
+        if (invitation) {
+          invitation.status = 'REJECTED';
+        }
+    
+        return true;
+      } catch (err) {
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke avslå invitasjon';
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    /**
+     * Adds a user to the household.
+     * @param {string} userId - ID of the user to add.
+     * @returns {Promise<boolean>} True if successful.
+     */
+    async addUserToHousehold(userId) {
+      if (!this.currentHousehold?.id) {
+        throw new Error('Ingen aktiv husholdning');
+      }
+
+      try {
+        this.isLoading = true;
+        this._verifyOwnership();
+
+        await HouseholdService.addUserToHousehold(userId, this.currentHousehold.id);
+        await this.checkCurrentHousehold();
+
+        return true;
+      } catch (err) {
+        this.error = err.response?.data?.error || err.message || 'Kunne ikke legge til bruker i husstand';
+        throw err;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+    /**
+     * Updates the status of a join request.
+     * @param {string} requestId - ID of the join request.
+     * @param {'ACCEPTED'|'REJECTED'} action - Action to perform.
+     * @returns {Promise<void>}
+     */
+    async updateJoinRequestStatus(requestId, action) {
+      this._verifyOwnership()
+      this.isLoading = true
+      try {
+        if (action === 'ACCEPTED') {
+          await RequestService.acceptJoinRequest(requestId)
+          await this.checkCurrentHousehold()
+        }
+        else {
+          await RequestService.declineJoinRequest(requestId)
+        }
+    
+        const req = this.ownershipRequests.find(r => r.id === requestId)
+        if (req) req.status = action
+    
+      } catch (err) {
+        this.error = err.message || `Kunne ikke ${action==='ACCEPTED'?'godta':'avslå'} forespørsel`
+        throw err
+      } finally {
+        this.isLoading = false
+      }
+    },
+    
+    /**
+     * Transfers ownership of the household to another user.
+     * @param {string} userId - ID of the new owner.
+     * @returns {Promise<boolean>} True if successful.
+     */
     async transferOwnership(userId) {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husstand funnet');
@@ -355,7 +593,11 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
-    // Method to create a new household
+     /**
+     * Creates a new household.
+     * @param {object} data - New household data.
+     * @returns {Promise<object>} The created household.
+     */
     async createHousehold(data) {
       try {
         this.isLoading = true;
@@ -371,7 +613,10 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
-    // Method to delete the current household
+    /**
+     * Deletes the current household.
+     * @returns {Promise<void>}
+     */
     async deleteHousehold() {
       const userStore = useUserStore();
 
@@ -395,7 +640,10 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
-    // Method to leave the current household
+    /**
+     * Leaves the current household.
+     * @returns {Promise<void>}
+     */
     async leaveHousehold() {
       if (!this.currentHousehold?.id) {
         throw new Error('Ingen aktiv husholdning å forlate');
@@ -417,49 +665,70 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
+    /**
+     * Searches for a household by ID.
+     * Validates the input, queries the backend, and stores the found household's ID and name.
+     * @param {string|number} householdId - Household ID.
+     * @returns {Promise<{ id: number, name: string } | null>} The household's ID and name if found, otherwise null.
+     * @throws {Error} If the input is invalid or the search fails due to a backend error.
+     */
     async searchHouseholdById(householdId) {
+      this.isLoading = true;
       try {
-        this.isLoading = true;
-        if (!householdId || isNaN(Number(householdId))) {
-          throw new Error('Ugyldig husstands-ID format');
+        if (!householdId || typeof householdId !== 'string') {
+          throw new Error('Ugyldig husstands-ID');
         }
-
-        const response = await HouseholdService.searchHouseholdById({
-          householdId: Number(householdId)
-        });
-        return response;
+        const household = await HouseholdService.searchHouseholdById({ householdId });
+        // 3) Handle empty result
+        if (!household || !household.id) {
+          throw new Error('Ingen husstand funnet');
+        }
+    
+        return { id: household.id, name: household.name };
+    
       } catch (err) {
-        this.error = err.response?.data?.error || err.message || 'Kunne ikke søke etter husstand';
+        const status = err.response?.status;
+        if (status === 400 || status === 404) {
+          throw new Error('Ingen husstand funnet');
+        }
         throw err;
+    
       } finally {
         this.isLoading = false;
       }
     },
-
-    //Send a join request to a household
+    
+    /**
+     * Sends a join request to another household.
+     * @param {string|number} householdId - Target household ID.
+     * @returns {Promise<boolean>} True if request was sent.
+     */
     async sendJoinRequest(householdId) {
       try {
         this.isLoading = true;
         const userStore = useUserStore();
-
+    
         if (!userStore.user || !userStore.user.id) {
           throw new Error('Bruker må være logget inn');
         }
-
+    
+        if (this.currentHousehold?.ownerId === userStore.user.id) {
+          throw new Error('…');
+        }
+    
         const request = {
           userId: userStore.user.id,
           householdId: householdId
         };
-
+    
         await RequestService.sendJoinRequest(request);
-
-        // Add to sent join requests tracking
+    
         this.sentJoinRequests.push({
           householdId: householdId,
           date: new Date().toISOString().split('T')[0],
           status: 'PENDING'
         });
-
+    
         return true;
       } catch (err) {
         this.error = err.response?.data?.error || err.message || 'Kunne ikke sende forespørsel om å bli med i husstand';

@@ -18,6 +18,15 @@ const displayedRequests = computed(() => {
   const start = (page.value - 1) * perPage
   return store.ownershipRequests.slice(start, start + perPage)
 })
+
+const acceptRequestAndAddUser = async request => {
+  try {
+    await store.updateJoinRequestStatus(request.id, 'ACCEPTED')
+  } catch (err) {
+    console.error('Feil under godkjenning/legge til bruker:', err)
+  }
+}
+
 </script>
 
 <template>
@@ -34,7 +43,7 @@ const displayedRequests = computed(() => {
 
         <div v-if="r.status === 'PENDING' && isOwner" class="flex space-x-2">
           <button
-            @click="store.updateJoinRequestStatus(r.id, 'ACCEPTED')"
+            @click="acceptRequestAndAddUser(r)"
             class="px-2 py-1 bg-green-600 text-white rounded hover:bg-green-700"
           >
             Godta

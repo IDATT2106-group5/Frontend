@@ -1,4 +1,3 @@
-// Component for managing ownership transfer in a household
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useHouseholdStore } from '@/stores/HouseholdStore'
@@ -11,8 +10,13 @@ const hoveredIndex = ref(-1)
 const suggestions = computed(() => {
   const q = name.value.trim().toLowerCase()
   if (!q) return []
+  const ownerId = store.currentHousehold.ownerId
   return store.members.registered
-    .filter(m => m.fullName.toLowerCase().includes(q))
+    .filter(m => m.id !== ownerId)
+    .filter(m =>
+      m.fullName.toLowerCase().includes(q) ||
+      m.email.toLowerCase().includes(q)
+    )
     .slice(0, 5)
 })
 
@@ -71,7 +75,7 @@ async function give() {
         @focus="showDropdown = !!name.trim() && !selected"
         @keydown="handleKeydown"
         type="text"
-        placeholder="Skriv navn…"
+        placeholder="Skriv navn eller e-post…"
         class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
 
@@ -89,7 +93,8 @@ async function give() {
             'hover:bg-gray-100': hoveredIndex !== i
           }"
         >
-          {{ s.fullName }}
+          <div>{{ s.fullName }}</div>
+          <div class="text-xs text-black">{{ s.email }}</div>
         </li>
       </ul>
     </div>

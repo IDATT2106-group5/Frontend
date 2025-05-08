@@ -9,7 +9,6 @@ import StorageDetailView from '@/views/storageViews/StorageDetailView.vue'
 import VerifyEmailView from '@/views/mainViews/VerifyEmailView.vue'
 import RegisterSuccessView from '@/views/mainViews/RegisterSucessView.vue'
 import RegisterFailedView from '@/views/mainViews/RegisterFailedView.vue'
-import HouseholdInviteView from '@/views/householdViews/HouseholdInviteView.vue'
 import StorageView from '@/views/storageViews/StorageView.vue'
 import HouseholdCreateView from '@/views/householdViews/HouseholdCreateView.vue'
 import HouseholdJoinView from '@/views/householdViews/HouseholdJoinView.vue'
@@ -31,6 +30,7 @@ import ScenarioList from '@/components/scenario/ScenarioList.vue'
 import ScenarioAdminView from '@/views/ScenarioAdminView.vue'
 import EditScenarioList from '@/components/scenario/EditScenarioList.vue'
 import ScenarioInfo from '@/components/scenario/ScenarioInfo.vue'
+import NyhetsView from '@/views/nyheter/NyhetsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -109,11 +109,6 @@ const router = createRouter({
       component: HouseholdJoinView,
     },
     {
-      path: '/household/invite',
-      name: 'household-invite',
-      component: HouseholdInviteView,
-    },
-    {
       path: '/verify-email',
       name: 'VerifyEmail',
       component: VerifyEmailView
@@ -155,6 +150,11 @@ const router = createRouter({
       name: 'ScenarioInfo',
       component: ScenarioInfo,
       props: true
+    },
+    {
+      path: '/nyheter',
+      name: 'NyhetsView',
+      component: NyhetsView
     },
     {
       path: '/before',

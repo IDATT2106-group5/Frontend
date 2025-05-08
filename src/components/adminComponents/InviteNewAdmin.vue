@@ -12,7 +12,6 @@ const formData = reactive({
 });
 
 const isSubmitting = ref(false);
-const errorMessage = ref('');
 
 const rules = computed(() => {
   return {
@@ -27,7 +26,7 @@ const rules = computed(() => {
         (value) => /^[A-Za-zÆØÅæøå\s]+$/.test(value)
       )
     }
-  }
+  };
 });
 
 const v$ = useVuelidate(rules, formData);
@@ -49,7 +48,6 @@ const submitForm = async () => {
   }
 
   isSubmitting.value = true;
-  errorMessage.value = '';
 
   try {
     emit('invite-admin', {
@@ -57,25 +55,28 @@ const submitForm = async () => {
       fullName: formData.fullName
     });
 
-    formData.email = '';
-    formData.fullName = '';
-
-    v$.value.$reset();
   } catch (error) {
-    errorMessage.value = 'Det oppstod en feil ved sending av invitasjon';
     console.error(error);
-  } finally {
-    isSubmitting.value = false;
   }
 };
 
+/**
+ * Resets the form fields to their initial state.
+ */
+const resetForm = () => {
+  formData.email = '';
+  formData.fullName = '';
+  v$.value.$reset();
+  isSubmitting.value = false;
+};
+
 const emit = defineEmits(['invite-admin']);
+
+defineExpose({ resetForm });
 </script>
 
 <template>
-  <div class="bg-white rounded-lg p-6 shadow-sm border border-gray-100 max-w-md">
-    <h2 class="text-2xl font-bold text-gray-800 mb-6">Invitere Admin</h2>
-
+  <div class="bg-white rounded-lg p-6 shadow-sm border border-gray-200 w-full max-w-md">
     <form @submit.prevent="submitForm" class="space-y-4">
       <!-- Email Input -->
       <div class="space-y-2">
@@ -125,11 +126,6 @@ const emit = defineEmits(['invite-admin']);
         <div v-if="v$.fullName.$error" class="text-red-500 text-xs mt-1">
           {{ getErrorMessage(v$.fullName) }}
         </div>
-      </div>
-
-      <!-- Error Message Display -->
-      <div v-if="errorMessage" class="text-red-600 text-sm">
-        {{ errorMessage }}
       </div>
 
       <!-- Submit Button -->
