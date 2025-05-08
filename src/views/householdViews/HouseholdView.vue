@@ -270,6 +270,7 @@ const sendJoinRequest = async () => {
                     @input="onJoinHouseholdIdInput"
                     id="joinHouseholdId"
                     type="text"
+                    placeholder="A1234CDE"
                     inputmode="text"
                     pattern="[A-Z0-9]*"
                     maxlength="8"
