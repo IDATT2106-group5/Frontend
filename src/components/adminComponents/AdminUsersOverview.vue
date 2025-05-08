@@ -86,7 +86,7 @@ function cancelDelete() {
 async function confirmDelete() {
   if (!adminToDelete.value) return
 
-  showPasswordModal.value = false
+  showDeleteModal.value = false
   isDeleting.value = true
 
   emit('delete-admin', adminToDelete.value)
