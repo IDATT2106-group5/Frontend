@@ -10,6 +10,7 @@ import RoutingService from '@/service/map/routingService';
 import GeolocationService from '@/service/map/geoLocationService.js';
 import GeocodingService from '@/service/map/geocodingService.js'
 import L from 'leaflet';
+import { useIncidentAdminStore } from '@/stores/admin/incidentAdminStore.js'
 
 export const useMapStore = defineStore('map', {
   state: () => ({
@@ -599,14 +600,41 @@ export const useMapStore = defineStore('map', {
     /**
      * Initialize incidents and incident layer
      */
-    initIncidents() {
+    async initIncidents() {
       if (!this.map) return;
 
       // Create incident layer and add to map
       this.incidentLayer = L.layerGroup().addTo(this.map);
 
+      if (!this.incidentLayer) {
+        this.incidentLayer = L.layerGroup().addTo(this.map);
+      } else {
+        // Clear existing incidents
+        this.incidentLayer.clearLayers();
+      }
+
       // Load incidents
-      this.loadIncidents();
+      await this.loadIncidents();
+    },
+
+    async refreshIncidents() {
+      if (!this.map || !this.incidentLayer) return;
+
+      try {
+        // Clear existing incidents
+        this.incidentLayer.clearLayers();
+
+        // Fetch fresh incidents data
+        this.incidents = await IncidentMapService.fetchIncidents();
+
+        // Add incidents to map
+        this.updateIncidentsOnMap();
+
+        return true;
+      } catch (error) {
+        console.error('Error refreshing incidents:', error);
+        return false;
+      }
     },
 
     /**
@@ -650,8 +678,14 @@ export const useMapStore = defineStore('map', {
       // Clear existing incidents
       this.incidentLayer.clearLayers();
 
-      // Add each incident to the map
+      // Get the editingIncidentId from the incidentAdminStore
+      const editingIncidentId = useIncidentAdminStore().editingIncidentId;
+
+      // Add each incident to the map, except the one being edited
       this.incidents.forEach(incident => {
+        // Skip the incident being edited
+        if (incident.id === editingIncidentId) return;
+
         // Use the IncidentConfigService to create circles
         const circleGroup = IncidentConfigService.createIncidentCircles(incident, this.map);
         if (circleGroup) {
