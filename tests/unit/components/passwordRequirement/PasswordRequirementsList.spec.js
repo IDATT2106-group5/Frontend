@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PasswordRequirementsList from '@/components/passwordRequirement/PasswordRequirementsList.vue'
-import PasswordRequirementCheck from '@/components/passwordRequirement/PasswordRequirementCheck.vue'
 
 vi.mock('@/components/passwordRequirement/PasswordRequirementCheck.vue', () => ({
   default: {

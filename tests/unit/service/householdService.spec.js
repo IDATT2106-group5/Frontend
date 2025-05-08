@@ -168,11 +168,11 @@ describe('HouseholdService', () => {
           HouseholdService.searchHouseholdById({ householdId: 'abc!' })
           ).rejects.toThrow('Ugyldig husstands-ID');
        });
-  
+
     it('should call post if ID is valid', async () => {
           mockMethods.post.mockResolvedValue({ id: 1, name: 'TestHouse' });
-          const result = await HouseholdService.searchHouseholdById({ householdId: '123' });
+          await HouseholdService.searchHouseholdById({ householdId: '123' });
           expect(mockMethods.post).toHaveBeenCalledWith('search', { householdId: '123' });
     });
-  });  
+  });
 });
