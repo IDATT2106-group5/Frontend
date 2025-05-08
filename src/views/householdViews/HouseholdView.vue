@@ -36,6 +36,7 @@ const {
 const activeTab = ref('members')
 const confirmLeaveOpen = ref(false)
 const confirmDeleteOpen = ref(false)
+const ownerLeaveErrorOpen = ref(false)
 
 // Join household functionality
 const joinHouseholdId = ref('')
@@ -62,6 +63,13 @@ function copyHouseholdId() {
     .catch(() => alert('Kunne ikke kopiere ID'))
 }
 
+function handleLeaveButtonClick() {
+  if (isOwner.value) {
+    ownerLeaveErrorOpen.value = true
+  } else {
+    confirmLeaveOpen.value = true
+  }
+}
 
 function onJoinHouseholdIdInput(e) {
   const cleaned = e.target.value
@@ -121,17 +129,15 @@ const searchForHousehold = async () => {
 
   console.log('📤 Searching with householdId:', joinHouseholdId.value)
 
-
-
   if (!joinHouseholdId.value) {
-  joinError.value = 'Husstands-ID kan ikke være tomt';
-  return;
+    joinError.value = 'Husstands-ID kan ikke være tomt';
+    return;
   }
 
-if (joinHouseholdId.value === householdId.value) {
-  joinError.value = 'Dette er din nåværende husstand';
-  return;
-}
+  if (joinHouseholdId.value === householdId.value) {
+    joinError.value = 'Dette er din nåværende husstand';
+    return;
+  }
 
   try {
     const found = await houseStore.searchHouseholdById(joinHouseholdId.value)
@@ -220,7 +226,7 @@ const sendJoinRequest = async () => {
             <button v-if="isOwner" @click="confirmDeleteOpen = true" class="px-3 py-1 border border-red-500 text-red-600 rounded hover:bg-red-50">
               Slett husstand
             </button>
-            <button @click="confirmLeaveOpen = true" class="px-3 py-1 border border-gray-700 text-gray-700 rounded hover:bg-gray-100">
+            <button @click="handleLeaveButtonClick" class="px-3 py-1 border border-gray-700 text-gray-700 rounded hover:bg-gray-100">
               Forlat husstand
             </button>
           </div>
@@ -378,6 +384,16 @@ const sendJoinRequest = async () => {
           description="Er du sikker på at du vil forlate husstanden?"
           @cancel="confirmLeaveOpen = false"
           @confirm="handleLeave"
+        />
+
+        <!-- Owner error modal when trying to leave -->
+        <ConfirmModal
+          v-if="ownerLeaveErrorOpen"
+          title="Kan ikke forlate husstand"
+          description="En hustandseier kan ikke forlate hustanden. Vennligst overfør eierskapet til en annen medlem eller slett husstanden."
+          confirmText="OK"
+          :showCancel="false"
+          @confirm="ownerLeaveErrorOpen = false"
         />
       </div>
     </div>
