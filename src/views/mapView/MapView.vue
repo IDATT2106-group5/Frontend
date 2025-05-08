@@ -9,10 +9,7 @@
       </div>
     </transition>
 
-    <!-- Existing components with proper condition checks -->
-    <div class="closest-facility-container" v-if="!isLoadingMarkers && !markersLoadError">
-      <ClosestFacilityFinder />
-    </div>
+    <ClosestFacilityFinder v-if="!isLoadingMarkers && !markersLoadError" />
 
     <!-- Loading indicator -->
     <div v-if="isLoadingMarkers" class="map-loading-overlay">
@@ -106,8 +103,9 @@ export default {
     const { subscribeToPosition, fetchHouseholdPositions, connected } = useWebSocket()
 
     // Use storeToRefs for reactive properties
-    const { layerOptions, activeLayerId, isLoadingMarkers, markersLoadError, notification } =
+    const { layerOptions, activeLayerId, isLoadingMarkers, markersLoadError, notification, activeRoute} =
       storeToRefs(mapStore)
+
 
     // Determine if we're in mobile view
     const isMobileView = computed(() => {
@@ -342,6 +340,7 @@ export default {
       map,
       userMarkers,
       userPositions,
+      activeRoute,
     }
   },
 }
@@ -358,8 +357,8 @@ export default {
 
 .closest-facility-container {
   position: absolute;
-  top: 16px;
-  right: 16px;
+  top: 55px;
+  right: 8px;
   z-index: 1000;
 }
 
@@ -418,20 +417,10 @@ export default {
   padding-top: 8px;
 }
 
-.marker-route-button {
-  background-color: #4caf50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 6px 12px;
-  font-size: 13px;
-  cursor: pointer;
-  transition: background-color 0.2s;
+:deep(.leaflet-top.leaflet-right > div) {
+  display: none;
 }
 
-.marker-route-button:hover {
-  background-color: #388e3c;
-}
 
 /* Map Notification */
 .map-notification {
