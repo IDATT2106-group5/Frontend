@@ -1,4 +1,11 @@
-<script setup xmlns="http://www.w3.org/1999/html">
+<script setup>
+/**
+ * Importing the necessary components and utilities:
+ * - Icons from 'lucide-vue-next' for UI elements.
+ * - Vue's reactive utilities (ref, onMounted, onBeforeUnmount, watch).
+ * - Custom components and stores for user and location management.
+ * - WebSocket composable for handling notifications and real-time updates.
+ */
 import {
   AlarmCheck,
   Bell,
@@ -14,19 +21,25 @@ import {
   User,
 } from 'lucide-vue-next'
 
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/UserStore'
 import useWebSocket from '@/service/websocketComposable.js'
 import { useLocationStore } from '@/stores/map/LocationStore.js'
+import notificationSoundFile from '@/assets/bell-notification-337658.mp3'
 
+// Initialize user and location stores
 const userStore = useUserStore()
 const router = useRouter()
-const mobileMenuOpen = ref(false)
-const showNotifications = ref(false)
+const mobileMenuOpen = ref(false) // State for mobile menu visibility
+const showNotifications = ref(false) // State for notifications panel visibility
 const locationStore = useLocationStore()
 
+// State for notification sound
+const notificationSound = ref(null)
+
+// Destructure WebSocket composable for notification handling
 const {
   notifications,
   notificationCount,
@@ -38,8 +51,26 @@ const {
   connected,
 } = useWebSocket()
 
+// Destructure location store for position sharing
 const { isSharing, startPositionSharing } = useLocationStore()
 
+/**
+ * A function to handle the sound notification.
+ */
+function playNotificationSound() {
+  console.log('Playing notification sound')
+  if (notificationSound.value) {
+    notificationSound.value.currentTime = 0 // Reset sound to beginning
+    notificationSound.value.play().catch(error => {
+      // Handle autoplay restrictions (common in browsers)
+      console.log('Could not play notification sound:', error)
+    })
+  }
+}
+/**
+ * Toggles the visibility of the notifications panel.
+ * Marks all notifications as read when the panel is opened.
+ */
 function toggleNotifications() {
   showNotifications.value = !showNotifications.value
   if (showNotifications.value) {
@@ -53,10 +84,19 @@ function toggleNotifications() {
   }
 }
 
+/**
+ * Marks a specific notification as read.
+ * @param {string} notificationId - The ID of the notification to mark as read.
+ */
 function handleMarkAsRead(notificationId) {
   markAsRead(notificationId)
 }
 
+/**
+ * Formats a timestamp into a readable string.
+ * @param {number} timestamp - The timestamp to format.
+ * @returns {string} - Formatted timestamp in "HH:mm, DD.MM.YYYY" format.
+ */
 function formatTimestamp(timestamp) {
   const date = new Date(timestamp)
 
@@ -69,19 +109,34 @@ function formatTimestamp(timestamp) {
   return `${hours}:${minutes}, ${day}.${month}.${year}`
 }
 
+/**
+ * Logs out the user and redirects to the login page.
+ */
 function handleLogout() {
   userStore.logout()
   router.push('/login')
 }
 
+/**
+ * Lifecycle hook: Executes when the component is mounted.
+ * Starts position sharing if the WebSocket is connected and sharing is enabled.
+ */
 onMounted(() => {
   if (connected.value && isSharing) {
     startPositionSharing()
   } else {
     console.log('WebSocket not connected')
   }
+
+  if (notificationSound.value) {
+    notificationSound.value.src = notificationSoundFile
+  }
 })
 
+/**
+ * Watches for changes in the WebSocket connection status.
+ * If connected and sharing is enabled, starts position sharing.
+ */
 watch(
   () => connected.value,
   (isConnected) => {
@@ -90,7 +145,25 @@ watch(
     }
   },
 )
+/**
+ * Watches for changes in the notification count.
+ * If the count increases, plays the notification sound.
+ */
+watch(
+  () => notificationCount.value,
+  (newCount, oldCount) => {
+    if (newCount > oldCount && oldCount !== undefined) {
+      playNotificationSound()
+    }
+  }
+)
 
+
+/**
+ * Determines the route to navigate to based on the notification type.
+ * @param {Object} notification - The notification object.
+ * @returns {string} - The route path.
+ */
 function getNotificationRoute(notification) {
   switch (notification.type) {
     case 'INVITATION':
@@ -108,8 +181,9 @@ function getNotificationRoute(notification) {
   }
 }
 
-onBeforeUnmount(() => {})
-
+/**
+ * Maps notification types to their respective icons.
+ */
 const notificationIcons = {
   INVITATION: Mail,
   MEMBERSHIP_REQUEST: User,
@@ -119,8 +193,8 @@ const notificationIcons = {
   INFO: Info,
 }
 </script>
-
 <template>
+  <audio ref="notificationSound" preload="auto"></audio>
   <!-- Incident Popup -->
   <transition name="fade">
     <div
