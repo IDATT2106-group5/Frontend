@@ -182,14 +182,14 @@ const routes = [
     name: '2FA',
     component: Admin2FAView,
     props: route => ({ email: route.query.email }),
-    meta: { requiresGuest: true, hideNavbar: true, hideFooter: true }
+    meta: { hideNavbar: true, hideFooter: true }
   },
   {
     path: '/admin-registration',
     name: 'admin-registration',
     component: AdminRegisterView,
     props: route => ({ email: route.query.email, token: route.query.token }),
-    meta: { requiresGuest: true, hideNavbar: true, hideFooter: true }
+    meta: { hideNavbar: true, hideFooter: true }
   },
 
   // --- Not authorized ---
