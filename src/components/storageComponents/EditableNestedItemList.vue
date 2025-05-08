@@ -293,7 +293,7 @@ function deleteItem(itemId) {
 
 <template>
   <div v-if="!searchQuery" class="p-2 sm:p-4 bg-white rounded">
-    <!-- Header Row with smaller text and more spacing -->
+    <!-- Header Row -->
     <div
       class="grid grid-cols-5 gap-2 sm:gap-3 items-center p-1.5 sm:p-3 font-semibold text-gray-700 border-b border-gray-300"
     >
@@ -460,7 +460,7 @@ function deleteItem(itemId) {
     <p v-else class="text-gray-500 italic text-center mt-2 sm:mt-4">Ingen varer funnet.</p>
   </div>
 
-  <!-- Search Result View with the same mobile-friendly adjustments -->
+  <!-- Search Result View -->
   <div v-else class="p-2 sm:p-4 bg-white rounded">
     <div
       class="grid grid-cols-5 gap-2 sm:gap-3 items-center p-1.5 sm:p-3 font-semibold text-gray-700 border-b border-gray-300"
