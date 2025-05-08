@@ -14,7 +14,7 @@ const props = defineProps({
   searchQuery: {
     type: String,
     default: '',
-  }
+  },
 })
 
 /**
@@ -292,30 +292,42 @@ function deleteItem(itemId) {
 </script>
 
 <template>
-  <div v-if="!searchQuery" class="p-4 bg-white rounded">
+  <div v-if="!searchQuery" class="p-2 sm:p-4 bg-white rounded">
+    <!-- Header Row with smaller text and more spacing -->
     <div
-      class="grid grid-cols-5 items-center p-3 font-semibold text-gray-700 border-b border-gray-300"
+      class="grid grid-cols-5 gap-2 sm:gap-3 items-center p-1.5 sm:p-3 font-semibold text-gray-700 border-b border-gray-300"
     >
-      <div class="font-medium pb-3">Navn:</div>
-      <div class="font-medium pb-3">Utløps dato:</div>
-      <div class="font-medium pb-3">Kvantitet:</div>
-      <div class="font-medium pb-3">Går ut på dato om:</div>
+      <div class="font-medium text-[10px] xs:text-xs sm:text-sm md:text-base">Navn:</div>
+      <div class="font-medium text-[10px] xs:text-xs sm:text-sm md:text-base">Utløps dato:</div>
+      <div class="font-medium text-[10px] xs:text-xs sm:text-sm md:text-base">Kvantitet:</div>
+      <div class="font-medium text-[10px] xs:text-xs sm:text-sm md:text-base">Går ut på dato:</div>
+      <div></div>
     </div>
 
     <div v-if="groupedSubItems && Object.keys(groupedSubItems).length > 0">
-      <div v-for="(group, groupName) in groupedSubItems" :key="groupName" class="mb-4">
+      <div v-for="(group, groupName) in groupedSubItems" :key="groupName" class="mb-2 sm:mb-4">
+        <!-- Group Header Row -->
         <div
           @click="toggleSubAccordion(groupName)"
-          class="grid grid-cols-5 items-center p-2 cursor-pointer hover:bg-gray-50 border-b border-gray-200"
+          class="grid grid-cols-5 gap-1 sm:gap-2 items-center p-1 sm:p-2 cursor-pointer hover:bg-gray-50 border-b border-gray-200"
         >
-          <div class="font-medium">{{ groupName }}</div>
-          <div>{{ getEarliestExpiryDate(group) }}</div>
-          <div>{{ getTotalQuantity(group) }} {{ group[0]?.unit || 'stk' }}</div>
-          <div>
+          <div
+            class="font-medium text-xs sm:text-sm md:text-base overflow-hidden break-words min-w-0"
+          >
+            {{ groupName }}
+          </div>
+          <div class="text-xs sm:text-sm md:text-base overflow-hidden break-words min-w-0">
+            {{ getEarliestExpiryDate(group) }}
+          </div>
+          <div class="text-xs sm:text-sm md:text-base overflow-hidden break-words min-w-0">
+            {{ getTotalQuantity(group) }}
+            {{ group[0]?.unit || 'stk' }}
+          </div>
+          <div class="text-xs sm:text-sm md:text-base overflow-hidden break-words min-w-0">
             <span
               v-if="getEarliestItemExpirationStatus(group).isExpired"
               class="text-red-600 font-medium"
-            >{{ getEarliestItemExpirationStatus(group).text }}</span
+              >{{ getEarliestItemExpirationStatus(group).text }}</span
             >
             <span v-else>{{ getEarliestItemExpirationStatus(group).text }}</span>
           </div>
@@ -323,7 +335,7 @@ function deleteItem(itemId) {
             <svg
               xmlns="http://www.w3.org/2000/svg"
               :class="[
-                'h-5 w-5 transform transition-transform',
+                'h-4 w-4 sm:h-5 sm:w-5 transform transition-transform',
                 openSubItems.includes(groupName) ? 'rotate-180' : '',
               ]"
               viewBox="0 0 20 20"
@@ -338,16 +350,17 @@ function deleteItem(itemId) {
           </div>
         </div>
 
+        <!-- Edit Mode Sub-Items -->
         <div
           v-if="openSubItems.includes(groupName) && isEditing"
-          class="mt-1 border-l-2 border-gray-200"
+          class="mt-0.5 sm:mt-1 border-l-2 border-gray-200"
         >
           <div
             v-for="item in group"
             :key="item.id"
-            class="grid grid-cols-5 items-center p-2 hover:bg-gray-50"
+            class="grid grid-cols-5 gap-1 sm:gap-2 items-center p-1 sm:p-2 hover:bg-gray-50"
           >
-            <div>
+            <div class="text-xs sm:text-sm md:text-base overflow-hidden break-words min-w-0">
               <span>{{ item.name }}</span>
             </div>
             <div>
@@ -355,68 +368,88 @@ function deleteItem(itemId) {
                 v-if="editingItem === item.id"
                 type="date"
                 v-model="editingData.expiryDate"
-                class="w-full px-2 py-1 border rounded"
+                class="w-full px-1 py-0.5 sm:px-2 sm:py-1 border rounded text-xs sm:text-sm"
               />
-              <span v-else>{{ item.expiryDate || 'N/A' }}</span>
+              <span
+                v-else
+                class="text-xs sm:text-sm md:text-base overflow-hidden break-words min-w-0"
+                >{{ item.expiryDate || 'N/A' }}</span
+              >
             </div>
             <div>
               <div v-if="editingItem === item.id" class="flex items-center">
                 <input
                   v-model="editingData.quantity"
                   type="number"
-                  class="w-24 px-2 py-1 border rounded"
+                  class="w-12 sm:w-16 md:w-24 px-1 py-0.5 sm:px-2 sm:py-1 border rounded text-xs sm:text-sm"
                 />
-                <span class="ml-2">{{ item.unit || 'stk' }}</span>
+                <span class="ml-0.5 sm:ml-1 text-xs sm:text-sm md:text-base">{{
+                  item.unit || 'stk'
+                }}</span>
               </div>
-              <span v-else>{{ item.quantity }} {{ item.unit || 'stk' }}</span>
+              <span
+                v-else
+                class="text-xs sm:text-sm md:text-base overflow-hidden break-words min-w-0"
+                >{{ item.quantity }} {{ item.unit || 'stk' }}</span
+              >
             </div>
-            <div>
+            <div class="text-xs sm:text-sm md:text-base overflow-hidden break-words min-w-0">
               <span
                 v-if="getExpirationStatus(item.expiryDate).isExpired"
                 class="text-red-600 font-medium"
-              >{{ getExpirationStatus(item.expiryDate).text }}</span
+                >{{ getExpirationStatus(item.expiryDate).text }}</span
               >
               <span v-else>{{ getExpirationStatus(item.expiryDate).text }}</span>
             </div>
-            <div class="flex justify-end space-x-2">
-              <div class="flex space-x-2">
+            <div class="flex justify-end space-x-0.5 sm:space-x-1 md:space-x-2">
+              <div class="flex space-x-0.5 sm:space-x-1 md:space-x-2">
                 <Pencil
                   v-if="editingItem !== item.id"
                   @click.stop="startEditing(item)"
-                  class="h-5 w-5 text-gray-600 hover:text-blue-600 cursor-pointer"
+                  class="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-gray-600 hover:text-blue-600 cursor-pointer flex-shrink-0"
                 />
                 <Save
                   v-if="editingItem === item.id"
                   @click.stop="saveItemEdit(item.id)"
-                  class="h-5 w-5 text-gray-600 hover:text-green-600 cursor-pointer"
+                  class="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-gray-600 hover:text-green-600 cursor-pointer flex-shrink-0"
                 />
                 <Trash
                   @click.stop="deleteItem(item.id)"
-                  class="h-5 w-5 text-gray-600 hover:text-red-600 cursor-pointer"
+                  class="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-gray-600 hover:text-red-600 cursor-pointer flex-shrink-0"
                 />
               </div>
             </div>
           </div>
         </div>
 
-        <div v-else-if="openSubItems.includes(groupName)" class="mt-1 border-l-2 border-gray-200">
+        <!-- View Mode Sub-Items -->
+        <div
+          v-else-if="openSubItems.includes(groupName)"
+          class="mt-0.5 sm:mt-1 border-l-2 border-gray-200"
+        >
           <div
             v-for="(subGroup, expiryDate) in groupItemsByExpiryDate(group)"
             :key="expiryDate"
-            class="grid grid-cols-5 items-center p-2 hover:bg-gray-50"
+            class="grid grid-cols-5 gap-1 sm:gap-2 items-center p-1 sm:p-2 hover:bg-gray-50"
           >
-            <div>{{ subGroup[0].name }}</div>
-            <div>{{ expiryDate }}</div>
-            <div>{{ getSubGroupTotalQuantity(subGroup) }} {{ subGroup[0].unit || 'stk' }}</div>
-            <div>
+            <div class="text-xs sm:text-sm md:text-base overflow-hidden break-words min-w-0">
+              {{ subGroup[0].name }}
+            </div>
+            <div class="text-xs sm:text-sm md:text-base overflow-hidden break-words min-w-0">
+              {{ expiryDate }}
+            </div>
+            <div class="text-xs sm:text-sm md:text-base overflow-hidden break-words min-w-0">
+              {{ getSubGroupTotalQuantity(subGroup) }} {{ subGroup[0].unit || 'stk' }}
+            </div>
+            <div class="text-xs sm:text-sm md:text-base overflow-hidden break-words min-w-0">
               <span
                 v-if="subGroup[0].expirationStatus && subGroup[0].expirationStatus.isExpired"
                 class="text-red-600 font-medium"
-              >{{ subGroup[0].expirationStatus.text }}</span
+                >{{ subGroup[0].expirationStatus.text }}</span
               >
-              <span v-else>{{
-                  subGroup[0].expirationStatus ? subGroup[0].expirationStatus.text : ''
-                }}</span>
+              <span v-else>
+                {{ subGroup[0].expirationStatus ? subGroup[0].expirationStatus.text : '' }}
+              </span>
             </div>
             <div></div>
           </div>
@@ -424,75 +457,89 @@ function deleteItem(itemId) {
       </div>
     </div>
 
-    <p v-else class="text-gray-500 italic text-center mt-4">Ingen varer funnet.</p>
+    <p v-else class="text-gray-500 italic text-center mt-2 sm:mt-4">Ingen varer funnet.</p>
   </div>
 
-  <div v-else class="p-4 bg-white rounded">
+  <!-- Search Result View with the same mobile-friendly adjustments -->
+  <div v-else class="p-2 sm:p-4 bg-white rounded">
     <div
-      class="grid grid-cols-5 items-center p-3 font-semibold text-gray-700 border-b border-gray-300"
+      class="grid grid-cols-5 gap-2 sm:gap-3 items-center p-1.5 sm:p-3 font-semibold text-gray-700 border-b border-gray-300"
     >
-      <div class="font-medium pb-3">Navn:</div>
-      <div class="font-medium pb-3">Utløps dato:</div>
-      <div class="font-medium pb-3">Kvantitet:</div>
-      <div class="font-medium pb-3">Går ut på dato om:</div>
+      <div class="font-medium text-[10px] xs:text-xs sm:text-sm md:text-base">Navn:</div>
+      <div class="font-medium text-[10px] xs:text-xs sm:text-sm md:text-base">Utløps dato:</div>
+      <div class="font-medium text-[10px] xs:text-xs sm:text-sm md:text-base">Kvantitet:</div>
+      <div class="font-medium text-[10px] xs:text-xs sm:text-sm md:text-base">Går ut på dato:</div>
+      <div></div>
     </div>
 
     <div v-if="items && items.length > 0">
       <div
         v-for="item in items"
         :key="item.id"
-        class="grid grid-cols-5 items-center p-2 hover:bg-gray-50 border-b border-gray-200"
+        class="grid grid-cols-5 gap-1 sm:gap-2 items-center p-1 sm:p-2 hover:bg-gray-50 border-b border-gray-200"
       >
-        <div class="font-medium">{{ item.name }}</div>
+        <div
+          class="font-medium text-xs sm:text-sm md:text-base overflow-hidden break-words min-w-0"
+        >
+          {{ item.name }}
+        </div>
         <div>
           <input
             v-if="editingItem === item.id"
             type="date"
             v-model="editingData.expiryDate"
-            class="w-full px-2 py-1 border rounded"
+            class="w-full px-1 py-0.5 sm:px-2 sm:py-1 border rounded text-xs sm:text-sm"
           />
-          <span v-else>{{ item.expiryDate || 'N/A' }}</span>
+          <span
+            v-else
+            class="text-xs sm:text-sm md:text-base overflow-hidden break-words min-w-0"
+            >{{ item.expiryDate || 'N/A' }}</span
+          >
         </div>
         <div>
           <div v-if="editingItem === item.id" class="flex items-center">
             <input
               v-model="editingData.quantity"
               type="number"
-              class="w-24 px-2 py-1 border rounded"
+              class="w-12 sm:w-16 md:w-24 px-1 py-0.5 sm:px-2 sm:py-1 border rounded text-xs sm:text-sm"
             />
-            <span class="ml-2">{{ item.unit || 'stk' }}</span>
+            <span class="ml-0.5 sm:ml-1 text-xs sm:text-sm md:text-base">{{
+              item.unit || 'stk'
+            }}</span>
           </div>
-          <span v-else>{{ item.quantity }} {{ item.unit || 'stk' }}</span>
+          <span v-else class="text-xs sm:text-sm md:text-base overflow-hidden break-words min-w-0"
+            >{{ item.quantity }} {{ item.unit || 'stk' }}</span
+          >
         </div>
-        <div>
+        <div class="text-xs sm:text-sm md:text-base overflow-hidden break-words min-w-0">
           <span
             v-if="getExpirationStatus(item.expiryDate).isExpired"
             class="text-red-600 font-medium"
-          >{{ getExpirationStatus(item.expiryDate).text }}</span
+            >{{ getExpirationStatus(item.expiryDate).text }}</span
           >
           <span v-else>{{ getExpirationStatus(item.expiryDate).text }}</span>
         </div>
-        <div v-if="isEditing" class="flex justify-end space-x-2">
-          <div class="flex space-x-2">
+        <div v-if="isEditing" class="flex justify-end space-x-0.5 sm:space-x-1 md:space-x-2">
+          <div class="flex space-x-0.5 sm:space-x-1 md:space-x-2">
             <Pencil
               v-if="editingItem !== item.id"
               @click.stop="startEditing(item)"
-              class="h-5 w-5 text-gray-600 hover:text-blue-600 cursor-pointer"
+              class="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-gray-600 hover:text-blue-600 cursor-pointer flex-shrink-0"
             />
             <Save
               v-if="editingItem === item.id"
               @click.stop="saveItemEdit(item.id)"
-              class="h-5 w-5 text-gray-600 hover:text-green-600 cursor-pointer"
+              class="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-gray-600 hover:text-green-600 cursor-pointer flex-shrink-0"
             />
             <Trash
               @click.stop="deleteItem(item.id)"
-              class="h-5 w-5 text-gray-600 hover:text-red-600 cursor-pointer"
+              class="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-gray-600 hover:text-red-600 cursor-pointer flex-shrink-0"
             />
           </div>
         </div>
       </div>
     </div>
 
-    <p v-else class="text-gray-500 italic text-center mt-4">Ingen varer funnet.</p>
+    <p v-else class="text-gray-500 italic text-center mt-2 sm:mt-4">Ingen varer funnet.</p>
   </div>
 </template>
