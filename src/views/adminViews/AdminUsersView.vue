@@ -84,14 +84,12 @@ async function handlePasswordReset(email) {
  * @param {Object} admin - The admin to delete
  */
 async function handleAdminDelete(admin) {
-  console.log('Admin deletion requested for:', admin.email);
-
   try {
-    adminStore.error = null;
-    adminStore.isLoading = true;
+    const response = adminStore.deleteAdmin(admin.id)
 
-    await AdminService.deleteAdmin(admin.id);
-    showSuccessMessage(`Admin ${admin.email} har blitt slettet`);
+    if (response) {
+      showSuccessMessage(`Admin ${admin.email} har blitt slettet`)
+    }
 
     await adminStore.fetchAdmins();
 

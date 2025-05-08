@@ -95,5 +95,25 @@ export const useAdminStore = defineStore('admin', {
         this.isLoading = false
       }
     },
+
+    async deleteAdmin(adminId) {
+      this.isLoading = true
+      this.error = null
+      try {
+        const response = await adminService.deleteAdmin(adminId)
+
+        if (response) {
+          console.log("[Response from delete admin] ", response)
+          return response
+        }
+        return null
+      } catch (error) {
+        console.error('[AdminStore] Failed to delete Admin user:', error)
+        this.error = error.message || 'Noe gikk galt ved sletting av admin bruker'
+        throw error
+      } finally {
+        this.isLoading = false
+      }
+    },
   }
 })
