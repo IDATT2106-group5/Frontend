@@ -3,7 +3,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { useHouseholdStore } from '@/stores/HouseholdStore';
 import HouseholdService from '@/service/householdService';
 import RequestService from '@/service/requestService';
-import { useUserStore } from '@/stores/UserStore';
 
 
 vi.mock('@/service/householdService', () => ({
@@ -23,7 +22,7 @@ vi.mock('@/service/householdService', () => ({
       searchHouseholdById: vi.fn(),
     }
   }));
-  
+
   vi.mock('@/service/requestService', () => ({
     default: {
       sendInvitation: vi.fn(),
@@ -107,9 +106,9 @@ describe('HouseholdStore', () => {
     store.currentHousehold = { id: 'h1', ownerId: 'user1' };
     const member = { id: 'm1', fullName: 'Old', isRegistered: false };
     store.members.unregistered = [member];
-  
+
     await store.removeMember(member, false);
-  
+
     expect(store.members.unregistered).toHaveLength(0);
   });
 

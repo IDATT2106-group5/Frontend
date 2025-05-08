@@ -18,9 +18,9 @@ export const useUserStore = defineStore('user', {
     isAdmin: (state) => state.user?.role === 'ADMIN' || state.user?.role === 'SUPERADMIN',
     isSuperAdmin: (state) => state.user?.role === 'SUPERADMIN',
   },
- 
+
   actions: {
-    
+
     setUser(user) {
       this.user = user
     },
@@ -40,20 +40,24 @@ export const useUserStore = defineStore('user', {
      * @throws {Error} Throws an error if the registration process fails unexpectedly.
      */
     async register(userData) {
-      this.isLoading = true;
-      this.error = null;
+      this.isLoading = true
+      this.error = null
       try {
-        const response = await AuthService.register(userData);
-        return true;
+        const response = await AuthService.register(userData)
+
+        if (response) {
+          return true
+        }
+        return false
       } catch (err) {
         if (err.response && err.response.data && err.response.data.error === "Email already in use") {
-          this.error = "E-postadressen er allerede registrert.";
+          this.error = "E-postadressen er allerede registrert."
         } else {
-          this.error = err.message || "Noe gikk galt under registrering.";
+          this.error = err.message || "Noe gikk galt under registrering."
         }
-        return false;
+        return false
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
       }
     },
 
@@ -105,7 +109,7 @@ export const useUserStore = defineStore('user', {
       try {
         const response = await apiClient.get('user/me')
         console.log("Fetch user called - implement UserService");
-        this.user = response.data 
+        this.user = response.data
       } catch (err) {
         console.error("Error fetching user:", err);
         this.logout()
@@ -216,7 +220,7 @@ export const useUserStore = defineStore('user', {
       if (token) {
         this.token = token
         apiClient.defaults.headers.common['Authorization'] = `Bearer ${token}`
-        
+
         // Only fetch user if you're not on a public route
         const publicRoutes = ['/login', '/register', '/reset-password']
         const currentPath = window.location.pathname
@@ -225,7 +229,7 @@ export const useUserStore = defineStore('user', {
         }
       }
     },
-    
+
     /**
      * Sends a password reset request to the backend for the provided email address.
      *
@@ -249,7 +253,7 @@ export const useUserStore = defineStore('user', {
         this.isLoading = false;
       }
     },
-    
+
     /**
      * Sends a request to reset the user's password using a valid token and the new password.
      *
@@ -285,7 +289,7 @@ export const useUserStore = defineStore('user', {
     async validateResetToken(token) {
       this.isLoading = true;
       this.error = null;
-    
+
       try {
         const response = await AuthService.validateResetToken(token);
         return { success: true, message: response.data.message };
@@ -296,8 +300,5 @@ export const useUserStore = defineStore('user', {
         this.isLoading = false;
       }
     }
-    
-    
-    
   }
 });
