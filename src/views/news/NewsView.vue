@@ -1,18 +1,36 @@
-
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useNewsStore } from '@/stores/news/NewsStore.js'
 
 const newsStore = useNewsStore()
-const itemsToShow = ref(5) // Number of news items to display initially
+const currentPage = ref(0)
+const pageSize = ref(5)
+const totalPages = ref(0)
+
 const currentFilter = ref('all') // Current filter for news items ('all', 'unread', 'read')
 
 /**
- * Fetches news items when the component is mounted.
+ * Fetches paginated news items when the component is mounted.
  */
 onMounted(() => {
-  newsStore.fetchAllNews()
+  fetchPaginatedNews()
 })
+
+/**
+ * Fetches news items with pagination from the backend.
+ */
+function fetchPaginatedNews() {
+  newsStore
+    .fetchPaginatedNews(currentPage.value, pageSize.value)
+    .then((response) => {
+      if (response && response.totalPages) {
+        totalPages.value = response.totalPages
+      }
+    })
+    .catch((error) => {
+      console.error('Error fetching paginated news:', error)
+    })
+}
 
 /**
  * Formats a date string into a localized Norwegian date and time format.
@@ -21,14 +39,28 @@ onMounted(() => {
  * @returns {string} The formatted date and time string in 'no-NO' locale.
  */
 function formatDate(dateString) {
-  const date = new Date(dateString)
-  return new Intl.DateTimeFormat('no-NO', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(date)
+  try {
+    if (!dateString) return 'Unknown date'
+
+    const date = new Date(dateString)
+
+    // Check if the date is valid
+    if (isNaN(date.getTime())) {
+      console.log('Invalid date received:', dateString)
+      return 'Invalid date'
+    }
+
+    return new Intl.DateTimeFormat('no-NO', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(date)
+  } catch (error) {
+    console.error('Error formatting date:', error, dateString)
+    return 'Invalid date'
+  }
 }
 
 /**
@@ -50,9 +82,11 @@ function markAsRead(news) {
  * @returns {Array} The filtered list of news items.
  */
 const allFilteredNews = computed(() => {
-  if (currentFilter.value === 'all') return newsStore.getAllNews
-  if (currentFilter.value === 'unread') return newsStore.unreadNews
-  if (currentFilter.value === 'read') return newsStore.readNews
+  const allNews = newsStore.getAllNews || []
+
+  if (currentFilter.value === 'all') return allNews
+  if (currentFilter.value === 'unread') return allNews.filter((item) => !item.read)
+  if (currentFilter.value === 'read') return allNews.filter((item) => item.read)
   return []
 })
 
@@ -62,14 +96,15 @@ const allFilteredNews = computed(() => {
  * @returns {Array} The visible news items.
  */
 const filteredNews = computed(() => {
-  return allFilteredNews.value.slice(0, itemsToShow.value)
+  return allFilteredNews.value
 })
 
 /**
  * Increases the number of news items to display by 5.
  */
 const loadMore = () => {
-  itemsToShow.value += 5
+  currentPage.value += 1
+  fetchPaginatedNews()
 }
 
 /**
@@ -78,7 +113,9 @@ const loadMore = () => {
  * @returns {boolean} True if there are more items to display, false otherwise.
  */
 const hasMoreItems = computed(() => {
-  return itemsToShow.value < allFilteredNews.value.length
+  console.log('Current Page:', currentPage.value)
+  console.log('Total Pages:', totalPages.value)
+  return totalPages.value - 1 > currentPage.value
 })
 </script>
 
@@ -105,9 +142,7 @@ const hasMoreItems = computed(() => {
       :class="{ 'border-blue-400': !news.read, 'border-white': news.read }"
     >
       <h2 class="font-bold text-lg mb-1">{{ news.title }}</h2>
-      <p class="text-sm text-gray-500 mb-2">
-        {{ news.source }} | {{ formatDate(news.created_at) }}
-      </p>
+      <p class="text-sm text-gray-500 mb-2">{{ news.source }} | {{ formatDate(news.createdAt) }}</p>
       <p class="text-gray-800 mb-4">{{ news.content }}</p>
       <button
         class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"

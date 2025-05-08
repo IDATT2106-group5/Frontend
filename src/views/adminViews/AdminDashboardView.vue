@@ -50,7 +50,7 @@ const adminButtons = computed(() => {
   const buttons = [
     { label: 'Aktive kriser', route: '/admin/incidents' },
     { label: 'Kart markører', route: '/admin/map-icons' },
-    { label: 'Nyhetshåndtering', route: '/admin/amin-news'},
+    { label: 'Nyhetshåndtering', route: '/admin/admin-news'},
     { label: 'Scenarioer', route: 'admin-scenarios' },
   ]
 

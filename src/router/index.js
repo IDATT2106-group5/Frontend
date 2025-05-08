@@ -40,6 +40,7 @@ import EditScenarioList from '@/components/scenario/EditScenarioList.vue'
 import ScenarioInfo from '@/components/scenario/ScenarioInfo.vue'
 import NewsView from '@/views/news/NewsView.vue'
 import NewsAdminView from '@/views/news/NewsAdminView.vue'
+import AfterView from '@/views/informationViews/AfterView.vue'
 
 const routes = [
   // --- Public ---
@@ -204,7 +205,17 @@ const routes = [
     path: '/not-authorized',
     name: 'not-authorized',
     component: notAuthorizedView
-  }
+  },
+  {
+    path: '/after',
+    name: 'after',
+    component: AfterView
+  },
+  {
+    path: '/under',
+    name: 'under',
+    component: SeekSafetyView
+  },
 ]
 
 const router = createRouter({

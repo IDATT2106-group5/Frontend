@@ -1,4 +1,4 @@
-import BaseService from '@/service/baseService';
+import BaseService from '@/service/baseService'
 
 /**
  * Service class for handling scenario-related API operations
@@ -18,14 +18,23 @@ class NewsService extends BaseService {
    * @returns {Promise<Array>} Promise resolving to an array of scenario objects
    * @throws {Error} If the API request fails
    */
-  async getAllNews() {
+  async fetchPaginatedNews(page, size) {
     try {
-      return await this.get('')
+      const response = await this.get(`get/?page=${page}&size=${size}`)
+      const data = response
+
+      console.log(data)
+
+      return {
+        news: data.news || [],
+        totalPages: data.totalPages || 1,
+        totalElements: data.totalElements || 0,
+      }
     } catch (error) {
       console.error('[ScenarioService] Failed to fetch scenarios:', error)
-      throw error
     }
   }
+
   /**
    * Retrieves a specific scenario by its ID
    * @async
