@@ -59,8 +59,20 @@ onMounted(async () => {
 
 function copyHouseholdId() {
   navigator.clipboard.writeText(householdId.value)
-    .then(() => alert('Husstands-ID kopiert!'))
-    .catch(() => alert('Kunne ikke kopiere ID'))
+    .then(() => {
+      toast({
+        title: 'Husstands-ID kopiert',
+        description: 'Husstands-ID er nå i utklippstavlen.',
+        variant: 'success'
+      })
+    })
+    .catch(() => {
+      toast({
+        title: 'Kunne ikke kopiere',
+        description: 'Det skjedde en feil ved kopiering av husstands-ID.',
+        variant: 'destructive'
+      })
+    })
 }
 
 function handleLeaveButtonClick() {
