@@ -1,22 +1,43 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, RouterLinkStub } from '@vue/test-utils'
+import { createTestingPinia } from '@pinia/testing'
 import HomeView from '@/views/mainViews/HomeView.vue'
 
-// Mock DateStore
+// Mock all required stores
 vi.mock('@/stores/DateStore', () => ({
   useDateStore: () => ({
+    currentDateTime: new Date().toISOString(),
     formattedDateTime: '05. mai 2025 14:00',
     startClock: vi.fn(),
     stopClock: vi.fn(),
   }),
 }))
 
-// Mock UserStore
 vi.mock('@/stores/UserStore', () => ({
   useUserStore: () => ({
     user: null,
     autoLogin: vi.fn(),
-    fetchUser: vi.fn(),
+    fetchUser: vi.fn().mockResolvedValue(),
+  }),
+}))
+
+vi.mock('@/stores/NewsStore', () => ({
+  useNewsStore: () => ({
+    newsItems: [],
+    fetchNews: vi.fn().mockResolvedValue(),
+  }),
+}))
+
+vi.mock('@/stores/HouseholdStore', () => ({
+  useHouseholdStore: () => ({
+    currentHousehold: vi.fn().mockResolvedValue(),
+  }),
+}))
+
+vi.mock('@/stores/admin/incidentAdminStore.js', () => ({
+  useIncidentAdminStore: () => ({
+    incidents: [],
+    fetchIncidents: vi.fn().mockResolvedValue(),
   }),
 }))
 
@@ -29,6 +50,11 @@ describe('HomeView.vue', () => {
         stubs: {
           RouterLink: RouterLinkStub,
         },
+        plugins: [
+          createTestingPinia({
+            createSpy: vi.fn,
+          }),
+        ],
       },
     })
   })
@@ -52,5 +78,4 @@ describe('HomeView.vue', () => {
     const link = wrapper.findAllComponents(RouterLinkStub).find(l => l.props().to === '/after')
     expect(link).toBeTruthy()
   })
-  
 })
