@@ -19,15 +19,11 @@ class HouseholdService extends BaseService {
    * @param {string} userId - ID of the user.
    * @returns {Promise<Object>} Household data.
    * @throws {Error} If userId is missing or request fails.
-   */  
-  async getHouseholdDetailsByUserId(userId) {
-    if (!userId) {
-      throw new Error('[ERROR] userId is undefined or null when calling getHouseholdDetailsByUserId');
-    }
+   */
+  async getHouseholdDetailsByUserId() {
     try {
- 
-      const response = await this.post('details', { userId });
-    
+      const response = await this.post('details');
+
       return response;
     } catch (error) {
       if (error.response?.status !== 400) {
@@ -36,7 +32,7 @@ class HouseholdService extends BaseService {
       throw error;
     }
   }
-  
+
   /**
    * Add a member (registered or unregistered) to the household.
    *
@@ -45,12 +41,11 @@ class HouseholdService extends BaseService {
    * @returns {Promise<Object>} Newly added member object.
    * @throws {Error} If the request fails.
    */
-  async addMember(householdId, data) {
+  async addMember(data) {
     try {
       if (data.email) {
         await this.post('add-user', {
           email: data.email,
-          householdId: householdId
         });
         return {
           id: Date.now(),
@@ -59,9 +54,9 @@ class HouseholdService extends BaseService {
           isRegistered: true
         };
       } else {
+        console.log("Adding unregistered member:", data);
         await this.post('add-unregistered-member', {
           fullName: data.fullName,
-          householdId: householdId
         });
         return {
           id: Date.now(),
@@ -83,11 +78,10 @@ class HouseholdService extends BaseService {
    * @returns {Promise<Object>} API response.
    * @throws {Error} If the request fails.
    */
-  async addUserToHousehold(userId, householdId) {
+  async addUserToHousehold(userId) {
     try {
       return await this.post('add-user', {
         userId,
-        householdId
       });
     } catch (error) {
       console.error("Error adding user to household:", error);
@@ -103,9 +97,8 @@ class HouseholdService extends BaseService {
    */
   async updateHousehold(data) {
     try {
-   
+
       return this.post('edit', {
-        householdId: data.householdId,
         name: data.name,
         address: data.address
       });
@@ -128,15 +121,14 @@ class HouseholdService extends BaseService {
       if (data.isRegistered) {
         throw new Error("Cannot update registered members.");
       }
-  
+
       const payload = {
         memberId,
         newFullName: data.name,
-        householdId 
       };
-  
 
-  
+
+
       return this.post(`edit-unregistered-member`, payload);
     } catch (error) {
       console.error("Error updating unregistered member:", error);
@@ -151,12 +143,11 @@ class HouseholdService extends BaseService {
    * @returns {Promise<Object>} API response.
    * @throws {Error} If the request fails.
    */
-  async removeRegisteredMember(userId, householdId) {
+  async removeRegisteredMember(userId) {
     try {
- 
+
       return this.post(`remove-user`, {
-        userId,
-        householdId
+        userId
       });
     } catch (error) {
       console.error("Error removing registered member:", error);
@@ -172,7 +163,7 @@ class HouseholdService extends BaseService {
    */
   async removeUnregisteredMember(memberId) {
     try {
-   
+
       return this.post(`delete-unregistered-member`, { memberId });
     } catch (error) {
       console.error("Error removing unregistered member:", error);
@@ -187,11 +178,10 @@ class HouseholdService extends BaseService {
    * @returns {Promise<Object>} API response.
    * @throws {Error} If the request fails.
    */
-  async inviteMember(householdId, email) {
+  async inviteMember( email) {
     try {
       return this.post(`invite-user`, {
         email: email,
-        householdId: householdId
       });
     } catch (error) {
       console.error("Error inviting member:", error);
@@ -210,9 +200,8 @@ class HouseholdService extends BaseService {
       const response = await this.post('create', {
         name: data.name,
         address: data.address,
-        ownerId: data.ownerId
       });
-      
+
       return {
         id: response.id || Math.floor(Math.random() * 1000),
         name: data.name,
@@ -245,16 +234,14 @@ class HouseholdService extends BaseService {
   /**
    * Transfer household ownership to another user.
    *
-   * @param {string} householdId - ID of the household.
    * @param {string} userId - ID of the new owner.
    * @returns {Promise<Object>} API response.
    * @throws {Error} If the request fails.
    */
-  async transferOwnership(householdId, userId) {
+  async transferOwnership(userId) {
     try {
-     
+
       return this.post('change-owner', {
-        householdId: householdId,
         userId: userId
       });
     } catch (error) {
@@ -291,16 +278,16 @@ class HouseholdService extends BaseService {
       if (typeof householdId !== 'string' || !/^[A-Za-z0-9]+$/.test(householdId)) {
         throw new Error('Ugyldig husstands-ID');
       }
-    
+
       try {
         const response = await this.post('search', { householdId });
-    
+
         if (!response || !response.id) {
           // API returned no match
           throw new Error('Ingen husstand funnet');
         }
         return response;
-    
+
       } catch (err) {
         const status = err.response?.status;
         // Convert any 400/404 or our own “not found” into the friendly message
@@ -311,7 +298,7 @@ class HouseholdService extends BaseService {
         throw err;
       }
     }
-  
+
 }
 
 export default new HouseholdService();
