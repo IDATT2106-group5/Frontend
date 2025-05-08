@@ -89,7 +89,7 @@ async function onSubmit(event) {
           class="w-1/2 bg-black text-white h-10 flex items-center justify-center"
           :disabled="userStore.isLoading"
           >
-          <Loader v-if="userStore.isLoading" class="h-4 w-4 mr-2 animate-spin" />
+          <Loader v-if="userStore.isLoading" class="h-4 w-4 mr-2 animate-spin" aria-hidden="true"/>
           <span>{{ userStore.isLoading ? 'Logger inn...' : 'Login' }}</span>
         </Button>
 
