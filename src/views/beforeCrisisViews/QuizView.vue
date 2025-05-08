@@ -16,7 +16,7 @@ const goToOverview = () => router.push('/before')
 /**
  * Quiz question data.
  * Each object contains a question, multiple choice options, and the correct answer.
- *
+ * 
  * @type {Array<{ question: string, options: string[], correct: string }>}
  */
 const questions = [
@@ -27,8 +27,8 @@ const questions = [
   },
   {
     question: 'Hva bør en nødsekk inneholde?',
-    options: ['Klokke og solkrem', 'Lommelykt og dokumentkopier', 'Bøker og godteri'],
-    correct: 'Lommelykt og dokumentkopier',
+    options: ['Verktøy og klokke', 'Klær og sovepose', 'Bøker og godteri'],
+    correct: 'Klær og sovepose',
   },
   {
     question: 'Hva slags radio bør du ha tilgjengelig i en krisesituasjon?',
@@ -46,23 +46,31 @@ const questions = [
     correct: '112',
   },
   {
-    question: 'Hva kan være en god strømkilde ved strømbrudd?',
-    options: ['Solcellepanel', 'Kullgrill innendørs', 'USB-lader fra bilen'],
-    correct: 'Solcellepanel',
-  },
-  {
-    question: 'Hva er viktig å gjøre hvis mobilnettet går ned?',
+    question: 'Hva bør du gjøre under et jordskjelv hvis du er innendørs?',
     options: [
-      'Sende e-post',
-      'Finne møtested avtalt på forhånd',
-      'Løpe til nærmeste politi',
+      'Stå i døråpningen og rop etter hjelp',
+      'Løpe ut av bygningen så fort som mulig',
+      'Søke dekning under et stabilt møbel og beskytte hodet og nakken'
     ],
-    correct: 'Finne møtested avtalt på forhånd',
+    correct: 'Søke dekning under et stabilt møbel og beskytte hodet og nakken',
   },
   {
-    question: 'Hva bør du unngå å bruke innendørs som varmekilde?',
-    options: ['Stearinlys', 'Gassovn', 'Vedovn'],
-    correct: 'Gassovn',
+    question: 'Hva bør du gjøre hvis du må evakuere en bygning som brenner?',
+    options: [
+      'Bruke heisen for å komme deg raskere ut',
+      'Holde deg lavt og bruke trappene for å unngå røyk',
+      'Gå tilbake for å hente personlige eiendeler',
+    ],
+    correct: 'Holde deg lavt og bruke trappene for å unngå røyk',
+  },
+  {
+    question: 'Hvorfor bør du lukke dører bak deg når du evakuerer en bygning i brann?',
+    options: [
+      'For å unngå å miste varme',
+      'For å hindre spredning av flammer og røyk',
+      'For å gjøre det lettere å finne veien tilbake',
+    ],
+    correct: 'For å hindre spredning av flammer og røyk',
   },
   {
     question: 'Hva er formålet med en beredskapsplan?',
@@ -75,24 +83,15 @@ const questions = [
   },
   {
     question: 'Hvor kan du finne offisiell informasjon under kriser?',
-    options: ['YouTube', 'DSB.no', 'Facebook-grupper'],
+    options: ['YouTube', 'DSB.no', 'Facebook'],
     correct: 'DSB.no',
   },
 ]
 
-/** Current index of the active question */
 const currentQuestion = ref(0)
-
-/** The selected answer by the user */
 const selectedAnswer = ref(null)
-
-/** User's current score */
 const score = ref(0)
-
-/** Whether the user has submitted the current answer */
 const hasSubmitted = ref(false)
-
-/** Whether the submitted answer was correct */
 const isCorrect = ref(false)
 
 /**
@@ -139,7 +138,8 @@ const nextQuestion = () => {
       <div class="bg-white border border-gray-300 rounded-lg shadow p-6 space-y-6">
         <div v-if="currentQuestion < questions.length">
           <div class="text-gray-800 text-base">
-            <p class="font-semibold mb-2">Spørsmål {{ currentQuestion + 1 }}:</p>
+            <p class="font-semibold mb-1">Spørsmål {{ currentQuestion + 1 }}:</p>
+            <p class="text-sm text-gray-500 mb-2">{{ currentQuestion + 1 }} / {{ questions.length }}</p>
             <p>{{ questions[currentQuestion].question }}</p>
           </div>
 
