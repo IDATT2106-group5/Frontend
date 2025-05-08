@@ -52,7 +52,6 @@ const adminButtons = computed(() => {
     { label: 'Kart markører', route: '/admin/map-icons' },
     { label: 'Nyhetshåndtering' },
     { label: 'Scenarioer', route: 'admin-scenarios' },
-    { label: 'Gamification' },
   ]
 
   if (userStore.isSuperAdmin) {
