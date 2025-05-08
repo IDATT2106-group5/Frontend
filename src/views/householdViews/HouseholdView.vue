@@ -62,24 +62,7 @@ function copyHouseholdId() {
     .catch(() => alert('Kunne ikke kopiere ID'))
 }
 
-// Force input to be numbers only
-function restrictToNumbersOnly(e) {
-  const key = e.key;
-  
-  // Allow: navigation keys, delete, backspace, tab, escape, enter
-  if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || 
-      e.key === 'ArrowUp' || e.key === 'ArrowDown' ||
-      e.key === 'Home' || e.key === 'End' ||
-      e.key === 'Delete' || e.key === 'Backspace' || 
-      e.key === 'Tab' || e.key === 'Escape' || e.key === 'Enter' ||
-      (e.ctrlKey === true && (e.key === 'a' || e.key === 'c' || e.key === 'v' || e.key === 'x'))) {
-    return; 
-  }
-  
-  if (!/^\d$/.test(key)) {
-    e.preventDefault();
-  }
-}
+
 
 const acceptInvitation = async (invId) => {
   try {
@@ -97,43 +80,6 @@ const declineInvitation = async (invId) => {
   } catch {
     toast({ title: 'Feil', description: 'Kunne ikke avslå invitasjonen.', variant: 'destructive' })
   }
-}
-
-// Clean input value to ensure it contains only numbers
-function cleanInputValue(inputElement) {
-  if (!inputElement) return;
-  inputElement.value = inputElement.value.replace(/[^\d]/g, '');
-}
-
-// Handle paste events to only allow numbers
-function handlePaste(e) {
-  e.preventDefault();
-  
-  const pastedData = (e.clipboardData || window.clipboardData).getData('text');
-  
-  const numbersOnly = pastedData.replace(/[^\d]/g, '');
-  
-  const input = e.target;
-  const currentValue = input.value;
-  const selectionStart = input.selectionStart;
-  const selectionEnd = input.selectionEnd;
-  
-  const newValue = currentValue.substring(0, selectionStart) + 
-                  numbersOnly + 
-                  currentValue.substring(selectionEnd);
-  
-  input.value = newValue;
-  input.dispatchEvent(new Event('input'));
-  
-  setTimeout(() => {
-    input.selectionStart = input.selectionEnd = selectionStart + numbersOnly.length;
-  }, 0);
-}
-
-// Input blur handler to clean up any non-numeric characters that might have gotten in
-function onInputBlur(e) {
-  cleanInputValue(e.target);
-  e.target.dispatchEvent(new Event('input'));
 }
 
 async function handleLeave() {
@@ -166,26 +112,17 @@ const searchForHousehold = async () => {
 
   console.log('📤 Searching with householdId:', joinHouseholdId.value)
 
-  if (!joinHouseholdId.value || joinHouseholdId.value <= 0) {
-    console.warn('⚠️ Invalid ID (empty or non-positive)')
-    joinError.value = 'Husstands-ID må være et positivt tall'
-    joinIsLoading.value = false
-    return
+
+
+  if (!joinHouseholdId.value) {
+  joinError.value = 'Husstands-ID kan ikke være tomt';
+  return;
   }
 
-  if (isNaN(Number(joinHouseholdId.value)) || Number(joinHouseholdId.value) <= 0) {
-    console.warn('⚠️ householdId is not a number or <= 0')
-    joinError.value = 'Husstands-ID må være et positivt tall'
-    joinIsLoading.value = false
-    return
-  }
-
-  if (Number(joinHouseholdId.value) === Number(householdId.value)) {
-    console.warn('⚠️ User searched for their own household')
-    joinError.value = 'Dette er din nåværende husstand'
-    joinIsLoading.value = false
-    return
-  }
+if (joinHouseholdId.value === householdId.value) {
+  joinError.value = 'Dette er din nåværende husstand';
+  return;
+}
 
   try {
     const found = await houseStore.searchHouseholdById(joinHouseholdId.value)
@@ -324,17 +261,13 @@ const sendJoinRequest = async () => {
                 <label for="joinHouseholdId" class="block text-sm font-medium text-gray-700 mb-1">
                   Husstands ID
                 </label>
-                <input
-                  v-model="joinHouseholdId"
-                  id="joinHouseholdId"
-                  type="text"
-                  inputmode="numeric"
-                  pattern="[0-9]*"
-                  @keydown="restrictToNumbersOnly"
-                  @paste="handlePaste"
-                  @input="$event.target.value = $event.target.value.replace(/[^\d]/g, '')"
-                  @blur="onInputBlur"
-                  class="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  <input
+                    v-model="joinHouseholdId"
+                    id="joinHouseholdId"
+                    type="text"
+                    inputmode="text"
+                    pattern="[A-Za-z0-9]+"
+                    class="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
               <button

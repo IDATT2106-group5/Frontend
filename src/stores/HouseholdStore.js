@@ -670,13 +670,11 @@ export const useHouseholdStore = defineStore('household', {
       try {
         this.isLoading = true;
     
-        if (!householdId || isNaN(Number(householdId))) {
+        if (!householdId) {
           throw new Error('Ugyldig husstands-ID format');
         }
-    
-        const household = await HouseholdService.searchHouseholdById({
-          householdId: Number(householdId),
-        });
+
+        const household = await HouseholdService.searchHouseholdById({ householdId });
     
         if (!household || !household.id) {
           return null;
@@ -709,7 +707,7 @@ export const useHouseholdStore = defineStore('household', {
         }
     
         if (this.currentHousehold?.ownerId === userStore.user.id) {
-          throw new Error('Husstandseiere kan ikke sende forespørsler om å bli med i en annen husstand');
+          throw new Error('…');
         }
     
         const request = {

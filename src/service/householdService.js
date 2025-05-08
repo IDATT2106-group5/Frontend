@@ -283,30 +283,28 @@ class HouseholdService extends BaseService {
    * @returns {Promise<Object>} API response with household info.
    * @throws {Error} If the household ID is invalid or request fails.
    */
-  async searchHouseholdById(data) {
+  async searchHouseholdById({ householdId }) {
+    // must be non‐empty, letters and digits only
+    if (typeof householdId !== 'string' || !/^[A-Za-z0-9]+$/.test(householdId)) {
+      throw new Error('Ugyldig husstands-ID')
+    }
+
     try {
-      const householdId = Number(data.householdId)
-  
-      if (isNaN(householdId) || householdId <= 0) {
-        throw new Error('Ugyldig husstands-ID')
-      }
-  
+      // send the raw string ID
       const response = await this.post('search', { householdId })
-  
-      // If backend returns null or empty object when not found
+
+      // not found ⇒ return null
       if (!response || !response.id) {
         return null
       }
-  
       return response
-    } catch (error) {
-      // ✅ If it's a 404 response, just return null
-      if (error.response && error.response.status === 404) {
+    } catch (err) {
+      // backend 404 ⇒ “not found”
+      if (err.response?.status === 404) {
         return null
       }
-  
-      console.error('Error searching for household:', error)
-      return null // ✅ Don't throw here
+      console.error('Error searching for household:', err)
+      throw err
     }
   }
   
