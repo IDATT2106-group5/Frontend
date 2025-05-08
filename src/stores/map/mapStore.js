@@ -3,6 +3,7 @@ import { defineStore } from 'pinia';
 import MapService from '@/service/map/mapService';
 import MarkerService from '@/service/map/markerService';
 import MarkerConfigService from '@/service/map/markerConfigService';
+import MarkerAdminService from '@/service/admin/markerAdminService';
 import IncidentMapService from '@/service/map/incidentMapService';
 import IncidentConfigService from '@/service/map/incidentConfigService';
 import RoutingService from '@/service/map/routingService';
@@ -40,6 +41,7 @@ export const useMapStore = defineStore('map', {
     markersLoadError: null,
     initialMarkersLoaded: false,
     silentLoading: false,
+    isLoading: false, // General loading state (migrated from markerAdminStore)
 
     // Cleanup reference
     mapMoveCleanup: null,
@@ -57,6 +59,30 @@ export const useMapStore = defineStore('map', {
     searchError: null,
     selectedSearchResult: null,
     searchResultMarker: null,
+
+    // Admin marker state (migrated from markerAdminStore)
+    markers: [],
+    filteredMarkers: [],
+    markersLayer: null,
+    searchTerm: '',
+    filterType: '',
+    error: null,
+    success: null,
+    markerFormData: {
+      id: null,
+      type: 'HEARTSTARTER',
+      name: '',
+      address: '',
+      postalCode: '',
+      city: '',
+      description: '',
+      contactInfo: '',
+      openingHours: '',
+      latitude: 63.4305,
+      longitude: 10.3951
+    },
+    isEditing: false,
+    isCreating: false
   }),
 
   getters: {
@@ -138,6 +164,25 @@ export const useMapStore = defineStore('map', {
      */
     severityLevels() {
       return IncidentConfigService.getSeverityLevels();
+    },
+
+    // Migrated from markerAdminStore
+    /**
+     * Get marker types for the dropdown
+     */
+    adminMarkerTypes() {
+      const configs = MarkerConfigService.getMarkerConfigs();
+      return Object.entries(configs).map(([id, config]) => ({
+        id,
+        name: config.norwegianName
+      }));
+    },
+
+    /**
+     * Check if we have markers
+     */
+    hasMarkers() {
+      return this.markers.length > 0;
     }
   },
 
@@ -162,36 +207,6 @@ export const useMapStore = defineStore('map', {
       this.refreshMarkerLayers();
     },
 
-    // 4. Modify the addMarkersToLayers method to use visibleMarkerData
-    addMarkersToLayers() {
-      // Use the visibleMarkerData getter instead of markerData directly
-      // to filter out the marker being edited
-      const visibleData = this.visibleMarkerData;
-
-      // Process each marker type
-      Object.entries(visibleData).forEach(([typeId, markers]) => {
-        // Create layer group if it doesn't exist
-        if (!this.markerLayers[typeId]) {
-          this.markerLayers[typeId] = L.layerGroup();
-        }
-
-        // Find marker type configuration
-        const markerType = this.markerTypes.find(type => type.id === typeId);
-        if (!markerType) return;
-
-        // Add markers to the layer group
-        markers.forEach(markerData => {
-          const marker = this.createMarkerWithPopup(markerData, markerType);
-          this.markerLayers[typeId].addLayer(marker);
-        });
-
-        // Add layer to map if it should be visible
-        if (markerType.visible && this.map) {
-          this.markerLayers[typeId].addTo(this.map);
-        }
-      });
-    },
-
     /**
      * Initialize the map and setup initial state
      * @param {HTMLElement} container - DOM element to contain the map
@@ -201,6 +216,7 @@ export const useMapStore = defineStore('map', {
       if (!container) return null;
 
       try {
+
         // Create the map with initial values from state
         this.map = MapService.createMap(container, {
           center: [this.initialLat, this.initialLng],
@@ -229,7 +245,12 @@ export const useMapStore = defineStore('map', {
         }
 
         // Initialize markers
-        this.initMarkers();
+        await this.initMarkers();
+
+        setTimeout(() => {
+          MapService.invalidateMapSize(this.map);
+          this.refreshMarkerLayers(); // Add this line to explicitly refresh markers
+        }, 300);
 
         // Initialize incidents
         this.initIncidents();
@@ -314,11 +335,8 @@ export const useMapStore = defineStore('map', {
       this.setMarkerLoadingState(silent);
 
       try {
-        // Fetch marker data
-        const newMarkerData = await this.fetchMarkerDataForCurrentView();
-
-        // Update marker data
-        this.markerData = newMarkerData;
+        // Fetch marker data directly into state
+        this.markerData = await this.fetchMarkerDataForCurrentView();
 
         // Refresh marker layers
         this.refreshMarkerLayers();
@@ -417,20 +435,6 @@ export const useMapStore = defineStore('map', {
     },
 
     /**
-     * Get user's current position as a promise
-     * @returns {Promise<Array>} User position as [lat, lng]
-     */
-    async getUserPosition() {
-      try {
-        return await GeolocationService.getUserLocation();
-      } catch (error) {
-        console.error("Error getting user position:", error);
-        this.routeError = "Kunne ikke hente din posisjon: " + GeolocationService.getErrorMessage(error);
-        return null;
-      }
-    },
-
-    /**
      * Show a temporary notification message
      * @param {string} message - Message to display
      */
@@ -522,7 +526,7 @@ export const useMapStore = defineStore('map', {
       this.markersLoadError = 'Failed to load markers. Please try again later.';
 
       // Initialize empty objects to prevent UI errors
-      this.markerTypes = [];
+      this.markerTypes = this.markerTypes || [];
       this.markerLayers = {};
       this.markerData = {};
     },
@@ -759,9 +763,6 @@ export const useMapStore = defineStore('map', {
         this.routeStart = startCoords;
         this.routeEnd = endCoords;
 
-        // Make sure RoutingService is imported
-        const RoutingService = await import('@/service/map/routingService').then(m => m.default);
-
         // Show the route
         this.activeRoute = RoutingService.showRoute(this.map, startCoords, endCoords);
 
@@ -786,32 +787,13 @@ export const useMapStore = defineStore('map', {
      * Clear the current route
      */
     clearRoute() {
-      RoutingService.clearRoute();
+      if (RoutingService && typeof RoutingService.clearRoute === 'function') {
+        RoutingService.clearRoute();
+      }
       this.activeRoute = null;
       this.routeStart = null;
       this.routeEnd = null;
       this.routeError = null;
-    },
-
-    /**
-     * Find marker type by coordinates
-     */
-    findMarkerTypeByCoords(lat, lng) {
-      // Set a small threshold for coordinate comparison (to handle floating point precision)
-      const threshold = 0.0001;
-
-      // Check all marker types and their markers
-      for (const [typeId, markers] of Object.entries(this.markerData)) {
-        for (const marker of markers) {
-          if (
-            Math.abs(marker.lat - lat) < threshold &&
-            Math.abs(marker.lng - lng) < threshold
-          ) {
-            return typeId;
-          }
-        }
-      }
-      return null;
     },
 
     /**
@@ -910,6 +892,601 @@ export const useMapStore = defineStore('map', {
 
       this.goToLocation(result, 16); // Zoom level 16 gives good detail for most locations
       this.searchResults = []; // Clear results after selection
+    },
+
+    /* -----------------------------------------------------------------
+     * ADMIN MARKER MANAGEMENT METHODS (MIGRATED FROM markerAdminStore)
+     * ----------------------------------------------------------------- */
+
+    /**
+     * Set the markers layer reference
+     * @param {Object} layer - Leaflet layer group for markers
+     */
+    setMarkersLayer(layer) {
+      this.markersLayer = layer;
+    },
+
+    /**
+     * Clear all markers from the map
+     */
+    clearMarkers() {
+      if (this.markersLayer) {
+        this.markersLayer.clearLayers();
+      }
+    },
+
+    /**
+     * Add a marker to the map
+     * @param {Object} map - Leaflet map instance
+     * @param {Object} markerData - Marker data
+     * @returns {Object} - Leaflet marker
+     */
+    addMarkerToMap(map, markerData) {
+      // Get the marker configuration
+      const configs = MarkerConfigService.getMarkerConfigs();
+      const config = configs[markerData.type];
+
+      if (!config) return null;
+
+      // Create marker icon
+      const icon = MarkerConfigService.createLeafletIcon(
+        config.iconType,
+        config.color
+      );
+
+      // Create marker
+      const marker = L.marker(
+        [markerData.latitude, markerData.longitude],
+        { icon }
+      );
+
+      // Add to map
+      if (this.markersLayer) {
+        this.markersLayer.addLayer(marker);
+      } else {
+        marker.addTo(map);
+      }
+
+      return marker;
+    },
+
+    /**
+     * Refresh markers on the map
+     * @param {Object} map - Leaflet map instance
+     */
+    refreshMapMarkers(map) {
+      this.clearMarkers();
+
+      // Add all markers to the map
+      this.markers.forEach(markerData => {
+        this.addMarkerToMap(map, markerData);
+      });
+    },
+
+    /**
+     * Fetch all markers for admin interface
+     */
+    async fetchMarkers() {
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        const markers = await MarkerAdminService.fetchAllMarkersForAdmin();
+        this.markers = markers.map(marker => ({
+          id: marker.id,
+          type: marker.type,
+          name: marker.name || '',
+          address: marker.address || '',
+          postalCode: marker.postalCode || '',
+          city: marker.city || '',
+          description: marker.description || '',
+          contactInfo: marker.contactInfo || '',
+          openingHours: marker.openingHours || '',
+          latitude: marker.latitude,
+          longitude: marker.longitude
+        }));
+        this.applyFilters();
+
+        // If we're currently editing a marker, make sure we handle the editing state
+        if (this.isEditing && this.markerFormData.id) {
+          this.setEditingMarkerId(this.markerFormData.id);
+        }
+      } catch (error) {
+        this.error = 'Kunne ikke laste markører. Vennligst prøv igjen senere.';
+        console.error('Error in fetchMarkers:', error);
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    /**
+     * Apply search and filters to markers
+     */
+    applyFilters() {
+      // Apply both search and type filter
+      this.filteredMarkers = this.markers.filter(marker => {
+        const matchesSearch =
+          this.searchTerm === '' ||
+          (marker.name && marker.name.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+          (marker.address && marker.address.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+          (marker.postalCode && marker.postalCode.toString().includes(this.searchTerm)) ||
+          (marker.city && marker.city.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+          (marker.description && marker.description.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+          (marker.contactInfo && marker.contactInfo.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+          (marker.openingHours && marker.openingHours.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+          (marker.type && marker.type.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+          (marker.latitude && marker.latitude.toString().includes(this.searchTerm)) ||
+          (marker.longitude && marker.longitude.toString().includes(this.searchTerm));
+
+        const matchesType =
+          this.filterType === '' ||
+          marker.type === this.filterType;
+
+        return matchesSearch && matchesType;
+      });
+    },
+
+    /**
+     * Set search term and apply filters
+     */
+    setSearchTerm(term) {
+      this.searchTerm = term;
+      this.applyFilters();
+    },
+
+    /**
+     * Set filter type and apply filters
+     */
+    setFilterType(type) {
+      this.filterType = type;
+      this.applyFilters();
+    },
+
+    /**
+     * Reset form data for creating a new marker
+     */
+    initNewMarker() {
+      this.isCreating = true;
+      this.isEditing = false;
+      this.error = null;
+      this.success = null;
+
+      this.markerFormData = {
+        id: null,
+        type: 'HEARTSTARTER',
+        name: '',
+        address: '',
+        postalCode: '',
+        city: '',
+        description: '',
+        contactInfo: '',
+        openingHours: '',
+        latitude: 63.4305,
+        longitude: 10.3951
+      };
+    },
+
+    /**
+     * Load marker data into form for editing
+     */
+    editMarker(marker) {
+      // Set which marker is being edited
+      this.setEditingMarkerId(marker.id);
+
+      // Regular marker editing logic
+      const [street, postal, city] = (marker.address || '').split(',').map(p => p.trim());
+
+      this.markerFormData = {
+        id: marker.id,
+        type: marker.type,
+        name: marker.name || '',
+        address: street || '',
+        postalCode: postal || '',
+        city: city || '',
+        description: marker.description || '',
+        contactInfo: marker.contactInfo || '',
+        openingHours: marker.openingHours || '',
+        latitude: marker.latitude,
+        longitude: marker.longitude
+      };
+
+      this.isEditing = true;
+      this.isCreating = false;
+      this.error = null;
+      this.success = null;
+    },
+
+    /**
+     * Create a new marker
+     */
+    async createMarker() {
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        const {
+          id,
+          address,
+          postalCode,
+          city,
+          ...rest
+        } = this.markerFormData;
+
+        const requestData = {
+          ...rest,
+          address: `${address}, ${postalCode}, ${city}`
+        };
+
+        // Call API to create the marker
+        await MarkerAdminService.createMarker(requestData);
+
+        // Assuming the API returns a success message rather than the created object
+        this.success = 'Markør opprettet.';
+
+        // Refresh the marker list
+        await this.fetchMarkers();
+
+        // Reset form state
+        this.isCreating = false;
+
+        return true;
+      } catch (error) {
+        // Handle different types of errors
+        if (error.response && error.response.data && error.response.data.error) {
+          this.error = error.response.data.error;
+        } else {
+          this.error = 'Kunne ikke opprette markør. Vennligst prøv igjen senere.';
+        }
+        console.error('Error in createMarker:', error);
+        return false;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    /**
+     * Update an existing marker
+     */
+    async updateMarker() {
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        const {
+          id,
+          address,
+          postalCode,
+          city,
+          ...rest
+        } = this.markerFormData;
+
+        const requestData = {
+          ...rest,
+          address: `${address}, ${postalCode}, ${city}`
+        };
+
+        await MarkerAdminService.updateMarker(id, requestData);
+
+        // Assuming the API returns a success message
+        this.success = 'Markør oppdatert.';
+
+        // Refresh the marker list
+        await this.fetchMarkers();
+
+        // Reset form state
+        this.isEditing = false;
+
+        return true;
+      } catch (error) {
+        // Handle different types of errors
+        if (error.response && error.response.data && error.response.data.error) {
+          this.error = error.response.data.error;
+        } else {
+          this.error = 'Kunne ikke oppdatere markør. Vennligst prøv igjen senere.';
+        }
+        console.error('Error in updateMarker:', error);
+        return false;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    /**
+     * Save marker (create or update)
+     */
+    async saveMarker() {
+      let success = false;
+
+      if (this.isCreating) {
+        success = await this.createMarker();
+      } else if (this.isEditing) {
+        success = await this.updateMarker();
+      }
+
+      // Only reset the editingMarkerId if the save was successful
+      if (success) {
+        this.clearEditingMarkerId();
+        this.clearAllMarkerLayers();
+
+        // Re-add markers to layers
+        this.addMarkersToLayers();
+        await this.fetchAndDisplayMarkers()
+      }
+
+      return success;
+    },
+
+    /**
+     * Delete a marker
+     */
+    async deleteMarker(id) {
+      this.isLoading = true;
+      this.error = null;
+
+      try {
+        await MarkerAdminService.deleteMarker(id);
+        this.success = 'Markør slettet.';
+
+        // Remove from local arrays
+        this.markers = this.markers.filter(marker => marker.id !== id);
+        this.applyFilters();
+
+        // Clear the editing marker
+        this.clearEditingMarkerId();
+
+        // Reset form state if we were editing this marker
+        if (this.isEditing && this.markerFormData.id === id) {
+          this.isEditing = false;
+        }
+
+        return true;
+      } catch (error) {
+        // Handle different types of errors
+        if (error.response && error.response.data && error.response.data.error) {
+          this.error = error.response.data.error;
+        } else {
+          this.error = 'Kunne ikke slette markør. Vennligst prøv igjen senere.';
+        }
+        console.error('Error in deleteMarker:', error);
+        return false;
+      } finally {
+        this.isLoading = false;
+      }
+    },
+
+    /**
+     * Update marker address based on coordinates using reverse geocoding
+     * @param {number} lat - Latitude
+     * @param {number} lng - Longitude
+     * @returns {Promise<Object>} Address information
+     */
+    async updateAddressFromCoordinates(lat, lng) {
+      try {
+        const addressInfo = await GeocodingService.reverseGeocode(lat, lng);
+
+        if (addressInfo && addressInfo.address) {
+          // Extract address components from the response
+          const { address } = addressInfo;
+
+          // Parse the address components
+          // The structure may vary depending on the country and location type
+          const streetAddress = address.road || address.footway || address.pedestrian || '';
+          const houseNumber = address.house_number || '';
+          const formattedStreet = houseNumber ? `${streetAddress} ${houseNumber}` : streetAddress;
+
+          // Update the form data with the new address information
+          this.markerFormData.address = formattedStreet;
+          this.markerFormData.postalCode = address.postcode || '';
+          this.markerFormData.city = address.city || address.town || address.village || address.suburb || '';
+
+          return {
+            address: formattedStreet,
+            postalCode: address.postcode || '',
+            city: this.markerFormData.city
+          };
+        }
+
+        return null;
+      } catch (error) {
+        console.error('Error in updateAddressFromCoordinates:', error);
+        // Don't throw the error to prevent UI disruption
+        return null;
+      }
+    },
+
+    /**
+     * Update marker coordinates
+     */
+    updateMarkerCoordinates(lat, lng) {
+      this.markerFormData.latitude = lat;
+      this.markerFormData.longitude = lng;
+
+      // If we're in edit mode, update the current marker's position
+      if (this.isEditing) {
+        const marker = this.markers.find(m => m.id === this.markerFormData.id);
+        if (marker) {
+          marker.latitude = this.markerFormData.latitude;
+          marker.longitude = this.markerFormData.longitude;
+        }
+      }
+    },
+
+    /**
+     * Update coordinates based on address using geocoding
+     * @param {string} addressQuery - The address string to geocode
+     * @returns {Promise<Object|null>} - Coordinates or null if not found
+     */
+    async updateCoordinatesFromAddress(addressQuery) {
+      try {
+        // Search for places with the address query
+        const results = await GeocodingService.searchPlaces(addressQuery, {
+          limit: 1, // Only get the top result
+          countryCode: 'no' // Limit to Norway
+        });
+
+        if (results && results.length > 0) {
+          const result = results[0];
+          const lat = result.lat;
+          const lng = result.lng;
+
+          // Update store values
+          this.markerFormData.latitude = lat;
+          this.markerFormData.longitude = lng;
+
+          // If we're in edit mode, update the marker in the list
+          if (this.isEditing) {
+            const marker = this.markers.find(m => m.id === this.markerFormData.id);
+            if (marker) {
+              marker.latitude = lat;
+              marker.longitude = lng;
+            }
+          }
+
+          return { lat, lng };
+        }
+
+        return null;
+      } catch (error) {
+        console.error('Error in updateCoordinatesFromAddress:', error);
+        return null;
+      }
+    },
+
+    /**
+     * Cancel editing/creating
+     */
+    async cancelEdit() {
+      // Clear the editing marker state
+      this.clearEditingMarkerId();
+
+      // Regular cancel edit logic
+      this.isEditing = false;
+      this.isCreating = false;
+      this.error = null;
+      this.success = null;
+
+      await this.fetchAndDisplayMarkers()
+    },
+
+    /**
+     * Clear success message
+     */
+    clearSuccess() {
+      this.success = null;
+    },
+
+    /**
+     * Clear error message
+     */
+    clearError() {
+      this.error = null;
+    },
+
+    /**
+     * Set admin markers to be displayed on the map
+     * @param {Array} adminMarkers - Array of admin marker objects
+     */
+    setAdminMarkers(adminMarkers) {
+      // Create a special layer type for admin markers if it doesn't exist
+      if (!this.markerData['ADMIN']) {
+        this.markerData['ADMIN'] = [];
+      }
+
+      // Update the admin markers
+      this.markerData['ADMIN'] = adminMarkers.filter(marker =>
+        !marker.editingMarkerId || marker.id !== marker.editingMarkerId
+      );
+
+      // Make sure we have a layer for admin markers
+      if (!this.markerLayers['ADMIN']) {
+        this.markerLayers['ADMIN'] = L.layerGroup();
+
+        // Add a special marker type for admin markers if it doesn't exist
+        const adminTypeExists = this.markerTypes.some(type => type.id === 'ADMIN');
+        if (!adminTypeExists) {
+          this.markerTypes.push({
+            id: 'ADMIN',
+            title: 'Admin Markers',
+            color: '#FF5722',
+            visible: true,
+            icon: null // The icon will be determined by the marker type
+          });
+        }
+      }
+
+      // Refresh the marker layers to display the admin markers
+      this.refreshMarkerLayers();
+    },
+
+    /**
+     * Modify addMarkersToLayers to handle admin markers specifically
+     */
+    addMarkersToLayers() {
+      // Use the visibleMarkerData getter to filter out being-edited markers
+      const visibleData = this.visibleMarkerData;
+
+      // Process each marker type
+      Object.entries(visibleData).forEach(([typeId, markers]) => {
+        // Create layer group if it doesn't exist
+        if (!this.markerLayers[typeId]) {
+          this.markerLayers[typeId] = L.layerGroup();
+        }
+
+        // Get marker type configuration
+        let markerType;
+
+        // Special handling for admin markers
+        if (typeId === 'ADMIN') {
+          // Clear the admin layer first
+          this.markerLayers[typeId].clearLayers();
+
+          // Add admin markers with their specific icons
+          markers.forEach(markerData => {
+            // Get the proper config for this marker's type
+            const configs = MarkerConfigService.getMarkerConfigs();
+            const config = configs[markerData.type];
+            if (!config) return;
+
+            // Create the marker with the specific icon
+            const icon = MarkerConfigService.createLeafletIcon(
+              config.iconType,
+              config.color
+            );
+
+            const marker = L.marker(
+              [markerData.lat, markerData.lng],
+              { icon }
+            );
+
+            // Create popup content
+            const popupContent = MarkerConfigService.createMarkerPopupContent(markerData);
+            marker.bindPopup(popupContent);
+
+            // Add to the ADMIN layer
+            this.markerLayers[typeId].addLayer(marker);
+          });
+        } else {
+          // Regular marker processing for non-admin markers
+          markerType = this.markerTypes.find(type => type.id === typeId);
+          if (!markerType) return;
+
+          // Clear existing markers
+          this.markerLayers[typeId].clearLayers();
+
+          // Add each marker to layer
+          markers.forEach(markerData => {
+            const marker = this.createMarkerWithPopup(markerData, markerType);
+            this.markerLayers[typeId].addLayer(marker);
+          });
+        }
+
+        // Add layer to map if it should be visible
+        // For admin layers, always show them
+        if ((typeId === 'ADMIN' || (markerType && markerType.visible)) && this.map) {
+          this.markerLayers[typeId].addTo(this.map);
+        }
+      });
     }
+
   }
 });
