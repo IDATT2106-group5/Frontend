@@ -32,8 +32,13 @@
       </div>
     </transition>
 
+    <!-- Add the search bar -->
+    <div class="map-search-container">
+      <MapSearchBar />
+    </div>
+
     <!-- Existing components with proper condition checks -->
-    <div class="closest-facility-container" v-if="!isLoadingMarkers && !markersLoadError">
+    <div class="closest-facility-container" v-if="!isLoadingMarkers && !markersLoadError && !isAdminMode">
       <ClosestFacilityFinder />
     </div>
 
@@ -51,34 +56,8 @@
       </Button>
     </div>
 
-    <!-- Custom Layer Controls -->
-    <div class="layer-control-container" :class="{ collapsed: isLayerCollapsed }">
-      <Button
-        v-if="isMobileView"
-        @click="toggleLayerCollapse"
-        variant="default"
-        class="layer-toggle-button"
-      >
-        <span v-if="isLayerCollapsed">Vis informasjonslag</span>
-        <span v-else>Skjul informasjonslag</span>
-      </Button>
-      <div :class="['layer-content', { hidden: isLayerCollapsed && isMobileView }]">
-        <div class="layer-controls">
-          <button
-            v-for="layer in layerOptions"
-            :key="layer.id"
-            :class="['layer-button', { active: activeLayerId === layer.id }]"
-            @click="setActiveLayer(layer.id)"
-          >
-            <div class="layer-icon" :class="[`${layer.id}-icon`]"></div>
-            <div class="layer-name">{{ layer.name }}</div>
-          </button>
-        </div>
-      </div>
-    </div>
-
     <!-- Marker Filter -->
-    <div class="marker-filter-container" :class="{ collapsed: isFilterCollapsed }">
+    <div class="marker-filter-container" :class="{ collapsed: isFilterCollapsed }" v-if="!isAdminMode">
       <Button
         v-if="isMobileView"
         @click="toggleFilterCollapse"
@@ -92,6 +71,7 @@
         <MarkerFilter v-if="!isLoadingMarkers && !markersLoadError" :isMobileView="isMobileView" />
       </div>
     </div>
+
   </div>
 </template>
 
@@ -109,21 +89,37 @@ import { useUserStore } from '@/stores/UserStore.js'
 import { useHouseholdStore } from '@/stores/HouseholdStore.js'
 import { useLocationStore } from '@/stores/map/LocationStore.js' // Import the new store
 import { LocateFixed } from 'lucide-vue-next' // Import the icon
+import MapSearchBar from '@/components/map/MapSearchBar.vue';
 
 export default {
-  name: 'EmergencyMap',
+  name: 'MapView',
   components: {
     ClosestFacilityFinder,
     MarkerFilter,
     Button,
-    LocateFixed, // Add the icon component
+    LocateFixed,
+    MapSearchBar
   },
-  setup() {
+  props: {
+    center: {
+      type: Array,
+      default: () => [63.4305, 10.3951]
+    },
+    zoom: {
+      type: Number,
+      default: 13
+    },
+    isAdminMode: {
+      type: Boolean,
+      default: false
+    }
+  },
+  emits: ['map-ready', 'map-click'],
+  setup(props, { emit }) {
     const mapContainer = ref(null)
     const mapStore = useMapStore()
     const windowWidth = ref(window.innerWidth)
     const isFilterCollapsed = ref(false)
-    const isLayerCollapsed = ref(false)
     const userMarkers = ref(new Map())
     const userPositions = ref(new Map())
     const map = ref(null)
@@ -139,7 +135,8 @@ export default {
 
     const { subscribeToPosition, fetchHouseholdPositions, connected } = useWebSocket()
 
-    const { layerOptions, activeLayerId, isLoadingMarkers, markersLoadError, notification } =
+    // Use storeToRefs for reactive properties
+    const { isLoadingMarkers, markersLoadError, notification } =
       storeToRefs(mapStore)
 
     const isMobileView = computed(() => {
@@ -152,7 +149,6 @@ export default {
 
     onMounted(async () => {
       isFilterCollapsed.value = isMobileView.value
-      isLayerCollapsed.value = isMobileView.value
 
       try {
         map.value = await mapStore.initMap(mapContainer.value)
@@ -161,25 +157,38 @@ export default {
           console.log('Map initialized successfully')
           mapInitialized.value = true
 
-          userPositions.value.forEach((position, userId) => {
-            const isCurrentUser = userId === userStore.user.id
-            updateUserMarker(userId, position.fullName, position.longitude, position.latitude, isCurrentUser)
-          })
+          emit('map-ready', map.value);
 
-          if (connected.value && householdId) {
-            subscribeToPosition(householdId, handlePositionUpdate)
-          }
+          // If in admin mode, set up click handler directly on the Leaflet map
+          if (props.isAdminMode) {
+            console.log("Setting up admin mode click handler");
+            map.value.on('click', (e) => {
+              console.log("Leaflet map click:", e.latlng);
+              emit('map-click', e);
+            });
+          } else {
+            // Only process user positions if not in admin mode
+            // Process any stored positions that came in before map initialization
+            userPositions.value.forEach((position, userId) => {
+              const isCurrentUser = userId === userStore.user.id
+              updateUserMarker(userId, position.fullName, position.longitude, position.latitude, isCurrentUser)
+            })
 
-          try {
-            const positions = await fetchHouseholdPositions()
-            if (Array.isArray(positions)) {
-              console.log(`Received ${positions.length} initial positions`)
-              positions.forEach((pos) => handlePositionUpdate(pos))
-            } else {
-              console.warn('Expected positions array but received:', positions)
+            if (connected.value && householdId) {
+              subscribeToPosition(householdId, handlePositionUpdate)
             }
-          } catch (error) {
-            console.error('Error fetching household positions:', error)
+
+            try {
+              const positions = await fetchHouseholdPositions()
+              if (Array.isArray(positions)) {
+                console.log(`Received ${positions.length} initial positions`)
+                positions.forEach((pos) => handlePositionUpdate(pos))
+              } else {
+                console.warn('Expected positions array but received:', positions)
+              }
+            } catch (error) {
+              console.error('Error fetching household positions:', error)
+            }
           }
         }
       } catch (error) {
@@ -190,7 +199,7 @@ export default {
     })
 
     watch(() => connected.value && householdId, (isConnected) => {
-      if (isConnected && householdId) {
+      if (isConnected && householdId && !props.isAdminMode) {
         subscribeToPosition(householdId, handlePositionUpdate)
       }
     })
@@ -208,6 +217,9 @@ export default {
     })
 
     const handlePositionUpdate = (positionData) => {
+      // Skip if in admin mode
+      if (props.isAdminMode) return;
+
       console.log('Handling position update:', positionData)
 
       if (!positionData) {
@@ -248,6 +260,10 @@ export default {
     }
 
     function updateUserMarker(userId, name, longitude, latitude, isCurrentUser = false) {
+      // Skip if in admin mode
+      if (props.isAdminMode) return;
+
+      // First check if marker already exists
       if (userMarkers.value.has(userId)) {
         const marker = userMarkers.value.get(userId)
         marker.setLatLng([latitude, longitude])
@@ -307,19 +323,12 @@ export default {
       windowWidth.value = window.innerWidth
       mapStore.resizeMap()
 
-      // Auto-collapse filter and layers on small screens when resizing
+      // Auto-collapse filter on small screens when resizing
       if (isMobileView.value) {
         if (!isFilterCollapsed.value) {
           isFilterCollapsed.value = true
         }
-        if (!isLayerCollapsed.value) {
-          isLayerCollapsed.value = true
-        }
       }
-    }
-
-    const setActiveLayer = (layerId) => {
-      mapStore.setActiveLayer(layerId)
     }
 
     const retryLoadMarkers = () => {
@@ -337,33 +346,19 @@ export default {
       }
     }
 
-    const toggleLayerCollapse = () => {
-      isLayerCollapsed.value = !isLayerCollapsed.value
-      // When expanding layers, we need to resize map after a small delay
-      if (!isLayerCollapsed.value) {
-        setTimeout(() => {
-          mapStore.resizeMap()
-        }, 300)
-      }
-    }
-
     return {
       mapContainer,
-      layerOptions,
-      activeLayerId,
-      setActiveLayer,
       isLoadingMarkers,
       markersLoadError,
       retryLoadMarkers,
       isMobileView,
       isFilterCollapsed,
       toggleFilterCollapse,
-      isLayerCollapsed,
-      toggleLayerCollapse,
       notification,
       map,
       userMarkers,
       userPositions,
+      isAdminMode: props.isAdminMode,
       isSharing, // Expose from location store
       locationError, // Expose from location store
       togglePositionSharing, // Expose from location store
@@ -373,12 +368,22 @@ export default {
 </script>
 
 <style scoped>
-/* Original styles */
 .map-container {
   width: 100%;
   height: calc(100vh - 60px);
   position: relative;
   overflow: hidden;
+}
+
+/* Search container */
+.map-search-container {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 400px;
+  z-index: 1000;
 }
 
 /* Location Services Styling */
@@ -442,6 +447,11 @@ export default {
     top: auto;
     bottom: 16px;
     right: 16px;
+  }
+
+  .map-search-container {
+    top: 10px;
+    max-width: 90%;
   }
 
   /* Adjust location services on mobile */
@@ -528,126 +538,20 @@ export default {
 }
 
 @keyframes fade-in-out {
-  0% {
-    opacity: 0;
-  }
-  15% {
-    opacity: 1;
-  }
-  85% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
 }
 
-/* Layer Control Container */
-.layer-control-container {
+.marker-filter-container {
   position: absolute;
-  bottom: 30px;
+  top: 16px;
   left: 16px;
   z-index: 1000;
   transition: all 0.3s ease;
   max-width: 100%;
   width: auto;
-  display: flex;
-  flex-direction: row;
-  align-items: flex-start;
-}
-
-/* Layer Toggle Button (for mobile) */
-.layer-toggle-button {
-  padding: 10px 16px;
-  background-color: white;
-  border: none;
-  border-radius: 12px;
-  text-align: center;
-  font-weight: 500;
-  color: #333;
-  cursor: pointer;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-  flex-shrink: 0;
-}
-
-.layer-content {
-  transition: all 0.3s ease;
-  opacity: 1;
-  margin-left: 12px;
-}
-
-.layer-content.hidden {
-  width: 0;
-  opacity: 0;
-  overflow: hidden;
-  margin-left: 0;
-  visibility: hidden;
-}
-
-.layer-content:not(.hidden) {
-  visibility: visible;
-}
-
-/* Layer Controls */
-.layer-controls {
-  display: flex;
-  background-color: white;
-  border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-  padding: 4px;
-}
-
-.layer-button {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 10px;
-  margin: 0 2px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-  min-width: 65px;
-}
-
-.layer-button:hover {
-  background-color: #f5f5f5;
-}
-
-.layer-button.active {
-  background-color: #f0f0f0;
-}
-
-.layer-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 4px;
-  transition: all 0.2s;
-}
-
-.satellite-icon {
-  background-color: #212121;
-}
-
-.terrain-icon {
-  background-color: #e8f5e9;
-}
-
-.standard-icon {
-  background-color: #fafafa;
-  border: 1px solid #e0e0e0;
-}
-
-.layer-name {
-  font-size: 11px;
-  color: #333;
-  font-weight: 500;
 }
 
 .filter-toggle-button {
@@ -686,9 +590,9 @@ export default {
 /* Custom Zoom Controls */
 :deep(.leaflet-control-zoom) {
   position: absolute !important;
-  top: 70px !important;
-  right: 16px !important;
-  margin: 0 !important;
+  bottom: 16px !important;
+  right: 10px !important;
+  margin: 20px !important;
   border: none;
   border-radius: 8px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
@@ -728,6 +632,11 @@ export default {
   align-items: center;
   justify-content: center;
   padding: 4px;
+}
+
+/* Search result marker styles */
+:deep(.search-result-icon) {
+  z-index: 1000 !important;
 }
 
 .map-loading-overlay {
@@ -788,40 +697,15 @@ export default {
   background-color: #2980b9;
 }
 
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* Mobile-specific styles */
 @media (max-width: 767px) {
-  .layer-controls {
-    padding: 2px;
-    flex-wrap: nowrap;
-  }
-
-  .layer-button {
-    padding: 6px 8px;
-    min-width: 54px;
-  }
-
-  .layer-icon {
-    width: 32px;
-    height: 32px;
-    margin-bottom: 2px;
-  }
-
-  .layer-name {
-    font-size: 10px;
-  }
-
-  .layer-control-container {
-    flex-direction: row;
-    align-items: center;
-  }
-
-  .layer-content {
-    height: auto;
-    margin-bottom: 0;
-  }
-
   :deep(.leaflet-control-zoom) {
-    top: 66px !important;
+    bottom: 16px !important;
   }
 
   :deep(.leaflet-control-zoom-in),
@@ -839,6 +723,10 @@ export default {
 
   .map-loading-text {
     font-size: 14px;
+  }
+
+  .marker-filter-container {
+    top: 70px; /* Moved below search bar on mobile */
   }
 }
 </style>

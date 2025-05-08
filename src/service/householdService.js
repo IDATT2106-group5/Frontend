@@ -1,22 +1,35 @@
 import BaseService from '@/service/baseService';
 
+/**
+ * Service class for managing household related API calls.
+ * Handles member management, household creation, updates, deletions, and invitations.
+ */
 class HouseholdService extends BaseService {
+  /**
+   * Initializes the HouseholdService with the base API path.
+   */
   constructor() {
     super('/household');
   }
 
-  // Get household details by using the userId
+  /**
+   * Fetch household details by user ID.
+   * Get household details by using the userId
+   *
+   * @param {string} userId - ID of the user.
+   * @returns {Promise<Object>} Household data.
+   * @throws {Error} If userId is missing or request fails.
+   */  
   async getHouseholdDetailsByUserId(userId) {
     if (!userId) {
       throw new Error('[ERROR] userId is undefined or null when calling getHouseholdDetailsByUserId');
     }
     try {
-      console.log('[POST] details with userId:', userId);
+ 
       const response = await this.post('details', { userId });
-      console.log('[RESPONSE] getHouseholdDetailsByUserId:', response);
+    
       return response;
     } catch (error) {
-      // Suppress expected 400 error logging
       if (error.response?.status !== 400) {
         console.error("Error fetching household details by user ID:", error);
       }
@@ -24,8 +37,14 @@ class HouseholdService extends BaseService {
     }
   }
   
-
-  // Add a member to the household
+  /**
+   * Add a member (registered or unregistered) to the household.
+   *
+   * @param {string} householdId - Household ID.
+   * @param {{ fullName: string, email?: string }} data - Member details.
+   * @returns {Promise<Object>} Newly added member object.
+   * @throws {Error} If the request fails.
+   */
   async addMember(householdId, data) {
     try {
       if (data.email) {
@@ -56,10 +75,35 @@ class HouseholdService extends BaseService {
     }
   }
 
-  // Update household details
+  /**
+   * Add a registered user to the household.
+   *
+   * @param {string} userId - User ID.
+   * @param {string} householdId - Household ID.
+   * @returns {Promise<Object>} API response.
+   * @throws {Error} If the request fails.
+   */
+  async addUserToHousehold(userId, householdId) {
+    try {
+      return await this.post('add-user', {
+        userId,
+        householdId
+      });
+    } catch (error) {
+      console.error("Error adding user to household:", error);
+      throw error;
+    }
+  }
+  /**
+   * Update household details (name, address).
+   *
+   * @param {{ householdId: string, name: string, address: string }} data - Updated household info.
+   * @returns {Promise<Object>} API response.
+   * @throws {Error} If the request fails.
+   */
   async updateHousehold(data) {
     try {
-      console.log('[POST] /edit household:', data);
+   
       return this.post('edit', {
         householdId: data.householdId,
         name: data.name,
@@ -70,8 +114,15 @@ class HouseholdService extends BaseService {
       throw error;
     }
   }
-  
-  // Update a unregistered member
+  /**
+   * Update an unregistered member's name.
+   *
+   * @param {string} householdId - Household ID.
+   * @param {string} memberId - Member ID.
+   * @param {{ name: string, isRegistered: boolean }} data - Updated member data.
+   * @returns {Promise<Object>} API response.
+   * @throws {Error} If trying to update a registered member or request fails.
+   */
   async updateUnregisteredMember(householdId, memberId, data) {
     try {
       if (data.isRegistered) {
@@ -84,7 +135,7 @@ class HouseholdService extends BaseService {
         householdId 
       };
   
-      console.log('[POST] edit-unregistered-member → Sending payload:', payload);
+
   
       return this.post(`edit-unregistered-member`, payload);
     } catch (error) {
@@ -92,10 +143,17 @@ class HouseholdService extends BaseService {
       throw error;
     }
   }
-  // Remove a member from the household
+  /**
+   * Remove a registered user from the household.
+   *
+   * @param {string} userId - User ID.
+   * @param {string} householdId - Household ID.
+   * @returns {Promise<Object>} API response.
+   * @throws {Error} If the request fails.
+   */
   async removeRegisteredMember(userId, householdId) {
     try {
-      console.log('[REMOVE REGISTERED] userId:', userId, 'householdId:', householdId);
+ 
       return this.post(`remove-user`, {
         userId,
         householdId
@@ -105,19 +163,30 @@ class HouseholdService extends BaseService {
       throw error;
     }
   }
-
-  // Remove an unregistered user 
+  /**
+   * Remove an unregistered member from the household.
+   *
+   * @param {string} memberId - Member ID.
+   * @returns {Promise<Object>} API response.
+   * @throws {Error} If the request fails.
+   */
   async removeUnregisteredMember(memberId) {
     try {
-      console.log('[REMOVE UNREGISTERED] ID:', memberId);
+   
       return this.post(`delete-unregistered-member`, { memberId });
     } catch (error) {
       console.error("Error removing unregistered member:", error);
       throw error;
     }
   }
-
-  // Invite a member by email
+  /**
+   * Invite a member by email to join the household.
+   *
+   * @param {string} householdId - Household ID.
+   * @param {string} email - Email address to invite.
+   * @returns {Promise<Object>} API response.
+   * @throws {Error} If the request fails.
+   */
   async inviteMember(householdId, email) {
     try {
       return this.post(`invite-user`, {
@@ -129,8 +198,13 @@ class HouseholdService extends BaseService {
       throw error;
     }
   }
-
-  // Create a new household
+  /**
+   * Create a new household.
+   *
+   * @param {{ name: string, address: string, ownerId: string }} data - New household data.
+   * @returns {Promise<Object>} Created household with ID.
+   * @throws {Error} If the request fails.
+   */
   async createHousehold(data) {
     try {
       const response = await this.post('create', {
@@ -149,8 +223,14 @@ class HouseholdService extends BaseService {
       throw error;
     }
   }
-
-  // Method to delete a household
+  /**
+   * Delete a household by ID and owner.
+   *
+   * @param {string} householdId - ID of the household to delete.
+   * @param {string} ownerId - ID of the owner requesting deletion.
+   * @returns {Promise<Object>} API response.
+   * @throws {Error} If the request fails.
+   */
   async deleteHousehold(householdId, ownerId) {
     try {
       return await this.post('delete', {
@@ -162,10 +242,17 @@ class HouseholdService extends BaseService {
       throw error;
     }
   }
-
+  /**
+   * Transfer household ownership to another user.
+   *
+   * @param {string} householdId - ID of the household.
+   * @param {string} userId - ID of the new owner.
+   * @returns {Promise<Object>} API response.
+   * @throws {Error} If the request fails.
+   */
   async transferOwnership(householdId, userId) {
     try {
-      console.log('[POST] change-owner → Transferring ownership to userId:', userId, 'for householdId:', householdId);
+     
       return this.post('change-owner', {
         householdId: householdId,
         userId: userId
@@ -175,8 +262,12 @@ class HouseholdService extends BaseService {
       throw error;
     }
   }
-
-  // Leave the household
+  /**
+   * Leave the currently joined household.
+   *
+   * @returns {Promise<Object>} API response.
+   * @throws {Error} If the request fails.
+   */
   async leaveHousehold() {
     try {
       return this.post('leave');
@@ -186,22 +277,40 @@ class HouseholdService extends BaseService {
     }
   }
 
-  // Search for a household by ID
-  async searchHouseholdById(data) {
-    try {
-      const householdId = Number(data.householdId);
-      
-      if (isNaN(householdId) || householdId <= 0) {
+    /**
+   * Search for a household by its ID.
+   *
+   * @param  {{ householdId: string }} options
+   * @param  {string} options.householdId  alphanumeric household identifier
+   * @throws {Error}   if `householdId` is not a nonempty alphanumeric string,
+   *                   or if the backend returns a 400/404
+   * @returns {Promise<{ id: string|number, name: string } | null>}
+   *                   the matching household record, or `null` if none found
+   */
+    async searchHouseholdById({ householdId }) {
+      if (typeof householdId !== 'string' || !/^[A-Za-z0-9]+$/.test(householdId)) {
         throw new Error('Ugyldig husstands-ID');
       }
-      
-      console.log('[SEARCH] Searching for household with ID:', householdId);
-      return await this.post('search', { householdId });
-    } catch (error) {
-      console.error("Error searching for household:", error);
-      throw error;
+    
+      try {
+        const response = await this.post('search', { householdId });
+    
+        if (!response || !response.id) {
+          // API returned no match
+          throw new Error('Ingen husstand funnet');
+        }
+        return response;
+    
+      } catch (err) {
+        const status = err.response?.status;
+        // Convert any 400/404 or our own “not found” into the friendly message
+        if (status === 400 || status === 404 || err.message === 'Ingen husstand funnet') {
+          throw new Error('Ingen husstand funnet');
+        }
+        console.error('Error searching for household:', err);
+        throw err;
+      }
     }
-  }
   
 }
 

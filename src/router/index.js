@@ -8,7 +8,6 @@ import StorageDetailView from '@/views/storageViews/StorageDetailView.vue'
 import VerifyEmailView from '@/views/mainViews/VerifyEmailView.vue'
 import RegisterSuccessView from '@/views/mainViews/RegisterSucessView.vue'
 import RegisterFailedView from '@/views/mainViews/RegisterFailedView.vue'
-import HouseholdInviteView from '@/views/householdViews/HouseholdInviteView.vue'
 import StorageView from '@/views/storageViews/StorageView.vue'
 import HouseholdCreateView from '@/views/householdViews/HouseholdCreateView.vue'
 import HouseholdJoinView from '@/views/householdViews/HouseholdJoinView.vue'
@@ -24,6 +23,8 @@ import AdminDashboardView from '@/views/adminViews/AdminDashboardView.vue'
 import notAuthorizedView from '@/views/mainViews/notAuthorizedView.vue'
 import PersonVern from '@/views/mainViews/PersonVern.vue'
 import AdminUserView from '@/views/adminViews/AdminUsersView.vue'
+import MarkerAdmin from '@/views/adminViews/MarkerAdmin.vue'
+import IncidentAdmin from '@/views/adminViews/IncidentAdmin.vue'
 import ScenarioList from '@/components/scenario/ScenarioList.vue'
 import ScenarioAdminView from '@/views/ScenarioAdminView.vue'
 import EditScenarioList from '@/components/scenario/EditScenarioList.vue'
@@ -39,6 +40,7 @@ import ImproveView from '@/views/afterCrisisViews/ImproveView.vue'
 import AboutView from '@/views/mainViews/AboutView.vue'
 import ContactView from '@/views/mainViews/ContactView.vue'
 import QuestionsView from '@/views/mainViews/QuestionsView.vue'
+import NyhetsView from '@/views/nyheter/NyhetsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -183,11 +185,6 @@ const router = createRouter({
       component: HouseholdJoinView,
     },
     {
-      path: '/household/invite',
-      name: 'household-invite',
-      component: HouseholdInviteView,
-    },
-    {
       path: '/verify-email',
       name: 'VerifyEmail',
       component: VerifyEmailView
@@ -229,6 +226,11 @@ const router = createRouter({
       name: 'ScenarioInfo',
       component: ScenarioInfo,
       props: true
+    },
+    {
+      path: '/nyheter',
+      name: 'NyhetsView',
+      component: NyhetsView
     },
     {
       path: '/before',
@@ -282,6 +284,20 @@ const router = createRouter({
       },
       meta:{hideNavbar: true, hideFooter: true },
     },
+    {
+      path: '/admin/map-icons',
+      name: 'MarkerAdmin',
+      component: MarkerAdmin,
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true
+      }
+    },
+    {
+      path: '/admin/incidents',
+      name: 'IncidentAdmin',
+      component: IncidentAdmin,
+    }
   ],
 })
 
