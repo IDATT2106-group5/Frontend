@@ -24,6 +24,8 @@ import AdminDashboardView from '@/views/adminViews/AdminDashboardView.vue'
 import notAuthorizedView from '@/views/mainViews/notAuthorizedView.vue'
 import PersonVern from '@/views/mainViews/PersonVern.vue'
 import AdminUserView from '@/views/adminViews/AdminUsersView.vue'
+import MarkerAdmin from '@/views/adminViews/MarkerAdmin.vue'
+import IncidentAdmin from '@/views/adminViews/IncidentAdmin.vue'
 import ScenarioList from '@/components/scenario/ScenarioList.vue'
 import ScenarioAdminView from '@/views/ScenarioAdminView.vue'
 import EditScenarioList from '@/components/scenario/EditScenarioList.vue'
@@ -200,6 +202,20 @@ const router = createRouter({
       },
       meta:{hideNavbar: true, hideFooter: true },
     },
+    {
+      path: '/admin/map-icons',
+      name: 'MarkerAdmin',
+      component: MarkerAdmin,
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true
+      }
+    },
+    {
+      path: '/admin/incidents',
+      name: 'IncidentAdmin',
+      component: IncidentAdmin,
+    }
   ],
 })
 
