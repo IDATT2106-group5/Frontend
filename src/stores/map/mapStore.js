@@ -1,5 +1,5 @@
 // stores/map/mapStore.js
-import { defineStore } from 'pinia';
+import {defineStore} from 'pinia';
 import MapService from '@/service/map/mapService';
 import MarkerService from '@/service/map/markerService';
 import MarkerConfigService from '@/service/map/markerConfigService';
@@ -7,8 +7,6 @@ import IncidentMapService from '@/service/map/incidentMapService';
 import IncidentConfigService from '@/service/map/incidentConfigService';
 import RoutingService from '@/service/map/routingService';
 import GeolocationService from '@/service/map/geoLocationService.js';
-
-
 
 import L from 'leaflet';
 
@@ -144,7 +142,9 @@ export const useMapStore = defineStore('map', {
      * @returns {L.Map} The created map instance
      */
     async initMap(container) {
-      if (!container) return null;
+      if (!container) {
+        return null;
+      }
 
       try {
         // Create the map with initial values from state
@@ -195,7 +195,9 @@ export const useMapStore = defineStore('map', {
      * Set up map event listeners for updating markers when the map moves
      */
     setupMapEventListeners() {
-      if (!this.map) return;
+      if (!this.map) {
+        return;
+      }
 
       // Clean up any previous listeners
       if (this.mapMoveCleanup) {
@@ -242,7 +244,9 @@ export const useMapStore = defineStore('map', {
      * @returns {Promise<Object>} Marker data by type
      */
     async fetchMarkerDataForCurrentView() {
-      if (!this.map) return {};
+      if (!this.map) {
+        return {};
+      }
 
       const bounds = MapService.getMapBounds(this.map);
       return await MarkerService.fetchAllMarkers(bounds);
@@ -253,7 +257,9 @@ export const useMapStore = defineStore('map', {
      * @param {boolean} silent - Whether to show loading indicator
      */
     async updateMarkersForCurrentView(silent = false) {
-      if (!this.map) return;
+      if (!this.map) {
+        return;
+      }
 
       // Set loading state
       this.setMarkerLoadingState(silent);
@@ -302,7 +308,9 @@ export const useMapStore = defineStore('map', {
      * @returns {L.Marker|null} - The created Leaflet marker or null
      */
     createMarkerWithPopup(markerData, markerType) {
-      if (!markerData || !markerType) return null;
+      if (!markerData || !markerType) {
+        return null;
+      }
 
       const marker = L.marker([markerData.lat, markerData.lng], {
         icon: markerType.icon
@@ -366,7 +374,6 @@ export const useMapStore = defineStore('map', {
       }
     },
 
-
     /**
      * Get user's current position as a promise
      * @returns {Promise<Array>} User position as [lat, lng]
@@ -376,7 +383,8 @@ export const useMapStore = defineStore('map', {
         return await GeolocationService.getUserLocation();
       } catch (error) {
         console.error("Error getting user position:", error);
-        this.routeError = "Kunne ikke hente din posisjon: " + GeolocationService.getErrorMessage(error);
+        this.routeError = "Kunne ikke hente din posisjon: " + GeolocationService.getErrorMessage(
+          error);
         return null;
       }
     },
@@ -412,7 +420,9 @@ export const useMapStore = defineStore('map', {
 
         // Find marker type configuration
         const markerType = this.markerTypes.find(type => type.id === typeId);
-        if (!markerType) return;
+        if (!markerType) {
+          return;
+        }
 
         // Add markers to the layer group
         markers.forEach(markerData => {
@@ -432,7 +442,9 @@ export const useMapStore = defineStore('map', {
      * @param {string} layerId - ID of the layer to activate
      */
     setActiveLayer(layerId) {
-      if (!this.map) return;
+      if (!this.map) {
+        return;
+      }
 
       const layer = MapService.setActiveLayer(this.map, layerId);
 
@@ -524,7 +536,9 @@ export const useMapStore = defineStore('map', {
      * Remove all marker layers from the map (but keep layer groups)
      */
     removeAllMarkerLayers() {
-      if (!this.map) return;
+      if (!this.map) {
+        return;
+      }
 
       Object.values(this.markerLayers).forEach(layer => {
         if (layer) {
@@ -538,14 +552,18 @@ export const useMapStore = defineStore('map', {
      * @param {boolean} isVisible - Whether markers should be visible
      */
     setAllMarkersVisibility(isVisible) {
-      if (!this.map) return;
+      if (!this.map) {
+        return;
+      }
 
       // Update visibility state for all marker types
       this.markerTypes.forEach(markerType => {
         markerType.visible = isVisible;
 
         const layer = this.markerLayers[markerType.id];
-        if (!layer) return;
+        if (!layer) {
+          return;
+        }
 
         // Add or remove layer from map
         if (isVisible) {
@@ -556,23 +574,28 @@ export const useMapStore = defineStore('map', {
       });
     },
 
-
     /**
      * Toggle visibility for a specific marker type
      * @param {string} markerId - ID of the marker type to toggle
      */
     toggleMarkerVisibility(markerId) {
-      if (!this.map) return;
+      if (!this.map) {
+        return;
+      }
 
       // Find marker type
       const markerType = this.markerTypes.find(type => type.id === markerId);
-      if (!markerType) return;
+      if (!markerType) {
+        return;
+      }
 
       // Toggle visibility state
       markerType.visible = !markerType.visible;
 
       const layer = this.markerLayers[markerId];
-      if (!layer) return;
+      if (!layer) {
+        return;
+      }
 
       // Add or remove from map
       if (markerType.visible) {
@@ -586,7 +609,9 @@ export const useMapStore = defineStore('map', {
      * Initialize incidents and incident layer
      */
     initIncidents() {
-      if (!this.map) return;
+      if (!this.map) {
+        return;
+      }
 
       // Create incident layer and add to map
       this.incidentLayer = L.layerGroup().addTo(this.map);
@@ -599,7 +624,9 @@ export const useMapStore = defineStore('map', {
      * Load incidents from API and add to map
      */
     async loadIncidents() {
-      if (!this.map || !this.incidentLayer) return;
+      if (!this.map || !this.incidentLayer) {
+        return;
+      }
 
       this.isLoadingIncidents = true;
       this.incidentsLoadError = null;
@@ -631,7 +658,9 @@ export const useMapStore = defineStore('map', {
      * Update incidents on the map
      */
     updateIncidentsOnMap() {
-      if (!this.map || !this.incidentLayer) return;
+      if (!this.map || !this.incidentLayer) {
+        return;
+      }
 
       // Clear existing incidents
       this.incidentLayer.clearLayers();
@@ -651,7 +680,9 @@ export const useMapStore = defineStore('map', {
      * @param {boolean} isVisible - Whether incidents should be visible
      */
     setIncidentsVisibility(isVisible) {
-      if (!this.map || !this.incidentLayer) return;
+      if (!this.map || !this.incidentLayer) {
+        return;
+      }
 
       if (isVisible) {
         this.incidentLayer.addTo(this.map);
@@ -779,28 +810,9 @@ export const useMapStore = defineStore('map', {
      * Clear any existing route from the map
      */
     clearRoute() {
-      if (this.routingControl) {
-        try {
-          // First, remove any event listeners
-          if (this.routingControl._map) {
-            this.routingControl._map.off('zoomend', this.routingControl._onZoomEnd);
-          }
-
-          // Remove from map
-          this.routingControl.remove();
-
-          // Clean up references
-          this.routingControl = null;
-
-        } catch (error) {
-          console.warn("Error cleaning up routing control:", error);
-        }
-      }
-
-      // Also clean up the container reference
-      if (this.routingContainer) {
-        this.routingContainer = null;
-      }
+      RoutingService.clearRoute();
+      this.activeRoute = null;
+      this.routeStart = this.routeEnd = null;
     },
 
     /**
