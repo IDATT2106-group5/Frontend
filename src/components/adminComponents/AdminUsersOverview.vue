@@ -1,7 +1,4 @@
 <script>
-import { useAdminStore } from '@/stores/AdminStore'
-import { useUserStore } from '@/stores/UserStore'
-import AdminService from '@/service/adminService'
 import ConfirmModal from '@/components/householdMainView/modals/ConfirmModal.vue'
 import { ref, reactive } from 'vue'
 
@@ -10,31 +7,27 @@ export default {
     ConfirmModal
   },
 
-  /**
-   * Setup function for the component
-   * @returns {Object} Properties and stores accessible in the template
-   */
-  setup() {
-    const adminStore = useAdminStore()
-    const userStore = useUserStore()
+  props: {
+    admins: {
+      type: Array,
+      required: true
+    },
+    isLoading: {
+      type: Boolean,
+      default: false
+    }
+  },
 
+  setup() {
     const showDeleteModal = ref(false)
     const adminToDelete = ref(null)
     const showPasswordModal = ref(false)
     const adminEmailForPassword = ref('')
-
     const successfulResets = reactive({})
-
-    const isDeleting = ref(false)
     const isResettingPassword = ref(false)
-
-    if (userStore.isSuperAdmin) {
-      adminStore.fetchAdmins()
-    }
+    const isDeleting = ref(false)
 
     return {
-      adminStore,
-      userStore,
       showDeleteModal,
       adminToDelete,
       showPasswordModal,
@@ -64,7 +57,7 @@ export default {
     },
 
     /**
-     * Confirms and executes the password reset
+     * Emits reset-password event to parent
      * @async
      */
     async confirmPasswordReset() {
@@ -72,27 +65,17 @@ export default {
 
       this.showPasswordModal = false
       this.isResettingPassword = true
-      this.adminStore.error = null
 
-      const emailToReset = this.adminEmailForPassword
+      this.$emit('reset-password', this.adminEmailForPassword)
 
-      try {
-        this.successfulResets[emailToReset] = true
-        await AdminService.resetPassword(emailToReset)
+      this.successfulResets[this.adminEmailForPassword] = true
 
-        setTimeout(() => {
-          this.successfulResets[emailToReset] = false
-        }, 60000)
+      setTimeout(() => {
+        this.successfulResets[this.adminEmailForPassword] = false
+      }, 60000)
 
-      } catch (error) {
-        console.error('Kunne ikke tilbakestille passord:', error)
-        this.adminStore.error = `Kunne ikke sende nytt passord: ${error.message || 'Ukjent feil'}`
-        this.successfulResets[emailToReset] = false
-      } finally {
-        this.isResettingPassword = false
-        this.adminEmailForPassword = ''
-        this.adminStore.isLoading = false
-      }
+      this.isResettingPassword = false
+      this.adminEmailForPassword = ''
     },
 
     /**
@@ -102,7 +85,6 @@ export default {
     openDeleteModal(admin) {
       this.adminToDelete = admin
       this.showDeleteModal = true
-      this.adminStore.error = null
     },
 
     /**
@@ -114,7 +96,7 @@ export default {
     },
 
     /**
-     * Confirm and execute the delete operation
+     * Emits delete-admin event to parent
      * @async
      */
     async confirmDelete() {
@@ -122,19 +104,20 @@ export default {
 
       this.showPasswordModal = false
       this.isDeleting = true
-      this.adminStore.error = null
-      this.adminStore.isLoading = true
 
-      try {
-        await AdminService.deleteAdmin(this.adminToDelete.id)
-        await this.adminStore.fetchAdmins()
-        this.adminToDelete = null
-      } catch (error) {
-        console.error('Failed to delete admin:', error)
-        this.adminStore.error = error.message || 'Ukjent feil'
-      } finally {
-        this.adminStore.isLoading = false
-        this.isDeleting = false
+      this.$emit('delete-admin', this.adminToDelete)
+
+      this.isDeleting = false
+      this.adminToDelete = null
+    },
+
+    /**
+     * Marks a reset as failed for UI feedback
+     * @param {string} email - Email address of the admin
+     */
+    markResetFailed(email) {
+      if (this.successfulResets[email]) {
+        this.successfulResets[email] = false
       }
     }
   }
@@ -143,12 +126,12 @@ export default {
 
 <template>
   <div class="bg-white rounded shadow">
-    <div v-if="adminStore.isLoading" class="text-center py-4">
+    <div v-if="isLoading" class="text-center py-4">
       <p class="text-gray-600">Laster administratorer...</p>
     </div>
 
     <div v-else>
-      <div v-for="admin in adminStore.admins" :key="admin.email"
+      <div v-for="admin in admins" :key="admin.email"
            class="flex items-center justify-between p-4 border-b border-gray-200 last:border-b-0">
         <div class="text-black">{{ admin.email }}</div>
 

@@ -5,6 +5,7 @@ import AdminUserOverview from "@/components/adminComponents/AdminUsersOverview.v
 import { useUserStore } from '@/stores/UserStore'
 import { useRouter } from 'vue-router'
 import { useAdminStore } from "@/stores/AdminStore";
+import AdminService from '@/service/adminService'
 import { CheckCircle, XCircle, Loader } from 'lucide-vue-next';
 
 const router = useRouter()
@@ -15,7 +16,21 @@ const successMessage = ref('');
 const showSuccess = computed(() => !!successMessage.value);
 const clearSuccessTimeout = ref(null);
 const inviteFormRef = ref(null);
+const adminUsersOverviewRef = ref(null);
 
+/**
+ * Shows a success message temporarily
+ * @param {string} message - The success message to display
+ */
+function showSuccessMessage(message) {
+  successMessage.value = message;
+
+  if (clearSuccessTimeout.value) clearTimeout(clearSuccessTimeout.value);
+
+  clearSuccessTimeout.value = setTimeout(() => {
+    successMessage.value = '';
+  }, 5000);
+}
 
 /**
  * Handles the process of inviting a new admin user.
@@ -23,26 +38,18 @@ const inviteFormRef = ref(null);
  * @param {Object} adminData - The data of the admin user to be invited.
  * @param {string} adminData.email - The email address of the admin user.
  * @param {string} adminData.fullName - The name of the admin user.
- * @returns {Promise<void>} - A promise that resolves when the invite process is complete.
  */
 async function handleInvite(adminData) {
   console.log('New admin invitation:', adminData);
 
   try {
     successMessage.value = '';
-    if (clearSuccessTimeout.value) clearTimeout(clearSuccessTimeout.value);
-
     adminStore.error = null;
 
     const response = await adminStore.inviteNewAdmin(adminData);
 
     if (response && response.message) {
-      successMessage.value = response.message;
-
-      clearSuccessTimeout.value = setTimeout(() => {
-        successMessage.value = '';
-      }, 5000);
-
+      showSuccessMessage(response.message);
       adminStore.fetchAdmins();
     }
   } catch (error) {
@@ -50,13 +57,62 @@ async function handleInvite(adminData) {
   } finally {
     inviteFormRef.value.resetForm();
   }
+}
 
+/**
+ * Handles password reset requests
+ * @param {string} email - Email address of the admin
+ */
+async function handlePasswordReset(email) {
+  console.log('Password reset requested for:', email);
+
+  try {
+    adminStore.error = null;
+
+    await AdminService.resetPassword(email);
+    showSuccessMessage(`Nytt passord sendt til: ${email}`);
+
+  } catch (error) {
+    console.error('Kunne ikke tilbakestille passord:', error);
+    adminStore.error = `Kunne ikke sende nytt passord: ${error.message || 'Ukjent feil'}`;
+
+    // If there's an error, mark the reset as failed in the component
+    if (adminUsersOverviewRef.value) {
+      adminUsersOverviewRef.value.markResetFailed(email);
+    }
+  }
+}
+
+/**
+ * Handles admin deletion requests
+ * @param {Object} admin - The admin to delete
+ */
+async function handleAdminDelete(admin) {
+  console.log('Admin deletion requested for:', admin.email);
+
+  try {
+    adminStore.error = null;
+    adminStore.isLoading = true;
+
+    await AdminService.deleteAdmin(admin.id);
+    showSuccessMessage(`Admin ${admin.email} har blitt slettet`);
+
+    await adminStore.fetchAdmins();
+
+  } catch (error) {
+    console.error('Failed to delete admin:', error);
+    adminStore.error = error.message || 'Ukjent feil';
+  } finally {
+    adminStore.isLoading = false;
+  }
 }
 
 onMounted(async () => {
   if (!userStore.isSuperAdmin) {
     return router.push('/not-authorized')
   }
+
+  adminStore.fetchAdmins();
 })
 </script>
 
@@ -100,7 +156,13 @@ onMounted(async () => {
         <div class="flex justify-center">
           <h2 class="text-2xl font-bold mb-4 text-center md:text-left">Administratorer</h2>
         </div>
-        <AdminUserOverview />
+        <AdminUserOverview
+          ref="adminUsersOverviewRef"
+          :admins="adminStore.admins"
+          :isLoading="adminStore.isLoading"
+          @reset-password="handlePasswordReset"
+          @delete-admin="handleAdminDelete"
+        />
       </div>
     </div>
   </div>
