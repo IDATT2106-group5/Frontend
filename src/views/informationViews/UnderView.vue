@@ -51,6 +51,33 @@ const goToBefore = () => {
 const goToAfter = () => {
   router.push('/after')
 }
+
+/**
+ * Navigates to the "Seek Safety" page.
+ *
+ * @returns {void}
+ */
+const goToSeekSafety = () => {
+  router.push('/seek-safety')
+}
+
+/**
+ * Navigates to the "Emergency Tips" page.
+ *
+ * @returns {void}
+ */
+const goToEmergencyTips = () => {
+  router.push('/emergency-tips')
+}
+
+/**
+ * Navigates to the "Alert" page.
+ *
+ * @returns {void}
+ */
+const goToAlert = () => {
+  router.push('/alert')
+}
 </script>
 
 <template>
@@ -99,7 +126,8 @@ const goToAfter = () => {
     >
       <div class="space-y-8 text-left">
         <!-- CARD 1 -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-6 min-h-[160px] max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-6 min-h-[160px] max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition"
+        @click="goToSeekSafety">
           <InfoBox
             title="1. Søk trygghet"
             description="Finn trygg plass, hold deg innendørs, eller evakuer ved behov"
@@ -117,7 +145,8 @@ const goToAfter = () => {
         </div>
 
         <!-- CARD 2 -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-6 min-h-[160px] max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-6 min-h-[160px] max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition"
+        @click="goToEmergencyTips">
           <InfoBox
             title="2. Tips til krisehåndtering"
             description="Kommunikasjon og håndtering av akutte behov"
@@ -136,7 +165,8 @@ const goToAfter = () => {
         </div>
 
         <!-- CARD 3 -->
-        <div class="flex flex-col sm:flex-row items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-6 min-h-[160px] max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-6 min-h-[160px] max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition"
+        @click="goToAlert">
           <InfoBox
             title="3. Følg med på varsler"
             description="Hold deg oppdatert på situasjonen"

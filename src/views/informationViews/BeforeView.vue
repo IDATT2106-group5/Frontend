@@ -50,6 +50,26 @@ const goToScenarios = () => {
   router.push('/scenarios') 
 }
 
+/**
+ * Navigates to the "Prepare for Crisis" page at `/prepare-crisis`.
+ * Typically triggered by clicking the "Forbered deg på kriser" card.
+ *
+ * @returns {void}
+ */
+const goToPrepareCrisis = () => {
+  router.push('/prepare-crisis')
+}
+
+/**
+ * Navigates to the "Quiz" page at `/quiz`.
+ * Typically triggered by clicking the "Test deg selv" card.
+ *
+ * @returns {void}
+ */
+const goToQuiz = () => {
+  router.push('/quiz')
+}
+
 </script>
 
 <template>
@@ -84,7 +104,8 @@ const goToScenarios = () => {
       <div class="space-y-8 text-left">
         <!-- Card 1 -->
         <div class="flex flex-col sm:flex-row items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-6 min-h-[160px]
-                    max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition">
+                    max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition"
+            @click="goToPrepareCrisis">
           <InfoBox
             title="1. Forbered deg på kriser"
             description="Les mer om å forberede seg til en krise"
@@ -126,7 +147,8 @@ const goToScenarios = () => {
 
         <!-- Card 3 -->
         <div class="flex flex-col sm:flex-row items-center justify-between gap-6 border-2 border-[#ACACAC] rounded-xl px-6 py-6 min-h-[160px]
-                    max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition">
+                    max-w-xl mx-auto cursor-pointer hover:opacity-100 hover:shadow-md transform hover:scale-105 transition"
+             @click="goToQuiz">
           <InfoBox
             title="3. Test deg selv"
             description="Ta en quiz og test kunnskapene dine"

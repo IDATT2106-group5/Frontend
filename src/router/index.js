@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/UserStore'
-
 import HomeView from '../views/mainViews/HomeView.vue'
 import LoginView from '../views/login/LoginView.vue'
 import RegisterView from '../views/mainViews/RegisterView.vue'
@@ -30,6 +29,17 @@ import ScenarioList from '@/components/scenario/ScenarioList.vue'
 import ScenarioAdminView from '@/views/ScenarioAdminView.vue'
 import EditScenarioList from '@/components/scenario/EditScenarioList.vue'
 import ScenarioInfo from '@/components/scenario/ScenarioInfo.vue'
+import PrepareCrisisView from '@/views/beforeCrisisViews/PrepareCrisisView.vue'
+import QuizView from '@/views/beforeCrisisViews/QuizView.vue'
+import SeekSafetyView from '@/views/underCrisisViews/SeekSafetyView.vue'
+import EmergencyTipsView from '@/views/underCrisisViews/EmergencyTipsView.vue'
+import AlertView from '@/views/beforeCrisisViews/AlertView.vue'
+import TalkAboutItView from '@/views/afterCrisisViews/TalkAboutItView.vue'
+import MentalHealthView from '@/views/afterCrisisViews/MentalHealthView.vue'
+import ImproveView from '@/views/afterCrisisViews/ImproveView.vue'
+import AboutView from '@/views/mainViews/AboutView.vue'
+import ContactView from '@/views/mainViews/ContactView.vue'
+import QuestionsView from '@/views/mainViews/QuestionsView.vue'
 import NyhetsView from '@/views/nyheter/NyhetsView.vue'
 
 const router = createRouter({
@@ -45,6 +55,72 @@ const router = createRouter({
       name: 'login',
       component: LoginView,
       meta:{hideNavbar: true, hideFooter: true },
+    },
+    {
+      path: '/prepare-crisis',
+      name: 'prepare-crisis',
+      component: PrepareCrisisView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/quiz',
+      name: 'quiz',
+      component: QuizView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/seek-safety',
+      name: 'seek-safety',
+      component: SeekSafetyView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/emergency-tips',
+      name: 'emergency-tips',
+      component: EmergencyTipsView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/alert',
+      name: 'alert',
+      component: AlertView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/talk',
+      name: 'talk',
+      component: TalkAboutItView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/mental',
+      name: 'mental',
+      component: MentalHealthView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/improve',
+      name: 'improve',
+      component: ImproveView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/about',
+      name: 'about',
+      component: AboutView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/contact',
+      name: 'contact',
+      component: ContactView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/questions',
+      name: 'questions',
+      component: QuestionsView,
+      meta:{hideNavbar: false, hideFooter: false },
     },
     {
       path: '/request-reset',
