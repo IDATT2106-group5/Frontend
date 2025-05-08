@@ -185,7 +185,7 @@ describe('HouseholdStore', () => {
 
   it('searchHouseholdById returns found household', async () => {
     HouseholdService.searchHouseholdById.mockResolvedValue({ id: 1, name: 'Found House' });
-    const result = await store.searchHouseholdById(1);
+    const result = await store.searchHouseholdById('1');
     expect(result.name).toBe('Found House');
   });
   it('loadHouseholdData calls check and fetches data', async () => {
