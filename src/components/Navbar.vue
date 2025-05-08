@@ -7,42 +7,49 @@ import {
   Info,
   Lock,
   Mail,
-  Map,
   Menu,
   Newspaper,
   Package,
   ShoppingCart,
-  User,
+  User
 } from 'lucide-vue-next'
 
-import { onBeforeUnmount, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/UserStore'
 import useWebSocket from '@/service/websocketComposable.js'
+import { useLocationStore } from '@/stores/map/LocationStore.js'
 
 const userStore = useUserStore()
 const router = useRouter()
 const mobileMenuOpen = ref(false)
 const showNotifications = ref(false)
-const isSharing = ref(localStorage.getItem('isSharing') === 'true')
-const locationError = ref(null)
-let positionUpdateInterval = null
+const locationStore = useLocationStore()
 
 const {
   notifications,
   notificationCount,
   markAsRead,
   resetNotificationCount,
-  connected,
-  updatePosition,
-  subscribeToPosition,
+  showIncidentPopup,
+  currentIncident,
+  closeIncidentPopup,
+  connected
 } = useWebSocket()
+
+const { isSharing, startPositionSharing } = useLocationStore()
 
 function toggleNotifications() {
   showNotifications.value = !showNotifications.value
   if (showNotifications.value) {
     resetNotificationCount()
+
+    notifications.value.forEach((notification) => {
+      if (!notification.read) {
+        markAsRead(notification.id)
+      }
+    })
   }
 }
 
@@ -52,12 +59,14 @@ function handleMarkAsRead(notificationId) {
 
 function formatTimestamp(timestamp) {
   const date = new Date(timestamp)
-  return date.toLocaleString('no-NO', {
-    hour: '2-digit',
-    minute: '2-digit',
-    day: '2-digit',
-    month: '2-digit',
-  })
+
+  const day = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0') // Month is 0-indexed
+  const year = date.getFullYear()
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+
+  return `${hours}:${minutes}, ${day}.${month}.${year}`
 }
 
 function handleLogout() {
@@ -65,64 +74,41 @@ function handleLogout() {
   router.push('/login')
 }
 
-function updateUserPosition() {
-  if (!connected.value) return
-
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      const { latitude, longitude } = position.coords
-      const userId = userStore.userId || 44
-      console.log('User ID:', userId)
-      updatePosition(userId, longitude.toString(), latitude.toString())
-      locationError.value = null
-    },
-    (error) => {
-      console.error('Geolocation error:', error)
-      locationError.value = 'Could not access your location'
-      stopPositionSharing()
-    },
-    {
-      enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 30000,
-    },
-  )
-}
-
-function startPositionSharing() {
-  if (!navigator.geolocation) {
-    locationError.value = 'Geolocation is not supported by your browser'
-    return
-  }
-
-  updateUserPosition()
-  positionUpdateInterval = setInterval(updateUserPosition, 10000)
-  isSharing.value = true
-  localStorage.setItem('isSharing', true)
-  console.log('Position sharing allowed:', localStorage.getItem('isSharing'))
-}
-
-function stopPositionSharing() {
-  if (positionUpdateInterval) {
-    clearInterval(positionUpdateInterval)
-    positionUpdateInterval = null
-  }
-  isSharing.value = false
-  localStorage.setItem('isSharing', false)
-  console.log('Position sharing allowed:', localStorage.getItem('isSharing'))
-}
-
-function togglePositionSharing() {
-  if (isSharing.value) {
-    stopPositionSharing()
-  } else {
+onMounted(() => {
+  if (connected.value && isSharing) {
     startPositionSharing()
+  } else {
+    console.log('WebSocket not connected')
   }
-  localStorage.setItem('isSharing', isSharing.value)
+})
+
+watch(
+  () => connected.value,
+  (isConnected) => {
+    if (isSharing && isConnected) {
+      startPositionSharing()
+    }
+  }
+)
+
+function getNotificationRoute(notification) {
+  switch (notification.type) {
+    case 'INVITATION':
+      return '/household'
+    case 'MEMBERSHIP_REQUEST':
+      return '/household'
+    case 'HOUSEHOLD':
+      return '/household'
+    case 'INCIDENT':
+      return '/map'
+    case 'STOCK_CONTROL':
+      return '/storage'
+    default:
+      return '/'
+  }
 }
 
 onBeforeUnmount(() => {
-  stopPositionSharing()
 })
 
 const notificationIcons = {
@@ -131,11 +117,59 @@ const notificationIcons = {
   INCIDENT: AlarmCheck,
   STOCK_CONTROL: Package,
   HOUSEHOLD: Home,
-  INFO: Info,
+  INFO: Info
 }
 </script>
 
 <template>
+  <!-- Incident Popup -->
+  <transition name="fade">
+    <div
+      v-if="showIncidentPopup && currentIncident"
+      class="fixed inset-0 flex items-center justify-center z-[2000] bg-black bg-opacity-50"
+    >
+      <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
+        <div class="bg-blue-600 p-4 text-white flex justify-between items-center">
+          <div class="flex items-center">
+            <AlarmCheck class="w-6 h-6 mr-2" />
+            <h3 class="text-lg font-bold">EMERGENCY ALERT</h3>
+          </div>
+          <button @click="closeIncidentPopup" class="text-white hover:text-gray-200">
+            <span class="text-2xl">×</span>
+          </button>
+        </div>
+        <div class="p-6">
+          <p class="text-lg mb-4">{{ currentIncident.message }}</p>
+          <p v-show="!locationStore.isSharing" class="text-sm text-gray-500 mb-4">
+            Del posisjon for å tillate husstanden din til å se posisjonen din
+          </p>
+          <p v-show="locationStore.isSharing" class="text-sm text-gray-500 mb-4">
+            Din posisjon er delt med husstanden din, gå til kartet for å se om de er i faresonen
+          </p>
+          <p class="text-sm text-gray-500 mb-6">
+            {{ formatTimestamp(currentIncident.timestamp) }}
+          </p>
+          <div class="flex justify-center gap-3 pt-4">
+            <Button
+              v-show="!locationStore.isSharing"
+              @click="startPositionSharing"
+              variant="default"
+              class="ml-2 bg-blue-600 hover:bg-blue-700"
+            >
+              Del posisjon
+            </Button>
+            <Button
+              @click="closeIncidentPopup"
+              variant="default"
+              class="bg-red-600 hover:bg-red-700"
+            >
+              Lukk
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </transition>
   <header class="bg-[#2c3e50] text-white px-6 py-4 shadow">
     <div class="flex items-center justify-between">
       <RouterLink to="/" class="flex items-center gap-3">
@@ -163,11 +197,11 @@ const notificationIcons = {
           class="flex items-center gap-2 hover:underline"
         >
           <ShoppingCart class="w-5 h-5 text-white" />
-          Min beholdning
+          Beholdning
         </RouterLink>
         <RouterLink to="/household" class="flex items-center gap-2 hover:underline">
           <User class="w-5 h-5 text-white" />
-          Min husstand
+          Husstand
         </RouterLink>
         <RouterLink
           v-if="userStore.isAdmin"
@@ -194,6 +228,7 @@ const notificationIcons = {
           </span>
         </div>
 
+        <!-- Login/Logout Button -->
         <template v-if="userStore.token">
           <Button
             @click="handleLogout"
@@ -254,23 +289,10 @@ const notificationIcons = {
     </div>
   </header>
 
-  <!-- Add this button next to the notifications button in the Auth and notifications div -->
-  <Button
-    @click="togglePositionSharing"
-    variant="outline"
-    :class="[
-      'text-white border-white bg-[#2c3e50]',
-      isSharing ? 'hover:bg-red-600' : 'hover:bg-green-600',
-    ]"
-  >
-    <Map class="w-4 h-4 mr-2" />
-    {{ isSharing ? 'Stop deling' : 'Del posisjon' }}
-  </Button>
-
   <!-- Notifications Panel -->
   <div
     v-if="showNotifications"
-    class="fixed right-4 top-16 w-72 bg-white shadow-lg rounded-md border border-gray-200 z-50"
+    class="fixed right-4 top-16 w-72 bg-white shadow-lg rounded-md border border-gray-200 z-[1001]"
   >
     <div class="p-3 border-b border-gray-200 flex justify-between items-center">
       <div class="flex items-center">
@@ -289,23 +311,22 @@ const notificationIcons = {
         :key="notification.id"
         class="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
         :class="{ 'bg-blue-50': !notification.read }"
-        @click="handleMarkAsRead(notification.id)"
+        @click="router.push(getNotificationRoute(notification))"
       >
-        <div class="flex">
-          <div class="mr-3 text-gray-700">
-            <component
-              :is="notificationIcons[notification.type] || Bell"
-              class="w-5 h-5"
-            />
-          </div>
-          <div class="flex-1">
-            <div class="flex justify-between items-start">
-              <span class="font-medium">{{ notification.message }}</span>
-              <span class="text-xs text-gray-500">{{ formatTimestamp(notification.timestamp) }}</span>
-            </div>
+      <div class="flex">
+        <div class="mr-3 text-gray-700">
+          <component :is="notificationIcons[notification.type] || Bell" class="w-5 h-5" />
+        </div>
+        <div class="flex-1">
+          <div class="flex justify-between items-start">
+            <span class="font-medium">{{ notification.message }}</span>
+            <span class="text-xs text-gray-500">{{
+                formatTimestamp(notification.timestamp)
+              }}</span>
           </div>
         </div>
       </div>
     </div>
+  </div>
   </div>
 </template>
