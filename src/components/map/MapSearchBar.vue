@@ -109,7 +109,7 @@ export default {
       } else if (event.key === 'Escape') {
         clearSearch();
       } else {
-        // Set up auto-search after 4 seconds of inactivity
+        // Set up auto-search after 1 second of inactivity
         autoSearchTimeout.value = setTimeout(() => {
           if (searchInput.value.trim().length >= 3) {
             triggerSearch();
