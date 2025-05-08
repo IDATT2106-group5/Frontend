@@ -112,12 +112,12 @@ defineExpose({
 
 <template>
   <div class="bg-white rounded shadow">
-    <div v-if="isLoading" class="text-center py-4">
+    <div v-if="props.isLoading" class="text-center py-4">
       <p class="text-gray-600">Laster administratorer...</p>
     </div>
 
     <div v-else>
-      <div v-for="admin in admins" :key="admin.email"
+      <div v-for="admin in props.admins" :key="admin.email"
            class="flex items-center justify-between p-4 border-b border-gray-200 last:border-b-0">
         <div class="text-black">{{ admin.email }}</div>
 

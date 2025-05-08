@@ -39,20 +39,24 @@ export const useUserStore = defineStore('user', {
      * @throws {Error} Throws an error if the registration process fails unexpectedly.
      */
     async register(userData) {
-      this.isLoading = true;
-      this.error = null;
+      this.isLoading = true
+      this.error = null
       try {
-        const response = await AuthService.register(userData);
-        return true;
+        const response = await AuthService.register(userData)
+
+        if (response) {
+          return true
+        }
+        return false
       } catch (err) {
         if (err.response && err.response.data && err.response.data.error === "Email already in use") {
-          this.error = "E-postadressen er allerede registrert.";
+          this.error = "E-postadressen er allerede registrert."
         } else {
-          this.error = err.message || "Noe gikk galt under registrering.";
+          this.error = err.message || "Noe gikk galt under registrering."
         }
-        return false;
+        return false
       } finally {
-        this.isLoading = false;
+        this.isLoading = false
       }
     },
 

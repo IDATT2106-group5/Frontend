@@ -68,7 +68,7 @@ const rules = computed(() => {
       ),
       containsSpecial: helpers.withMessage(
         'Passordet må inneholde minst ett spesialtegn (f.eks. !@#$%^&*)',
-        helpers.regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/)
+        helpers.regex(/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+/)
       )
     },
     confirmPassword: {
