@@ -208,6 +208,10 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const userStore = useUserStore()
 
+  if (to.name === '2FA' && !to.query.email) {
+    return next({ name: 'login' })
+  }
+
   if (!userStore.user && localStorage.getItem('jwt')) {
     try {
       await userStore.fetchUser()
