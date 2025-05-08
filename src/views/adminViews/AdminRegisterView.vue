@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from "vue"
+import { ref, reactive, computed, onMounted, onBeforeMount } from "vue"
 import { useRouter } from "vue-router"
 import { useUserStore } from "@/stores/UserStore"
 import { Button } from "@/components/ui/button"
@@ -25,6 +25,10 @@ const props = defineProps({
 const router = useRouter()
 const userStore = useUserStore()
 
+onBeforeMount(() => {
+  userStore.logout()
+})
+
 if (props.emailMissing || props.tokenMissing) {
   router.replace('/login');
 }
@@ -38,7 +42,7 @@ const formData = reactive({
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 
-const status = reactive({ // TODO connect to UserStore
+const status = reactive({
   loading: userStore.isLoading,
   error: false,
   errorMessage: ''
@@ -64,7 +68,7 @@ const rules = computed(() => {
       ),
       containsSpecial: helpers.withMessage(
         'Passordet må inneholde minst ett spesialtegn (f.eks. !@#$%^&*)',
-        helpers.regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+/)
+        helpers.regex(/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+/)
       )
     },
     confirmPassword: {

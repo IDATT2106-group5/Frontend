@@ -45,11 +45,11 @@ describe('RegisterView.vue', () => {
 
   beforeEach(() => {
     // Mock hCaptcha
-    global.window.hcaptcha = {
+    globalThis.window.hcaptcha = {
       render: vi.fn()
     }
-    global.window.hcaptchaCallback = vi.fn()
-    global.window.hcaptchaReset = vi.fn()
+    globalThis.window.hcaptchaCallback = vi.fn()
+    globalThis.window.hcaptchaReset = vi.fn()
 
     document.body.innerHTML = '<div class="h-captcha"></div>'
 
