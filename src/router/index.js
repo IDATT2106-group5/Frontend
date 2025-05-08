@@ -1,6 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useUserStore } from '@/stores/UserStore'
-
 import HomeView from '../views/mainViews/HomeView.vue'
 import LoginView from '../views/login/LoginView.vue'
 import RegisterView from '../views/mainViews/RegisterView.vue'
@@ -30,6 +29,17 @@ import ScenarioList from '@/components/scenario/ScenarioList.vue'
 import ScenarioAdminView from '@/views/ScenarioAdminView.vue'
 import EditScenarioList from '@/components/scenario/EditScenarioList.vue'
 import ScenarioInfo from '@/components/scenario/ScenarioInfo.vue'
+import PrepareCrisisView from '@/views/beforeCrisisViews/PrepareCrisisView.vue'
+import QuizView from '@/views/beforeCrisisViews/QuizView.vue'
+import SeekSafetyView from '@/views/underCrisisViews/SeekSafetyView.vue'
+import EmergencyTipsView from '@/views/underCrisisViews/EmergencyTipsView.vue'
+import AlertView from '@/views/beforeCrisisViews/AlertView.vue'
+import TalkAboutItView from '@/views/afterCrisisViews/TalkAboutItView.vue'
+import MentalHealthView from '@/views/afterCrisisViews/MentalHealthView.vue'
+import ImproveView from '@/views/afterCrisisViews/ImproveView.vue'
+import AboutView from '@/views/mainViews/AboutView.vue'
+import ContactView from '@/views/mainViews/ContactView.vue'
+import QuestionsView from '@/views/mainViews/QuestionsView.vue'
 import NyhetsView from '@/views/nyheter/NyhetsView.vue'
 
 const routes = [
@@ -188,6 +198,261 @@ const routes = [
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes
+  routes: [
+    {
+      path: '/',
+      name: 'home',
+      component: HomeView,
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: LoginView,
+      meta:{hideNavbar: true, hideFooter: true },
+    },
+    {
+      path: '/prepare-crisis',
+      name: 'prepare-crisis',
+      component: PrepareCrisisView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/quiz',
+      name: 'quiz',
+      component: QuizView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/seek-safety',
+      name: 'seek-safety',
+      component: SeekSafetyView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/emergency-tips',
+      name: 'emergency-tips',
+      component: EmergencyTipsView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/alert',
+      name: 'alert',
+      component: AlertView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/talk',
+      name: 'talk',
+      component: TalkAboutItView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/mental',
+      name: 'mental',
+      component: MentalHealthView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/improve',
+      name: 'improve',
+      component: ImproveView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/about',
+      name: 'about',
+      component: AboutView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/contact',
+      name: 'contact',
+      component: ContactView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/questions',
+      name: 'questions',
+      component: QuestionsView,
+      meta:{hideNavbar: false, hideFooter: false },
+    },
+    {
+      path: '/request-reset',
+      name: 'request-reset',
+      component: RequestPasswordView,
+      meta:{hideNavbar: true, hideFooter: true },
+    },
+    {
+      path: '/reset-password',
+      name: 'reset-password-confirm',
+      component: ResetPasswordConfirmView,
+      meta:{hideNavbar: true, hideFooter: true },
+    },
+    {
+      path: '/register',
+      name: 'register',
+      component: RegisterView,
+      meta:{hideNavbar: true, hideFooter: true },
+    },
+    {
+      path: '/not-authorized',
+      name: 'not-authorized',
+      component: notAuthorizedView,
+    },
+    {
+      path: '/admin-dashboard',
+      name: 'admin-dashboard',
+      component: AdminDashboardView,
+      meta: { requiresAdmin: true },
+    },
+    {
+      path: '/admin-users',
+      name: 'admin-users',
+      component: AdminUserView,
+      meta: { requiresAdmin: true },
+    },
+    {
+      path: '/storage-detail',
+      name: 'storage detail',
+      component: StorageDetailView,
+      props: true
+    },
+    {
+      path: '/storage',
+      name: 'storage',
+      component: StorageView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/household',
+      name: 'household',
+      component: HouseholdView,
+    },
+    {
+      path: '/household/create',
+      name: 'household-create',
+      component: HouseholdCreateView,
+    },
+    {
+      path: '/household/join',
+      name: 'household-join',
+      component: HouseholdJoinView,
+    },
+    {
+      path: '/verify-email',
+      name: 'VerifyEmail',
+      component: VerifyEmailView
+    },
+    {
+      path: '/register-success',
+      name: 'RegisterSuccess',
+      component: RegisterSuccessView,
+      meta:{hideNavbar: true , hideFooter: true },
+    },
+    {
+      path: '/register-failed',
+      name: 'RegisterFailed',
+      component: RegisterFailedView,
+      meta:{hideNavbar: true, hideFooter: true },
+    },
+    {
+      path: '/admin-scenarios',
+      name: 'AdminScenarioList',
+      component: EditScenarioList
+    },
+    {
+      path: '/admin-scenarios/new',
+      name: 'CreateScenario',
+      component: ScenarioAdminView
+    },
+    {
+      path: '/admin-scenarios/:id',
+      name: 'EditScenario',
+      component: ScenarioAdminView
+    },
+    {
+      path: '/scenarios',
+      name: 'ScenarioList',
+      component: ScenarioList
+    },
+    {
+      path: '/scenarios/:id',
+      name: 'ScenarioInfo',
+      component: ScenarioInfo,
+      props: true
+    },
+    {
+      path: '/nyheter',
+      name: 'NyhetsView',
+      component: NyhetsView
+    },
+    {
+      path: '/before',
+      name: 'before',
+      component: BeforeView,
+    },
+    {
+      path: '/under',
+      name: 'under',
+      component: UnderView,
+    },
+    {
+      path: '/after',
+      name: 'after',
+      component: AfterView,
+    },
+    {
+      path: '/personvern',
+      name: 'personvern',
+      component: PersonVern,
+    },
+    {
+      path: '/2FA',
+      name: '2FA',
+      component: Admin2FAView,
+      props: (route) => {
+        if (!route.query.email) {
+          return { emailMissing: true };
+        }
+        return { email: route.query.email };
+      },
+      meta:{hideNavbar: true, hideFooter: true },
+    },
+    {
+      path: '/map',
+      name: 'map',
+      component: MapView,
+    },
+    {
+      path: '/admin-registration',
+      name: 'admin-registration',
+      component: AdminRegisterView,
+      props: (route) => {
+        if (!route.query.email) {
+          return { emailMissing: true };
+        }
+        if (!route.query.token) {
+          return { tokenMissing: true }
+        }
+        return { email: route.query.email, token: route.query.token };
+      },
+      meta:{hideNavbar: true, hideFooter: true },
+    },
+    {
+      path: '/admin/map-icons',
+      name: 'MarkerAdmin',
+      component: MarkerAdmin,
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true
+      }
+    },
+    {
+      path: '/admin/incidents',
+      name: 'IncidentAdmin',
+      component: IncidentAdmin,
+    }
+  ],
 })
 
 router.beforeEach(async (to, from, next) => {

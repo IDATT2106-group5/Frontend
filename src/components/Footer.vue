@@ -1,4 +1,7 @@
-<!-- src/components/Footer.vue -->
+<script setup>
+
+</script>
+
 <template>
   <footer class="text-white text-sm">
     <!-- Top Blue Footer Section -->
@@ -15,8 +18,8 @@
           <p class="uppercase font-bold mb-3 text-xs tracking-wider">Meny</p>
           <p class="mb-1">Nyheter</p>
           <RouterLink to="/map" class="mb-1 hover:underline block">Kart</RouterLink>
-          <p class="mb-1">Min beholdning</p>
-          <RouterLink to="/household" class="mb-1 hover:underline block">Min husstand</RouterLink>
+          <RouterLink to="/storage" class="mb-1 hover:underline block">Beholdning</RouterLink>
+          <RouterLink to="/household" class="mb-1 hover:underline block">Husstand</RouterLink>
         </div>
 
         <!-- Beredskap -->
@@ -30,9 +33,8 @@
         <!-- Info -->
         <div>
           <p class="uppercase font-bold mb-3 text-xs tracking-wider">Info</p>
-          <RouterLink to="/personvern" class="mb-1 hover:underline block">Personvern</RouterLink>
-          <p class="mb-1">Har du spørsmål?</p>
-          <p class="font-bold">Kontakt oss</p>
+          <RouterLink to="/questions" class="mb-1 hover:underline block">Har du spørsmål?</RouterLink>
+          <RouterLink to="/contact" class="mb-1 hover:underline block">Kontakt oss</RouterLink>
         </div>
       </div>
     </div>
@@ -40,14 +42,10 @@
     <!-- Bottom Black Bar -->
     <div class="bg-black text-white text-xs text-center py-4">
       <div class="flex justify-center space-x-4">
-        <span class="hover:underline cursor-pointer">Om oss</span>
+        <RouterLink to="/about" class="mb-1 hover:underline block">Om oss</RouterLink>
         <span>|</span>
         <router-link to="/personvern" class="hover:underline">Personvern</router-link>
       </div>
     </div>
   </footer>
 </template>
-
-<script setup>
-
-</script>
