@@ -31,6 +31,7 @@ import ScenarioList from '@/components/scenario/ScenarioList.vue'
 import ScenarioAdminView from '@/views/ScenarioAdminView.vue'
 import EditScenarioList from '@/components/scenario/EditScenarioList.vue'
 import ScenarioInfo from '@/components/scenario/ScenarioInfo.vue'
+import NyhetsView from '@/views/nyheter/NyhetsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -155,6 +156,11 @@ const router = createRouter({
       name: 'ScenarioInfo',
       component: ScenarioInfo,
       props: true
+    },
+    {
+      path: '/nyheter',
+      name: 'NyhetsView',
+      component: NyhetsView
     },
     {
       path: '/before',
