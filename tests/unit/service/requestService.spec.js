@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import RequestService from '@/service/requestService';
 
 const mockMethods = {
   post: vi.fn()
@@ -14,8 +15,6 @@ vi.mock('@/service/baseService', () => {
     }
   };
 });
-
-import RequestService from '@/service/requestService';
 
 describe('RequestService', () => {
   beforeEach(() => {

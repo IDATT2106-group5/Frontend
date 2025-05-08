@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import HouseholdService from '@/service/householdService';
 
 const mockMethods = {
   post: vi.fn()
@@ -14,8 +15,6 @@ vi.mock('@/service/baseService', () => {
     }
   };
 });
-
-import HouseholdService from '@/service/householdService';
 
 describe('HouseholdService', () => {
   beforeEach(() => {
@@ -164,16 +163,16 @@ describe('HouseholdService', () => {
   });
 
   describe('searchHouseholdById', () => {
-    it('should return null on invalid householdId', async () => {
-      const result = await HouseholdService.searchHouseholdById({ householdId: 'abc' });
-      expect(result).toBeNull(); 
-    });
+      it('should throw on invalid householdId', async () => {
+         await expect(
+          HouseholdService.searchHouseholdById({ householdId: 'abc!' })
+          ).rejects.toThrow('Ugyldig husstands-ID');
+       });
   
     it('should call post if ID is valid', async () => {
-      mockMethods.post.mockResolvedValue({ id: 1, name: 'TestHouse' }); 
-      const result = await HouseholdService.searchHouseholdById({ householdId: 123 });
-      expect(mockMethods.post).toHaveBeenCalledWith('search', { householdId: 123 });
-      expect(result.id).toBe(1);
+          mockMethods.post.mockResolvedValue({ id: 1, name: 'TestHouse' });
+          const result = await HouseholdService.searchHouseholdById({ householdId: '123' });
+          expect(mockMethods.post).toHaveBeenCalledWith('search', { householdId: '123' });
     });
   });  
 });

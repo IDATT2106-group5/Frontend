@@ -115,7 +115,7 @@ describe('HouseholdStore', () => {
 
   it('inviteMember sends invitation and fetches invitations', async () => {
     store.currentHousehold = { id: 'h1', ownerId: 'user1' };
-    RequestService.sendInvitation.mockResolvedValue({});
+    +  RequestService.sendInvitation.mockResolvedValue(true);
     RequestService.getSentInvitationsByHousehold.mockResolvedValue([]);
     const result = await store.inviteMember('invite@example.com');
     expect(result).toBe(true);
