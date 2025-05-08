@@ -48,7 +48,6 @@ const crisisTypes = ref([
 
 const adminButtons = computed(() => {
   const buttons = [
-    { label: 'LEGG TIL NY KRISE', isPrimary: true },
     { label: 'Aktive kriser', route: '/admin/incidents' },
     { label: 'Kart markører', route: '/admin/map-icons' },
     { label: 'Nyhetshåndtering' },
