@@ -16,12 +16,12 @@ export default defineConfig([
     '**/dist/**',
     '**/dist-ssr/**',
     '**/coverage/**',
-    'tailwind.config.js', // Recent Add so it doesn't get linted
-    'postcss.config.cjs', // Recent Add so it doesn't get linted
-    'src/components', // Recent Add so it doesn't get linted
-    'tests/**', // Recent Add so it doesn't get linted
-    'src/stores', // Recent Add so it doesn't get linted
-    'src/views', // Recent Add so it doesn't get linted
+    'tailwind.config.js',
+    'postcss.config.cjs',
+    'src/components/ui',
+    'src/components', // Remove this to start linting non-Shad files
+    'src/stores',
+    // 'src/views',
   ]),
 
   {
