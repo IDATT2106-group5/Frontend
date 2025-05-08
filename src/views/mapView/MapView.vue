@@ -387,8 +387,8 @@ export default {
 /* Location Services Styling */
 .location-services-container {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  bottom: 16px;
+  right: 16px;
   z-index: 1000;
 }
 
@@ -578,7 +578,7 @@ export default {
 /* Custom Zoom Controls */
 :deep(.leaflet-control-zoom) {
   position: absolute !important;
-  bottom: 16px !important;
+  bottom: 40px !important;
   right: 10px !important;
   margin: 20px !important;
   border: none;
