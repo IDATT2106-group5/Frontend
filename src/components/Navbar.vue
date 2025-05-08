@@ -11,7 +11,7 @@ import {
   Newspaper,
   Package,
   ShoppingCart,
-  User
+  User,
 } from 'lucide-vue-next'
 
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -35,7 +35,7 @@ const {
   showIncidentPopup,
   currentIncident,
   closeIncidentPopup,
-  connected
+  connected,
 } = useWebSocket()
 
 const { isSharing, startPositionSharing } = useLocationStore()
@@ -88,7 +88,7 @@ watch(
     if (isSharing && isConnected) {
       startPositionSharing()
     }
-  }
+  },
 )
 
 function getNotificationRoute(notification) {
@@ -108,8 +108,7 @@ function getNotificationRoute(notification) {
   }
 }
 
-onBeforeUnmount(() => {
-})
+onBeforeUnmount(() => {})
 
 const notificationIcons = {
   INVITATION: Mail,
@@ -117,7 +116,7 @@ const notificationIcons = {
   INCIDENT: AlarmCheck,
   STOCK_CONTROL: Package,
   HOUSEHOLD: Home,
-  INFO: Info
+  INFO: Info,
 }
 </script>
 
@@ -183,10 +182,10 @@ const notificationIcons = {
 
       <!-- Desktop Navigation -->
       <nav class="hidden md:flex gap-8 items-center text-sm font-medium">
-        <a href="#" class="flex items-center gap-2 hover:underline">
+        <RouterLink to="/nyheter" class="flex items-center gap-2 hover:underline">
           <Newspaper class="w-5 h-5 text-white" />
           Nyheter
-        </a>
+        </RouterLink>
         <RouterLink to="/map" class="flex items-center gap-2 hover:underline">
           <Globe class="w-5 h-5 text-white" />
           Kart
@@ -313,20 +312,20 @@ const notificationIcons = {
         :class="{ 'bg-blue-50': !notification.read }"
         @click="router.push(getNotificationRoute(notification))"
       >
-      <div class="flex">
-        <div class="mr-3 text-gray-700">
-          <component :is="notificationIcons[notification.type] || Bell" class="w-5 h-5" />
-        </div>
-        <div class="flex-1">
-          <div class="flex justify-between items-start">
-            <span class="font-medium">{{ notification.message }}</span>
-            <span class="text-xs text-gray-500">{{
+        <div class="flex">
+          <div class="mr-3 text-gray-700">
+            <component :is="notificationIcons[notification.type] || Bell" class="w-5 h-5" />
+          </div>
+          <div class="flex-1">
+            <div class="flex justify-between items-start">
+              <span class="font-medium">{{ notification.message }}</span>
+              <span class="text-xs text-gray-500">{{
                 formatTimestamp(notification.timestamp)
               }}</span>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
   </div>
 </template>
