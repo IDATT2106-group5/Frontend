@@ -329,7 +329,7 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { useMarkerAdminStore } from '@/stores/admin/markerAdminStore';
+import { useMapStore } from '@/stores/map/mapStore';
 import { storeToRefs } from 'pinia';
 import MarkerConfigService from '@/service/map/markerConfigService';
 import MapView from '@/views/mapView/MapView.vue';
@@ -358,8 +358,8 @@ export default {
     const mapCenter = ref([63.4305, 10.3951]); // Trondheim
     const mapZoom = ref(13);
 
-    // Initialize both stores
-    const markerAdminStore = useMarkerAdminStore();
+    // Initialize the mapStore
+    const mapStore = useMapStore();
 
     // Get reactive properties from the store
     const {
@@ -371,7 +371,7 @@ export default {
       isLoading,
       error,
       success
-    } = storeToRefs(markerAdminStore);
+    } = storeToRefs(mapStore);
 
     const searchTerm = ref('');
     const filterType = ref('');
@@ -380,7 +380,7 @@ export default {
     const markerConfigs = MarkerConfigService.getMarkerConfigs();
 
     // Computed properties
-    const markerTypes = computed(() => markerAdminStore.markerTypes);
+    const markerTypes = computed(() => mapStore.adminMarkerTypes);
 
     // Close dropdown when clicking outside
     const closeDropdownOnOutsideClick = (e) => {
@@ -429,7 +429,7 @@ export default {
       markerFormData.value.longitude = lng;
 
       // Also update through the store to ensure reactivity
-      markerAdminStore.updateMarkerCoordinates(lat, lng);
+      mapStore.updateMarkerCoordinates(lat, lng);
 
       // Update or create temporary marker
       if (tempMarker.value) {
@@ -441,7 +441,7 @@ export default {
 
       // Perform reverse geocoding to get address information
       try {
-        await markerAdminStore.updateAddressFromCoordinates(lat, lng);
+        await mapStore.updateAddressFromCoordinates(lat, lng);
       } catch (error) {
         console.error("Error updating address from coordinates:", error);
       }
@@ -459,7 +459,6 @@ export default {
       );
     };
 
-    // Add this method to the setup() function in MarkerAdmin.vue
     const onAddressChange = debounce(async () => {
       // Only proceed if we have at least some address information
       if (!markerFormData.value.address && !markerFormData.value.postalCode && !markerFormData.value.city) {
@@ -478,7 +477,7 @@ export default {
       }
 
       try {
-        const coordinates = await markerAdminStore.updateCoordinatesFromAddress(addressQuery);
+        const coordinates = await mapStore.updateCoordinatesFromAddress(addressQuery);
 
         if (coordinates && tempMarker.value && map.value) {
           // Update the marker position on the map
@@ -513,11 +512,11 @@ export default {
     };
 
     const onSearchChange = () => {
-      markerAdminStore.setSearchTerm(searchTerm.value);
+      mapStore.setSearchTerm(searchTerm.value);
     };
 
     const onFilterChange = () => {
-      markerAdminStore.setFilterType(filterType.value);
+      mapStore.setFilterType(filterType.value);
       showFilterDropdown.value = false;
     };
 
@@ -530,7 +529,7 @@ export default {
     };
 
     const onAddNew = () => {
-      markerAdminStore.initNewMarker();
+      mapStore.initNewMarker();
 
       // Center map at default location
       if (map.value) {
@@ -549,9 +548,7 @@ export default {
       ).addTo(map.value);
     };
 
-    // Complete update for the edit operations in MarkerAdmin.vue:
-
-// 1. Enhanced onEditMarker with forced marker updates
+    // Enhanced onEditMarker with forced marker updates
     const onEditMarker = (marker) => {
       console.log("Editing marker:", marker.id);
 
@@ -565,7 +562,7 @@ export default {
       }
 
       // Then call store method
-      markerAdminStore.editMarker(marker);
+      mapStore.editMarker(marker);
 
       // Remove any existing temp marker
       if (tempMarker.value) {
@@ -597,7 +594,7 @@ export default {
       }, 20);
     };
 
-// 2. Enhanced onCancelEdit with retries
+    // Enhanced onCancelEdit with retries
     const onCancelEdit = () => {
       console.log("Canceling edit");
 
@@ -614,75 +611,28 @@ export default {
       activeEditMarker.value = null;
 
       // Call store method to cancel
-      markerAdminStore.cancelEdit();
+      mapStore.cancelEdit();
 
-      // Force refresh markers with retry mechanism
-      const refreshWithRetry = (attempts = 3) => {
-        if (attempts <= 0) return;
-
-        setTimeout(() => {
-          if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
-            console.log(`Refreshing markers after cancel (attempt ${4-attempts})`);
-            mapView.value.refreshMarkers();
-
-            // Force map update
-            if (map.value) {
-              map.value.invalidateSize();
-            }
-
-            // Check if the marker is visible now
-            if (editingId && !mapView.value.adminMarkers?.has(editingId)) {
-              // If marker still not visible, retry
-              refreshWithRetry(attempts - 1);
-            }
-          }
-        }, 100);
-      };
-
-      refreshWithRetry();
     };
 
-// 3. Enhanced onSaveMarker with multi-stage refresh
+    // Enhanced onSaveMarker with multi-stage refresh
     const onSaveMarker = async () => {
       console.log("Saving marker");
 
-      // Clear temp marker
       if (tempMarker.value) {
         tempMarker.value.remove();
         tempMarker.value = null;
       }
 
-      // Clear active marker reference
       activeEditMarker.value = null;
+      mapStore.refreshMarkerLayers();
 
-      // Force immediate refresh to clear visuals
-      if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
-        mapView.value.refreshMarkers();
-      }
 
       // Call store method to save
-      const success = await markerAdminStore.saveMarker();
+      const success = await mapStore.saveMarker();
 
       if (success) {
         console.log("Save successful, refreshing markers");
-
-        // Multi-stage refresh to ensure markers appear
-        // First refresh immediately
-        if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
-          mapView.value.refreshMarkers();
-        }
-
-        // Then another refresh after a delay
-        setTimeout(() => {
-          if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
-            mapView.value.refreshMarkers();
-
-            // Force map update
-            if (map.value) {
-              map.value.invalidateSize();
-            }
-          }
-        }, 150);
 
         // Final refresh to catch any stragglers
         setTimeout(() => {
@@ -693,7 +643,7 @@ export default {
       }
     };
 
-// 4. Enhanced onDeleteMarker with better feedback
+    // Enhanced onDeleteMarker with better feedback
     const onDeleteMarker = async () => {
       if (!confirm('Er du sikker på at du vil slette denne markøren?')) {
         return;
@@ -719,7 +669,7 @@ export default {
       }
 
       // Call store method to delete
-      const success = await markerAdminStore.deleteMarker(deletingId);
+      const success = await mapStore.deleteMarker(deletingId);
 
       if (success) {
         console.log("Delete successful");
@@ -742,12 +692,14 @@ export default {
     };
 
     const clearSuccess = () => {
-      markerAdminStore.clearSuccess();
+      mapStore.clearSuccess();
     };
 
     const clearError = () => {
-      markerAdminStore.clearError();
+      mapStore.clearError();
     };
+
+
 
     // Watch for changes to marker type to update icon
     watch(() => markerFormData.value.type, (newType) => {
@@ -758,14 +710,24 @@ export default {
       }
     });
 
+    watch(() => map.value, (newMap) => {
+      if (newMap && props.isAdminMode) {
+        // Set up map move event for admin mode
+        newMap.on('moveend', () => {
+          console.log("Map moved, refreshing markers");
+          mapStore.refreshMarkerLayers();
+        });
+      }
+    });
+
     // Lifecycle hooks
     onMounted(async () => {
       // Fetch markers
-      await markerAdminStore.fetchMarkers();
+      await mapStore.fetchMarkers();
 
       // Initialize search and filter
-      searchTerm.value = markerAdminStore.searchTerm;
-      filterType.value = markerAdminStore.filterType;
+      searchTerm.value = mapStore.searchTerm;
+      filterType.value = mapStore.filterType;
 
       document.addEventListener('click', closeDropdownOnOutsideClick);
     });
