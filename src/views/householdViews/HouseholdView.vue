@@ -63,6 +63,14 @@ function copyHouseholdId() {
 }
 
 
+function onJoinHouseholdIdInput(e) {
+  const cleaned = e.target.value
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+
+  joinHouseholdId.value = cleaned
+  joinError.value = ''
+}
 
 const acceptInvitation = async (invId) => {
   try {
@@ -105,6 +113,7 @@ async function handleDelete() {
 // Join household functionality
 const searchForHousehold = async () => {
   joinError.value = ''
+  houseStore.error = null
   joinSuccess.value = ''
   requestSent.value = false
   foundHousehold.value = null
@@ -129,14 +138,9 @@ if (joinHouseholdId.value === householdId.value) {
     console.log('✅ Found household:', found)
 
     if (found && found.id) {
-      foundHousehold.value = {
-        id: found.id,
-        name: found.name || 'Ukjent navn'
-      }
-      console.log('🎯 foundHousehold.value set:', foundHousehold.value)
+      foundHousehold.value = { id: found.id, name: found.name || 'Ukjent navn' }
       joinSuccess.value = `Husstand funnet: ${found.name || 'Husstand ' + found.id}`
     } else {
-      console.warn('⚠️ No household found')
       joinError.value = 'Ingen husstand funnet'
     }
   } catch (err) {
@@ -187,7 +191,7 @@ const sendJoinRequest = async () => {
       </div>
 
       <!-- Error when already in household -->
-      <div v-else-if="error && hasHousehold" class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
+      <div v-else-if="error && hasHousehold && activeTab==='members'" class="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md">
         {{ error }}
       </div>
 
@@ -263,13 +267,18 @@ const sendJoinRequest = async () => {
                 </label>
                   <input
                     v-model="joinHouseholdId"
+                    @input="onJoinHouseholdIdInput"
                     id="joinHouseholdId"
                     type="text"
                     inputmode="text"
-                    pattern="[A-Za-z0-9]+"
+                    pattern="[A-Z0-9]*"
+                    maxlength="8"
                     class="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
+                  />
               </div>
+              <p v-if="joinError" class="mt-1 text-red-600 text-sm">
+                {{ joinError }}
+              </p>
               <button
                 @click="searchForHousehold"
                 class="w-full bg-gray-700 text-white py-2 rounded hover:bg-gray-800 transition"
@@ -278,9 +287,6 @@ const sendJoinRequest = async () => {
                 <span v-if="joinIsLoading">Søker...</span>
                 <span v-else>Søk</span>
               </button>
-              <div v-if="joinError" class="p-2 bg-red-50 border border-red-200 rounded">
-                <p class="text-red-600 text-sm">{{ joinError }}</p>
-              </div>
 
               <div v-if="foundHousehold && !requestSent" class="p-4 bg-white border rounded shadow-sm space-y-2">
                 <h3 class="text-lg font-semibold mb-2">Husstand funnet!</h3>
