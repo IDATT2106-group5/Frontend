@@ -112,7 +112,6 @@ class MarkerService extends BaseService {
 
         markersByType[marker.type].push({
           id: marker.id,
-          name: marker.name || '',
           address: marker.address || '',
           lat: marker.latitude,
           lng: marker.longitude,
