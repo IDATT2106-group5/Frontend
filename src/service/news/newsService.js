@@ -60,9 +60,18 @@ class NewsService extends BaseService {
    */
   async createNews(NewsData) {
     try {
-      return await this.post('', NewsData)
+      return await this.post('create', NewsData)
     } catch (error) {
       console.error('[ScenarioService] Failed to create scenario:', error)
+      throw error
+    }
+  }
+
+  async deleteNews(id) {
+    try {
+      return await this.post(`delete/${id}`)
+    } catch (error) {
+      console.error('[ScenarioService] Failed to delete scenario:', error)
       throw error
     }
   }
@@ -77,7 +86,7 @@ class NewsService extends BaseService {
    */
   async updateNews(id, newsData) {
     try {
-      return await this.put(`${id}`, newsData)
+      return await this.post(`edit/${id}`, newsData)
     } catch (error) {
       console.error('[ScenarioService] Failed to update scenario:', error)
       throw error

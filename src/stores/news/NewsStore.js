@@ -95,10 +95,19 @@ export const useNewsStore = defineStore('news', {
 
       try {
         const result = await NewsService.updateNews(id, newsData)
-        await this.fetchPaginatedNews(1, 10)
-        if (this.selectedNews && this.selectedNews.id === id) {
-          this.selectNews(id)
+
+        const index = this.news.findIndex((item) => item.id === id)
+        if (index !== -1) {
+          this.news[index] = {
+            ...this.news[index],
+            ...newsData,
+          }
         }
+
+        if (this.selectedNews && this.selectedNews.id === id) {
+          this.selectedNews = { ...this.selectedNews, ...newsData }
+        }
+
         return result
       } catch (error) {
         console.error('[NewsStore] Failed to update news item:', error)
@@ -133,6 +142,26 @@ export const useNewsStore = defineStore('news', {
       if (item) {
         item.read = true
         this.saveReadStatusToLocalStorage()
+      }
+    },
+    async deleteNews(id) {
+      console.log('Deleting news item with ID:', id)
+      this.loading = true
+      this.error = null
+
+      try {
+        const result = await NewsService.deleteNews(id)
+        this.news = this.news.filter((item) => item.id !== id)
+        if (this.selectedNews && this.selectedNews.id === id) {
+          this.selectedNews = null
+        }
+        return result
+      } catch (error) {
+        console.error('[NewsStore] Failed to delete news item:', error)
+        this.error = error
+        throw error
+      } finally {
+        this.loading = false
       }
     },
     resetState() {

@@ -1,8 +1,10 @@
 <script>
 import { useNewsStore } from '@/stores/news/NewsStore'
+import { Button } from '@/components/ui/button/index.js'
 
 export default {
   name: 'NewsManagement',
+  components: { Button },
 
   /**
    * Setup composition API and initialize required stores
@@ -81,12 +83,12 @@ export default {
    */
   async mounted() {
     // Set default date and time to current date and time
-    const now = new Date();
-    this.currentNews.publishDate = this.formatDate(now);
-    this.currentNews.publishTime = this.formatTime(now);
+    const now = new Date()
+    this.currentNews.publishDate = this.formatDate(now)
+    this.currentNews.publishTime = this.formatTime(now)
 
-    // Fetch all news from the API when component is mounted
-    await this.newsStore.fetchAllNews();
+    // Use the correct method to fetch news
+    await this.newsStore.fetchPaginatedNews(0, 100) // Fetch with pagination
   },
 
   /**
@@ -99,10 +101,10 @@ export default {
      * @returns {String} Formatted date string
      */
     formatDate(date) {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      return `${year}-${month}-${day}`
     },
 
     /**
@@ -111,26 +113,9 @@ export default {
      * @returns {String} Formatted time string
      */
     formatTime(date) {
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      return `${hours}:${minutes}`;
-    },
-
-    /**
-     * Toggle the crisis state of a news item
-     * @param {Object} newsItem - The news item to toggle
-     * @returns {Promise<void>}
-     */
-    async toggleCrisisState(newsItem) {
-      try {
-        const updatedNewsData = {
-          ...newsItem,
-          isCrisis: !newsItem.isCrisis
-        };
-        await this.newsStore.updateNews(newsItem.id, updatedNewsData);
-      } catch (error) {
-        console.error('Failed to toggle crisis state:', error);
-      }
+      const hours = String(date.getHours()).padStart(2, '0')
+      const minutes = String(date.getMinutes()).padStart(2, '0')
+      return `${hours}:${minutes}`
     },
 
     /**
@@ -138,25 +123,25 @@ export default {
      * @param {Object} newsItem - The news item to edit
      */
     editNewsItem(newsItem) {
-      this.isEditing = true;
-      this.newsStore.selectNews(newsItem.id);
+      this.isEditing = true
+      this.newsStore.selectNews(newsItem.id)
 
       // Prepare form data from the selected news
-      const selectedNews = this.newsStore.getSelectedNews;
+      const selectedNews = this.newsStore.getSelectedNews
       if (selectedNews) {
         // Extract date and time from timestamp if available
-        let publishDate = this.formatDate(new Date());
-        let publishTime = this.formatTime(new Date());
+        let publishDate = this.formatDate(new Date())
+        let publishTime = this.formatTime(new Date())
 
         if (selectedNews.timestamp) {
-          const timestampParts = selectedNews.timestamp.split(' ');
+          const timestampParts = selectedNews.timestamp.split(' ')
           if (timestampParts.length === 2) {
-            const dateParts = timestampParts[0].split('/');
+            const dateParts = timestampParts[0].split('/')
             if (dateParts.length === 3) {
               // Convert from DD/MM/YY to YYYY-MM-DD
-              publishDate = `20${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+              publishDate = `20${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`
             }
-            publishTime = timestampParts[1];
+            publishTime = timestampParts[1]
           }
         }
 
@@ -164,9 +149,9 @@ export default {
           ...selectedNews,
           publishDate,
           publishTime
-        };
+        }
 
-        this.showAddNewsForm = true;
+        this.showAddNewsForm = true
       }
     },
 
@@ -174,22 +159,22 @@ export default {
      * Cancel form and reset state
      */
     cancelForm() {
-      this.resetForm();
+      this.resetForm()
     },
 
     /**
      * Reset form to default state
      */
     resetForm() {
-      this.isEditing = false;
-      this.showAddNewsForm = false;
+      this.isEditing = false
+      this.showAddNewsForm = false
       this.currentNews = {
         title: '',
         source: 'Trondheim Kommune',
         content: '',
         url: '',
         isCrisis: false
-      };
+      }
     },
 
     /**
@@ -198,25 +183,28 @@ export default {
      */
     async saveNewsItem() {
       // Create a timestamp from the date and time
-      const timestamp = this.formatTimestamp(this.currentNews.publishDate, this.currentNews.publishTime);
+      const timestamp = this.formatTimestamp(
+        this.currentNews.publishDate,
+        this.currentNews.publishTime
+      )
 
       const newsItem = {
         ...this.currentNews,
         timestamp
-      };
+      }
 
       try {
         if (this.isEditing && this.newsStore.getSelectedNews) {
           // Update existing news
-          await this.newsStore.updateNews(this.newsStore.getSelectedNews.id, newsItem);
+          await this.newsStore.updateNews(this.newsStore.getSelectedNews.id, newsItem)
         } else {
           // Create new news
-          await this.newsStore.createNews(newsItem);
+          await this.newsStore.createNews(newsItem)
         }
 
-        this.resetForm();
+        this.resetForm()
       } catch (error) {
-        console.error('Failed to save news item:', error);
+        console.error('Failed to save news item:', error)
       }
     },
 
@@ -227,16 +215,41 @@ export default {
      * @returns {String} Formatted timestamp
      */
     formatTimestamp(dateStr, timeStr) {
-      // Convert YYYY-MM-DD to DD/MM/YY
-      const dateParts = dateStr.split('-');
-      if (dateParts.length === 3) {
-        const day = dateParts[2];
-        const month = dateParts[1];
-        const year = dateParts[0].slice(2); // Get last 2 digits of year
-        return `${day}/${month}/${year} ${timeStr}`;
+      if (!dateStr) {
+        const now = new Date()
+        dateStr = this.formatDate(now)
       }
-      return `${dateStr} ${timeStr}`;
-    }
+
+      if (!timeStr) {
+        const now = new Date()
+        timeStr = this.formatTime(now)
+      }
+
+      // Convert YYYY-MM-DD to DD/MM/YY
+      const dateParts = dateStr.split('-')
+      if (dateParts.length === 3) {
+        const day = dateParts[2]
+        const month = dateParts[1]
+        const year = dateParts[0].slice(2) // Get last 2 digits of year
+        return `${day}/${month}/${year} ${timeStr}`
+      }
+
+      return `${dateStr} ${timeStr}`
+    },
+    /**
+     * Delete a news item
+     * @param {String} newsId - The ID of the news item to delete
+     */
+    deleteNewsItem(newsId) {
+      this.newsStore
+        .deleteNews(newsId)
+        .then(() => {
+          this.resetForm()
+        })
+        .catch((error) => {
+          console.error('Failed to delete news item:', error)
+        })
+    },
   }
 }
 </script>
@@ -264,7 +277,7 @@ export default {
       <div v-else-if="hasError" class="py-8 text-center">
         <p class="text-red-600 mb-4">Feil ved lasting av nyheter: {{ errorMessage }}</p>
         <button
-          @click="newsStore.fetchAllNews"
+          @click="newsStore.fetchPaginatedNews(0, 100)"
           class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded transition duration-200"
         >
           Prøv igjen
@@ -272,18 +285,16 @@ export default {
       </div>
 
       <div v-else class="space-y-4">
-        <div v-for="newsItem in newsItems" :key="newsItem.id" class="border border-gray-200 rounded p-4 flex justify-between items-center">
+        <div
+          v-for="newsItem in newsItems"
+          :key="newsItem.id"
+          class="border border-gray-200 rounded p-4 flex justify-between items-center"
+        >
           <div>
             <h3 class="text-lg font-medium">{{ newsItem.title }}</h3>
             <p class="text-sm text-gray-500">{{ newsItem.source }} | {{ newsItem.timestamp }}</p>
           </div>
           <div class="flex gap-3">
-            <button
-              @click="toggleCrisisState(newsItem)"
-              class="px-3 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-sm transition duration-200"
-            >
-              {{ newsItem.isCrisis ? 'Fjern som krisehåndtering' : 'Gjør om til krisehåndtering' }}
-            </button>
             <button
               @click="editNewsItem(newsItem)"
               class="px-3 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded text-sm transition duration-200"
@@ -296,7 +307,10 @@ export default {
     </section>
 
     <!-- Add/Edit News Form -->
-    <section v-if="showAddNewsForm || isEditing" class="bg-gray-100 border border-gray-200 rounded p-6 mt-6">
+    <section
+      v-if="showAddNewsForm || isEditing"
+      class="bg-gray-100 border border-gray-200 rounded p-6 mt-6"
+    >
       <h2 class="text-xl font-semibold mb-4">{{ isEditing ? 'Rediger' : 'Opprett' }} Nyhet</h2>
 
       <div class="mb-4">
@@ -306,7 +320,7 @@ export default {
           id="title"
           v-model="currentNews.title"
           class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
+        />
       </div>
 
       <div class="mb-4">
@@ -316,7 +330,7 @@ export default {
           id="source"
           v-model="currentNews.source"
           class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
+        />
       </div>
 
       <div class="mb-4">
@@ -329,27 +343,6 @@ export default {
         ></textarea>
       </div>
 
-      <div class="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <label for="publishDate" class="block font-medium mb-1">Publiseringsdato</label>
-          <input
-            type="date"
-            id="publishDate"
-            v-model="currentNews.publishDate"
-            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-        </div>
-        <div>
-          <label for="publishTime" class="block font-medium mb-1">Tid</label>
-          <input
-            type="time"
-            id="publishTime"
-            v-model="currentNews.publishTime"
-            class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-        </div>
-      </div>
-
       <div class="mb-4">
         <label for="url" class="block font-medium mb-1">URL</label>
         <input
@@ -357,10 +350,16 @@ export default {
           id="url"
           v-model="currentNews.url"
           class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
+        />
       </div>
 
       <div class="flex justify-end gap-4 mt-6">
+        <button
+          @click="deleteNewsItem(currentNews.id)"
+          class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded transition duration-200"
+        >
+          Slett
+        </button>
         <button
           @click="cancelForm"
           class="px-4 py-2 bg-gray-100 hover:bg-gray-200 border border-gray-300 rounded transition duration-200"

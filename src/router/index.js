@@ -178,7 +178,7 @@ const routes = [
     meta: { requiresAuth: true, requiresAdmin: true }
   },
   {
-    path: '/admin-news',
+    path: '/admin/admin-news',
     name: 'AdminNews',
     component: NewsAdminView,
     meta: { requiresAuth: true, requiresAdmin: true }
