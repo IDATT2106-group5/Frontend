@@ -620,16 +620,6 @@ export default {
   100% { opacity: 0; }
 }
 
-.marker-filter-container {
-  position: absolute;
-  top: 16px;
-  left: 16px;
-  z-index: 1000;
-  transition: all 0.3s ease;
-  max-width: 100%;
-  width: auto;
-}
-
 .filter-toggle-button {
   display: block;
   width: 100%;
