@@ -3,11 +3,13 @@ import { defineStore } from 'pinia';
 import MarkerAdminService from '@/service/admin/markerAdminService';
 import MarkerConfigService from '@/service/map/markerConfigService';
 import GeocodingService from '@/service/map/geocodingService.js'
+import { useMapStore } from '@/stores/map/mapStore';
 
 export const useMarkerAdminStore = defineStore('markerAdmin', {
   state: () => ({
     markers: [],
     filteredMarkers: [],
+    markersLayer: null, // Add a reference to store the markers layer
     searchTerm: '',
     filterType: '',
     isLoading: false,
@@ -52,6 +54,71 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
 
   actions: {
     /**
+     * Set the markers layer reference
+     * @param {Object} layer - Leaflet layer group for markers
+     */
+    setMarkersLayer(layer) {
+      this.markersLayer = layer;
+    },
+
+    /**
+     * Clear all markers from the map
+     */
+    clearMarkers() {
+      if (this.markersLayer) {
+        this.markersLayer.clearLayers();
+      }
+    },
+
+    /**
+     * Add a marker to the map
+     * @param {Object} map - Leaflet map instance
+     * @param {Object} markerData - Marker data
+     * @returns {Object} - Leaflet marker
+     */
+    addMarkerToMap(map, markerData) {
+      // Get the marker configuration
+      const configs = MarkerConfigService.getMarkerConfigs();
+      const config = configs[markerData.type];
+
+      if (!config) return null;
+
+      // Create marker icon
+      const icon = MarkerConfigService.createLeafletIcon(
+        config.iconType,
+        config.color
+      );
+
+      // Create marker
+      const marker = L.marker(
+        [markerData.latitude, markerData.longitude],
+        { icon }
+      );
+
+      // Add to map
+      if (this.markersLayer) {
+        this.markersLayer.addLayer(marker);
+      } else {
+        marker.addTo(map);
+      }
+
+      return marker;
+    },
+
+    /**
+     * Refresh markers on the map
+     * @param {Object} map - Leaflet map instance
+     */
+    refreshMapMarkers(map) {
+      this.clearMarkers();
+
+      // Add all markers to the map
+      this.markers.forEach(markerData => {
+        this.addMarkerToMap(map, markerData);
+      });
+    },
+
+    /**
      * Fetch all markers for admin interface
      */
     async fetchMarkers() {
@@ -61,19 +128,25 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
       try {
         const markers = await MarkerAdminService.fetchAllMarkersForAdmin();
         this.markers = markers.map(marker => ({
-            id: marker.id,
-            type: marker.type,
-            name: marker.name || '',
-            address: marker.address || '',
-            postalCode: marker.postalCode || '',
-            city: marker.city || '',
-            description: marker.description || '',
-            contactInfo: marker.contactInfo || '',
-            openingHours: marker.openingHours || '',
-            latitude: marker.latitude,
-            longitude: marker.longitude
+          id: marker.id,
+          type: marker.type,
+          name: marker.name || '',
+          address: marker.address || '',
+          postalCode: marker.postalCode || '',
+          city: marker.city || '',
+          description: marker.description || '',
+          contactInfo: marker.contactInfo || '',
+          openingHours: marker.openingHours || '',
+          latitude: marker.latitude,
+          longitude: marker.longitude
         }));
         this.applyFilters();
+
+        // If we're currently editing a marker, make sure mapStore knows about it
+        if (this.isEditing && this.markerFormData.id) {
+          const mapStore = useMapStore();
+          mapStore.setEditingMarkerId(this.markerFormData.id);
+        }
       } catch (error) {
         this.error = 'Kunne ikke laste markører. Vennligst prøv igjen senere.';
         console.error('Error in fetchMarkers:', error);
@@ -97,9 +170,9 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
           (marker.description && marker.description.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
           (marker.contactInfo && marker.contactInfo.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
           (marker.openingHours && marker.openingHours.toLowerCase().includes(this.searchTerm.toLowerCase()));
-          (marker.type && marker.type.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
-          (marker.latitude && marker.latitude.toString().includes(this.searchTerm)) ||
-          (marker.longitude && marker.longitude.toString().includes(this.searchTerm));
+        (marker.type && marker.type.toLowerCase().includes(this.searchTerm.toLowerCase())) ||
+        (marker.latitude && marker.latitude.toString().includes(this.searchTerm)) ||
+        (marker.longitude && marker.longitude.toString().includes(this.searchTerm));
 
         const matchesType =
           this.filterType === '' ||
@@ -153,6 +226,12 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
      * Load marker data into form for editing
      */
     editMarker(marker) {
+      const mapStore = useMapStore();
+
+      // Set which marker is being edited in mapStore
+      mapStore.setEditingMarkerId(marker.id);
+
+      // Regular marker editing logic
       const [street, postal, city] = (marker.address || '').split(',').map(p => p.trim());
 
       this.markerFormData = {
@@ -274,18 +353,28 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
      * Save marker (create or update)
      */
     async saveMarker() {
+      const mapStore = useMapStore();
+      let success = false;
+
       if (this.isCreating) {
-        return await this.createMarker();
+        success = await this.createMarker();
       } else if (this.isEditing) {
-        return await this.updateMarker();
+        success = await this.updateMarker();
       }
-      return false;
+
+      // Only reset the editingMarkerId in mapStore if the save was successful
+      if (success) {
+        mapStore.clearEditingMarkerId();
+      }
+
+      return success;
     },
 
     /**
      * Delete a marker
      */
     async deleteMarker(id) {
+      const mapStore = useMapStore();
       this.isLoading = true;
       this.error = null;
 
@@ -296,6 +385,9 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
         // Remove from local arrays
         this.markers = this.markers.filter(marker => marker.id !== id);
         this.applyFilters();
+
+        // Clear the editing marker in mapStore
+        mapStore.clearEditingMarkerId();
 
         // Reset form state if we were editing this marker
         if (this.isEditing && this.markerFormData.id === id) {
@@ -420,6 +512,12 @@ export const useMarkerAdminStore = defineStore('markerAdmin', {
      * Cancel editing/creating
      */
     cancelEdit() {
+      const mapStore = useMapStore();
+
+      // Clear the editing marker state in mapStore
+      mapStore.clearEditingMarkerId();
+
+      // Regular cancel edit logic
       this.isEditing = false;
       this.isCreating = false;
       this.error = null;
