@@ -429,22 +429,6 @@ export const useMapStore = defineStore('map', {
     },
 
     /**
-     * Set the active base layer for the map
-     * @param {string} layerId - ID of the layer to activate
-     */
-    setActiveLayer(layerId) {
-      if (!this.map) {
-        return;
-      }
-
-      const layer = MapService.setActiveLayer(this.map, layerId);
-
-      if (layer) {
-        this.activeLayerId = layerId;
-      }
-    },
-
-    /**
      * Initialize markers and their layer groups
      */
     async initMarkers() {
