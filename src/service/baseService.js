@@ -2,19 +2,16 @@ import apiClient from '@/service/apiClient';
 
 const handleErrors = (error) => {
   if (error.response) {
-    console.error("Backend returned code", error.response.status, "body was:", error.response.data);
     return Promise.reject({
       status: error.response.status,
       message: error.response.data.error || error.response.data.message || 'Unknown error occurred',
     });
   } else if (error.request) {
-    console.error("No response received");
     return Promise.reject({
       status: 0,
       message: 'No response from server'
     });
   } else {
-    console.error('Error', error.message);
     return Promise.reject({
       status: 0,
       message: error.message
