@@ -77,7 +77,7 @@ async function resendCode() {
 </script>
 
 <template>
-  <main class="flex flex-col items-center justify-center min-h-screen p-4 space-y-3">
+  <main class="flex flex-col items-center justify-center min-h-screen p-4 space-y-3 bg-white">
     <img src="/src/assets/icons/Krisefikser.png" alt="Krisefikser Logo" class="w-60 mb-4" />
     <h1 class="text-3xl font-bold">To-faktor autentisering</h1>
 
