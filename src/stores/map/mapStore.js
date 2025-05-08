@@ -7,17 +7,15 @@ import IncidentMapService from '@/service/map/incidentMapService';
 import IncidentConfigService from '@/service/map/incidentConfigService';
 import RoutingService from '@/service/map/routingService';
 import GeolocationService from '@/service/map/geoLocationService.js';
-
-
+import GeocodingService from '@/service/map/geocodingService.js'
 import L from 'leaflet';
 
 export const useMapStore = defineStore('map', {
   state: () => ({
     // Core map state
     map: null,
-    activeLayerId: 'standard',
-    initialLat: 60.39299,
-    initialLng: 5.32415,
+    initialLat: 63.43,
+    initialLng: 10.39,
     initialZoom: 13,
 
     // Marker state
@@ -50,24 +48,17 @@ export const useMapStore = defineStore('map', {
     routeStart: null,
     routeEnd: null,
     isGeneratingRoute: false,
-    routeError: null
+    routeError: null,
+
+    // Search state
+    searchResults: [],
+    isSearching: false,
+    searchError: null,
+    selectedSearchResult: null,
+    searchResultMarker: null,
   }),
 
   getters: {
-    /**
-     * Get the layer options for UI
-     */
-    layerOptions() {
-      return MapService.getLayerOptions();
-    },
-
-    /**
-     * Get all layer definitions
-     */
-    mapLayers() {
-      return MapService.getLayerDefinitions();
-    },
-
     /**
      * Get only marker types that are currently visible
      */
@@ -147,14 +138,15 @@ export const useMapStore = defineStore('map', {
 
       try {
         // Create the map with initial values from state
-        this.map = L.map(container, {
+        this.map = MapService.createMap(container, {
           center: [this.initialLat, this.initialLng],
           zoom: this.initialZoom,
-          layers: []
         });
 
-        // Set the initial active layer
-        this.setActiveLayer(this.activeLayerId);
+        // Add zoom control in the bottom right corner
+        L.control.zoom({
+          position: 'bottomright'
+        }).addTo(this.map);
 
         // Make route function available globally for popup click handlers
         window.createRouteToMarker = (markerData) => {
@@ -411,20 +403,6 @@ export const useMapStore = defineStore('map', {
           this.markerLayers[typeId].addTo(this.map);
         }
       });
-    },
-
-    /**
-     * Set the active base layer for the map
-     * @param {string} layerId - ID of the layer to activate
-     */
-    setActiveLayer(layerId) {
-      if (!this.map) return;
-
-      const layer = MapService.setActiveLayer(this.map, layerId);
-
-      if (layer) {
-        this.activeLayerId = layerId;
-      }
     },
 
     /**
@@ -786,5 +764,103 @@ export const useMapStore = defineStore('map', {
       }
       return null;
     },
+
+    /**
+     * Search for places and addresses
+     * @param {string} query - The search query
+     * @returns {Promise<Array>} Search results
+     */
+    async searchPlaces(query) {
+      if (!query || query.trim() === '') {
+        this.searchResults = [];
+        this.searchError = null;
+        this.isSearching = false;
+        return [];
+      }
+
+      this.isSearching = true;
+      this.searchError = null;
+
+      try {
+        const results = await GeocodingService.searchPlaces(query);
+        this.searchResults = results;
+        return results;
+      } catch (error) {
+        console.error('Error searching places:', error);
+        this.searchError = 'Failed to search places. Please try again later.';
+        this.searchResults = [];
+        return [];
+      } finally {
+        this.isSearching = false;
+      }
+    },
+
+    /**
+     * Go to a location on the map
+     * @param {Object} location - Location with lat and lng
+     * @param {number} zoomLevel - Zoom level to set (optional)
+     */
+    goToLocation(location, zoomLevel = null) {
+      if (!this.map || !location || !location.lat || !location.lng) return;
+
+      // Center map on the location
+      this.map.setView([location.lat, location.lng], zoomLevel);
+
+      // Clear any existing search result marker
+      this.clearSearchResultMarker();
+
+      // Create a marker for the search result
+      this.createSearchResultMarker(location);
+
+      // Show notification
+      this.showNotification(`Gikk til ${location.name || 'valgt plassering'}`);
+    },
+
+    /**
+     * Create a marker for a search result
+     * @param {Object} location - Location to mark
+     */
+    createSearchResultMarker(location) {
+      if (!this.map || !location) return;
+
+      // Create a custom icon for search results
+      const searchIcon = L.divIcon({
+        className: 'custom-div-icon search-result-icon',
+        html: `<div style="background-color: #3498db; width: 20px; height: 20px; border-radius: 50%;"></div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+
+      // Create the marker
+      this.searchResultMarker = L.marker([location.lat, location.lng], {
+        icon: searchIcon,
+        zIndexOffset: 1000 // Ensure it appears above other markers
+      }).addTo(this.map);
+
+      // Store the selected search result
+      this.selectedSearchResult = location;
+    },
+
+    /**
+     * Clear the search result marker from the map
+     */
+    clearSearchResultMarker() {
+      if (this.searchResultMarker && this.map) {
+        this.searchResultMarker.removeFrom(this.map);
+        this.searchResultMarker = null;
+      }
+      this.selectedSearchResult = null;
+    },
+
+    /**
+     * Handle a search result selection
+     * @param {Object} result - The selected search result
+     */
+    selectSearchResult(result) {
+      if (!result) return;
+
+      this.goToLocation(result, 16); // Zoom level 16 gives good detail for most locations
+      this.searchResults = []; // Clear results after selection
+    }
   }
 });

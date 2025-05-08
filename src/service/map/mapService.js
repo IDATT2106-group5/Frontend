@@ -1,15 +1,11 @@
-import L from 'leaflet';
+import L from 'leaflet'
 
 /**
  * Service that handles Leaflet map operations
  */
 class MapService {
-  constructor() {
-    this.layers = this._initializeLayers();
-  }
-
   /**
-   * Creates and configures a Leaflet map instance
+   * Creates and configures a Leaflet map instance with the standard OSM layer
    * @param {HTMLElement} container - DOM element to contain the map
    * @param {Object} options - Custom map options
    * @returns {L.Map} The created map instance
@@ -23,9 +19,10 @@ class MapService {
 
     const map = L.map(container, { ...defaultOptions, ...options });
 
-    // Add zoom control in top right
-    L.control.zoom({
-      position: 'topright'
+    // Add the standard OSM layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
     return map;
@@ -93,108 +90,6 @@ class MapService {
 
     map.off(); // Remove all event listeners
     map.remove(); // Remove map from DOM
-  }
-
-  /**
-   * Sets the active base layer on the map
-   * @param {L.Map} map - The map instance
-   * @param {string} layerId - ID of the layer to activate
-   * @returns {L.TileLayer|null} The activated layer or null
-   */
-  setActiveLayer(map, layerId) {
-    if (!map) return null;
-
-    const definitions = this.getLayerDefinitions();
-    const options = this.getLayerOptions();
-
-    // Remove existing base layers
-    Object.values(definitions).forEach(layerDef => {
-      if (layerDef.base && map.hasLayer(layerDef.base)) {
-        map.removeLayer(layerDef.base);
-      }
-    });
-
-    // Find the requested layer option
-    const layerOption = options.find(option => option.id === layerId);
-    if (!layerOption) return null;
-
-    // Get the provider and the layer
-    const provider = layerOption.provider;
-    const layer = definitions[provider]?.base;
-
-    // Add layer to map if found
-    if (layer) {
-      layer.addTo(map);
-      return layer;
-    }
-
-    return null;
-  }
-
-  /**
-   * Gets layer definition objects for all available base layers
-   * @returns {Object} Map of layer definitions
-   */
-  getLayerDefinitions() {
-    return this.layers.definitions;
-  }
-
-  /**
-   * Gets UI configuration options for available map layers
-   * @returns {Array} Layer options for UI presentation
-   */
-  getLayerOptions() {
-    return this.layers.options;
-  }
-
-  /**
-   * Initializes the available map layers
-   * @private
-   * @returns {Object} Layer configurations
-   */
-  _initializeLayers() {
-    return {
-      // Layer definitions with actual Leaflet layers
-      definitions: {
-        standard: {
-          base: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          })
-        },
-        satellite: {
-          base: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            maxZoom: 19,
-            attribution: '&copy; ESRI'
-          })
-        },
-        terrain: {
-          base: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-            maxZoom: 17,
-            attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a> contributors'
-          })
-        }
-      },
-
-      // UI options for the layers
-      options: [
-        {
-          id: 'standard',
-          name: 'Trafikk',
-          provider: 'standard'
-        },
-        {
-          id: 'satellite',
-          name: 'Satellitt',
-          provider: 'satellite'
-        },
-        {
-          id: 'terrain',
-          name: 'Terreng',
-          provider: 'terrain'
-        }
-      ]
-    };
   }
 }
 
