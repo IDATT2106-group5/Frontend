@@ -9,17 +9,18 @@ vi.mock('@/stores/UserStore', () => ({
   useUserStore: () => ({
     registerAdmin: vi.fn(),
     error: null,
-    isLoading: false
+    isLoading: false,
+    logout: vi.fn()
   })
 }))
 
 // Mock hCaptcha
-global.window.hcaptcha = {
+globalThis.window.hcaptcha = {
   render: vi.fn(),
   reset: vi.fn()
 }
-global.window.hcaptchaCallback = vi.fn()
-global.window.hcaptchaReset = vi.fn()
+globalThis.window.hcaptchaCallback = vi.fn()
+globalThis.window.hcaptchaReset = vi.fn()
 
 // Mock document.querySelector for hCaptcha
 vi.spyOn(document, 'querySelector').mockImplementation(() => ({ dataset: {} }))
