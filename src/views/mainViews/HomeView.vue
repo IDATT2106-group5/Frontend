@@ -2,7 +2,7 @@
 /**
  * Vue Composition API lifecycle imports.
  */
-import { onMounted, onUnmounted } from 'vue'
+import { onMounted, onUnmounted, computed } from 'vue'
 
 /**
  * Imports the user store to manage authentication and user related actions.
@@ -16,8 +16,25 @@ import { useUserStore } from '@/stores/UserStore'
  */
 import { useDateStore } from '@/stores/DateStore'
 
+/**
+ * Imports the news store to manage news related actions.
+ * @see useNewsStore
+ */
+import { useNewsStore } from '@/stores/NewsStore'
+
+/**
+ * Imports the household store to manage household related actions.
+ * @see useHouseholdStore
+ */
+import { useHouseholdStore } from '@/stores/HouseholdStore'
+
+import { useIncidentAdminStore } from '@/stores/admin/incidentAdminStore.js'
+
 const userStore = useUserStore()
 const dateStore = useDateStore()
+const newsStore = useNewsStore()
+const householdStore = useHouseholdStore()
+const incidentStore = useIncidentAdminStore()
 
 /**
  * Lifecycle hook: called when the component is mounted.
@@ -26,12 +43,75 @@ const dateStore = useDateStore()
  * Fetches user data from the backend.
  */
 onMounted(async () => {
+  await newsStore.fetchNews()
+  dateStore.startClock()
+  await incidentStore.fetchIncidents()
   if (!userStore.user) {
     userStore.autoLogin()
-    dateStore.startClock()
-    await userStore.fetchUser()
   }
-}),
+  await userStore.fetchUser().then(await householdStore.currentHousehold)
+})
+
+/**
+ * Computed property to get the current date and time.
+ * @returns {string}
+ *
+ * @type {ComputedRef<{severity: null}>}
+ */
+const incident = computed(() =>
+  incidentStore.incidents?.length ? incidentStore.incidents[0] : {
+    severity: null,
+    startedAt: new Date().toISOString(),
+    name: 'Ingen aktive hendelser',
+    description: 'Det er ingen aktive krisesituasjoner for øyeblikket.'
+  }
+)
+
+/**
+ * Calculates the time difference between the current time and the created_at time of a news item.
+ *
+ * @param createdAt
+ * @returns {string|string}
+ */
+const calculateTimeDifference = (createdAt) => {
+  if (!createdAt) return 'Just now'
+
+  const now = new Date(dateStore.currentDateTime)
+  const createdTime = new Date(createdAt)
+  const diffInMs = now.getTime() - createdTime.getTime()
+
+  const minutes = Math.floor(diffInMs / (1000 * 60))
+  const hours = Math.floor(diffInMs / (1000 * 60 * 60))
+  const days = Math.floor(diffInMs / (1000 * 60 * 60 * 24))
+
+  if (days >= 1) {
+    return `${days} ${days === 1 ? 'dag' : 'dager'}`
+  } else if (hours >= 1) {
+    return `${hours} timer`
+  } else if (minutes >= 1) {
+    return `${minutes} min`
+  } else {
+    return 'Akkurat nå'
+  }
+}
+/**
+ * Formats a date string into a more readable format.
+ *
+ * @param dateString
+ * @returns {string}
+ */
+
+function formatDate(dateString) {
+  const date = new Date(dateString)
+  return new Intl.DateTimeFormat('no-NO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(date)
+}
+
 
 /**
  * Lifecycle hook: called when the component is unmounted.
@@ -40,17 +120,18 @@ onMounted(async () => {
 onUnmounted(() => {
   dateStore.stopClock()
 })
-
 </script>
 
 <template>
   <div class="min-h-screen bg-gray-100 font-sans">
     <!-- Header -->
-    <header class="flex flex-col sm:flex-row items-center justify-between p-4 bg-white shadow text-center sm:text-left gap-2 sm:gap-0">
+    <header
+      class="flex flex-col sm:flex-row items-center justify-between p-4 bg-white shadow text-center sm:text-left gap-2 sm:gap-0"
+    >
       <h1 class="text-3xl md:text-5xl font-bold">KRISESITUASJON</h1>
       <div class="text-sm">
         <p class="font-semibold">Norske myndigheter</p>
-        <p>{{ dateStore.formattedDateTime }}</p>
+        <p>{{ incident.startedAt ? formatDate(incident.startedAt) : formatDate(new Date()) }}</p>
       </div>
     </header>
 
@@ -59,23 +140,30 @@ onUnmounted(() => {
       <!-- Left: Danger Level -->
       <div class="text-center md:text-left">
         <p class="font-semibold">Farenivå:</p>
-        <p class="text-red-600 font-bold text-lg">KRITISK</p>
+        <p v-if="incident.severity === 'RED'" class="text-red-600 font-bold text-lg">
+          KRITISK
+        </p>
+        <p v-if="incident.severity === 'YELLOW'" class="text-yellow-400 font-bold text-lg">
+          FARLIG
+        </p>
+        <p v-if="incident.severity === 'GREEN'" class="text-green-600 font-bold text-lg">
+          MILD
+        </p>
       </div>
 
       <!-- Warning Message -->
       <div class="bg-gray-50 p-4 border rounded w-full max-w-4xl mx-auto text-sm">
-        <h2 class="font-bold text-lg mb-2">Flom i Trondheim</h2>
+        <h2 class="font-bold text-lg mb-2"> {{ incident.name }}</h2>
         <p>
-          Store nedbørsmengder har ført til alvorlige oversvømmelser i Trøndelag.
-          Vannstanden er kritisk høy, særlig i Trondheim. Veier er stengt og flere
-          distrikter isolert. Myndighetene har erklært katastrofetilstand i de hardest
-          rammede områdene. Situasjonen kan forverre seg grunnet fortsatt kraftig regn.
+          {{ incident.description }}
         </p>
       </div>
 
       <!-- Map Placeholder -->
       <router-link to="/map" class="w-full md:w-1/3">
-        <div class="h-48 md:h-64 bg-gray-300 rounded flex items-center justify-center text-gray-700 hover:bg-gray-400 transition cursor-pointer">
+        <div
+          class="h-48 md:h-64 bg-gray-300 rounded flex items-center justify-center text-gray-700 hover:bg-gray-400 transition cursor-pointer"
+        >
           Kart
         </div>
       </router-link>
@@ -84,69 +172,82 @@ onUnmounted(() => {
     <!-- Latest News -->
     <section class="bg-[#2c3e50] text-white py-8 px-4">
       <h2 class="text-3xl md:text-4xl font-bold text-center mb-6">Siste nytt</h2>
-
-      <div class="space-y-4 max-w-3xl mx-auto">
-        <div class="bg-white text-black p-4 rounded flex flex-col sm:flex-row justify-between gap-2">
-          <p class="font-semibold">Flom i Trondheim: Evakuering pågår i sentrale områder</p>
-          <span class="text-red-600 font-bold text-right sm:text-left">13 min</span>
-        </div>
-        <div class="bg-white text-black p-4 rounded flex flex-col sm:flex-row justify-between gap-2">
-          <p class="font-semibold">Flom i Trondheim: Flere skoler og barnehager stengt</p>
-          <span class="text-red-600 font-bold text-right sm:text-left">1 time 18 min</span>
-        </div>
-        <div class="bg-white text-black p-4 rounded flex flex-col sm:flex-row justify-between gap-2">
-          <p class="font-semibold">Flom i Trondheim: To personer reddet fra vannmasser</p>
-          <span class="text-red-600 font-bold text-right sm:text-left">2 timer 20 min</span>
-        </div>
+      <div
+        v-for="(news, index) in newsStore.newsItems.slice(0, 3)"
+        :key="index"
+        class="bg-white text-black p-4 rounded flex flex-col sm:flex-row justify-between gap-2 mb-3"
+        @click="$router.push('/nyheter')"
+      >
+        <p class="font-semibold">{{ news.title }}</p>
+        <span class="text-red-600 font-bold text-right sm:text-left">{{
+          calculateTimeDifference(news.created_at)
+        }}</span>
       </div>
 
       <div class="text-center mt-6">
-        <button class="bg-[#2c3e50] text-white px-4 py-2 rounded border border-white">
+        <button
+          class="bg-[#2c3e50] text-white px-4 py-2 rounded border border-white"
+          @click="$router.push('/nyheter')"
+        >
           Alle nyheter
         </button>
       </div>
     </section>
-
     <!-- Preparedness -->
     <section class="py-10 px-4 bg-gray-100 text-center">
       <h2 class="text-3xl md:text-5xl font-bold mb-6 text-[#2c3e50]">Beredskap</h2>
 
       <!-- Wrapper for desktop layout -->
-      <div class="flex flex-col md:flex-row justify-center items-center md:gap-32 gap-8 text-center">
-
+      <div
+        class="flex flex-col md:flex-row justify-center items-center md:gap-32 gap-8 text-center"
+      >
         <!-- Før -->
         <router-link to="/before" class="block">
-          <div class="bg-[#2c3e50] text-white p-6 rounded-lg w-52 h-52 flex flex-col justify-between hover:shadow-lg transition cursor-pointer">
+          <div
+            class="bg-[#2c3e50] text-white p-6 rounded-lg w-52 h-52 flex flex-col justify-between hover:shadow-lg transition cursor-pointer"
+          >
             <p class="text-xl font-bold text-center drop-shadow-md">Før</p>
             <div class="flex items-center justify-between">
               <span class="text-lg font-bold">Les mer</span>
-              <span class="bg-white text-[#2c3e50] rounded-md px-3 py-1 text-xl font-bold leading-none">→</span>
+              <span
+                class="bg-white text-[#2c3e50] rounded-md px-3 py-1 text-xl font-bold leading-none"
+                >→</span
+              >
             </div>
           </div>
         </router-link>
 
         <!-- Under -->
         <router-link to="/under" class="block">
-          <div class="bg-[#2c3e50] text-white p-6 rounded-lg w-52 h-52 flex flex-col justify-between hover:shadow-lg transition cursor-pointer">
+          <div
+            class="bg-[#2c3e50] text-white p-6 rounded-lg w-52 h-52 flex flex-col justify-between hover:shadow-lg transition cursor-pointer"
+          >
             <p class="text-xl font-bold text-center drop-shadow-md">Under</p>
             <div class="flex items-center justify-between">
               <span class="text-lg font-bold">Les mer</span>
-              <span class="bg-white text-[#2c3e50] rounded-md px-3 py-1 text-xl font-bold leading-none">→</span>
+              <span
+                class="bg-white text-[#2c3e50] rounded-md px-3 py-1 text-xl font-bold leading-none"
+                >→</span
+              >
             </div>
           </div>
         </router-link>
 
         <!-- Etter -->
         <router-link to="/after" class="block">
-          <div class="bg-[#2c3e50] text-white p-6 rounded-lg w-52 h-52 flex flex-col justify-between hover:shadow-lg transition cursor-pointer">
+          <div
+            class="bg-[#2c3e50] text-white p-6 rounded-lg w-52 h-52 flex flex-col justify-between hover:shadow-lg transition cursor-pointer"
+          >
             <p class="text-xl font-bold text-center drop-shadow-md">Etter</p>
             <div class="flex items-center justify-between">
               <span class="text-lg font-bold">Les mer</span>
-              <span class="bg-white text-[#2c3e50] rounded-md px-3 py-1 text-xl font-bold leading-none">→</span>
+              <span
+                class="bg-white text-[#2c3e50] rounded-md px-3 py-1 text-xl font-bold leading-none"
+                >→</span
+              >
             </div>
           </div>
         </router-link>
-
       </div>
     </section>
   </div>

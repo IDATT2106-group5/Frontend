@@ -23,6 +23,7 @@ export const useMapStore = defineStore('map', {
     markerLayers: {},
     markerData: {},
     cachedMarkerTypes: null,
+    editingMarkerId: null,
 
     // Notifications
     notification: null,
@@ -59,6 +60,19 @@ export const useMapStore = defineStore('map', {
   }),
 
   getters: {
+    visibleMarkerData() {
+      const result = {};
+
+      // For each marker type
+      Object.entries(this.markerData).forEach(([typeId, markers]) => {
+        // Filter out the marker being edited
+        result[typeId] = markers.filter(marker =>
+          !this.editingMarkerId || marker.id !== this.editingMarkerId
+        );
+      });
+
+      return result;
+    },
     /**
      * Get only marker types that are currently visible
      */
@@ -128,6 +142,56 @@ export const useMapStore = defineStore('map', {
   },
 
   actions: {
+    /**
+     * Set a marker as being edited
+     * @param {string} markerId - ID of the marker being edited
+     */
+    setEditingMarkerId(markerId) {
+      this.editingMarkerId = markerId;
+      this.clearAllMarkerLayers();
+      this.addMarkersToLayers();
+    },
+
+    /**
+     * Clear the editing marker ID
+     */
+    clearEditingMarkerId() {
+      this.editingMarkerId = null;
+      this.clearAllMarkerLayers();
+      // Refresh marker layers to show all markers
+      this.refreshMarkerLayers();
+    },
+
+    // 4. Modify the addMarkersToLayers method to use visibleMarkerData
+    addMarkersToLayers() {
+      // Use the visibleMarkerData getter instead of markerData directly
+      // to filter out the marker being edited
+      const visibleData = this.visibleMarkerData;
+
+      // Process each marker type
+      Object.entries(visibleData).forEach(([typeId, markers]) => {
+        // Create layer group if it doesn't exist
+        if (!this.markerLayers[typeId]) {
+          this.markerLayers[typeId] = L.layerGroup();
+        }
+
+        // Find marker type configuration
+        const markerType = this.markerTypes.find(type => type.id === typeId);
+        if (!markerType) return;
+
+        // Add markers to the layer group
+        markers.forEach(markerData => {
+          const marker = this.createMarkerWithPopup(markerData, markerType);
+          this.markerLayers[typeId].addLayer(marker);
+        });
+
+        // Add layer to map if it should be visible
+        if (markerType.visible && this.map) {
+          this.markerLayers[typeId].addTo(this.map);
+        }
+      });
+    },
+
     /**
      * Initialize the map and setup initial state
      * @param {HTMLElement} container - DOM element to contain the map
@@ -271,7 +335,14 @@ export const useMapStore = defineStore('map', {
      * Refresh all marker layers by clearing and re-adding markers
      */
     refreshMarkerLayers() {
+      if (!this.map) return;
+
+      console.log("Refreshing marker layers, editingMarkerId:", this.editingMarkerId);
+
+      // Clear all markers from their layers
       this.clearAllMarkerLayers();
+
+      // Re-add markers to layers
       this.addMarkersToLayers();
     },
 
@@ -375,34 +446,6 @@ export const useMapStore = defineStore('map', {
       this.notificationTimeout = setTimeout(() => {
         this.notification = null;
       }, 3000);
-    },
-
-    /**
-     * Add markers to their respective layer groups
-     */
-    addMarkersToLayers() {
-      // Process each marker type
-      Object.entries(this.markerData).forEach(([typeId, markers]) => {
-        // Create layer group if it doesn't exist
-        if (!this.markerLayers[typeId]) {
-          this.markerLayers[typeId] = L.layerGroup();
-        }
-
-        // Find marker type configuration
-        const markerType = this.markerTypes.find(type => type.id === typeId);
-        if (!markerType) return;
-
-        // Add markers to the layer group
-        markers.forEach(markerData => {
-          const marker = this.createMarkerWithPopup(markerData, markerType);
-          this.markerLayers[typeId].addLayer(marker);
-        });
-
-        // Add layer to map if it should be visible
-        if (markerType.visible && this.map) {
-          this.markerLayers[typeId].addTo(this.map);
-        }
-      });
     },
 
     /**
@@ -518,6 +561,9 @@ export const useMapStore = defineStore('map', {
           layer.removeFrom(this.map);
         }
       });
+
+      // Force map update to ensure visibility changes take effect immediately
+      this.resizeMap();
     },
 
     /**
@@ -543,6 +589,9 @@ export const useMapStore = defineStore('map', {
       } else {
         layer.removeFrom(this.map);
       }
+
+      // Force map update to ensure visibility changes take effect immediately
+      this.resizeMap();
     },
 
     /**

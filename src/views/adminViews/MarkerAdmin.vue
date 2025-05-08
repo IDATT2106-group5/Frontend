@@ -1,4 +1,3 @@
-<!-- src/views/admin/MarkerAdmin.vue -->
 <template>
   <div class="marker-admin-container">
     <!-- Alert messages -->
@@ -319,6 +318,8 @@
         :center="mapCenter"
         :zoom="mapZoom"
         :is-admin-mode="true"
+        :markers="markers"
+        :editingMarkerId="activeEditMarker"
         @map-ready="onMapReady"
         @map-click="onMapClick"
       />
@@ -351,12 +352,16 @@ export default {
     const showFilterDropdown = ref(false);
     const showDescriptionTips = ref(false);
     const dropdownOpen = ref(false);
+    const activeEditMarker = ref(null);
 
     // Map configuration
     const mapCenter = ref([63.4305, 10.3951]); // Trondheim
     const mapZoom = ref(13);
 
+    // Initialize both stores
     const markerAdminStore = useMarkerAdminStore();
+
+    // Get reactive properties from the store
     const {
       markers,
       filteredMarkers,
@@ -412,17 +417,12 @@ export default {
     };
 
     const onMapClick = async (e) => {
-      console.log("Map click handler called:", e.latlng);
-
       // Only proceed if in edit or create mode
       if (!isEditing.value && !isCreating.value) {
-        console.log("Click ignored: not in edit or create mode");
         return;
       }
 
       const { lat, lng } = e.latlng;
-
-      console.log("Updating coordinates to:", lat, lng);
 
       // Update form data with the new coordinates
       markerFormData.value.latitude = lat;
@@ -434,17 +434,14 @@ export default {
       // Update or create temporary marker
       if (tempMarker.value) {
         tempMarker.value.setLatLng([lat, lng]);
-        console.log("Updated existing marker position");
       } else {
         const icon = createMarkerIcon(markerFormData.value.type);
         tempMarker.value = L.marker([lat, lng], { icon }).addTo(map.value);
-        console.log("Created new temporary marker");
       }
 
       // Perform reverse geocoding to get address information
       try {
-        const addressInfo = await markerAdminStore.updateAddressFromCoordinates(lat, lng);
-        console.log("Address updated based on new coordinates:", addressInfo);
+        await markerAdminStore.updateAddressFromCoordinates(lat, lng);
       } catch (error) {
         console.error("Error updating address from coordinates:", error);
       }
@@ -552,53 +549,195 @@ export default {
       ).addTo(map.value);
     };
 
+    // Complete update for the edit operations in MarkerAdmin.vue:
+
+// 1. Enhanced onEditMarker with forced marker updates
     const onEditMarker = (marker) => {
+      console.log("Editing marker:", marker.id);
+
+      // Set active marker ID FIRST to hide original immediately
+      activeEditMarker.value = marker.id;
+
+      // Immediate refresh to hide original marker
+      if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
+        console.log("Hiding original marker immediately");
+        mapView.value.refreshMarkers();
+      }
+
+      // Then call store method
       markerAdminStore.editMarker(marker);
+
+      // Remove any existing temp marker
+      if (tempMarker.value) {
+        tempMarker.value.remove();
+        tempMarker.value = null;
+      }
 
       // Center map at marker location
       if (map.value) {
         map.value.setView([marker.latitude, marker.longitude], 16);
       }
 
-      // Create temporary marker
-      if (tempMarker.value) {
-        tempMarker.value.remove();
-      }
+      // Create temporary marker with small delay to ensure map is ready
+      setTimeout(() => {
+        try {
+          const icon = createMarkerIcon(marker.type);
+          if (icon && map.value) {
+            tempMarker.value = L.marker(
+              [marker.latitude, marker.longitude],
+              { icon }
+            ).addTo(map.value);
 
-      const icon = createMarkerIcon(marker.type);
-      tempMarker.value = L.marker(
-        [marker.latitude, marker.longitude],
-        { icon }
-      ).addTo(map.value);
+            // Force map to update to ensure marker is visible
+            map.value.invalidateSize();
+          }
+        } catch (err) {
+          console.error("Error creating temp marker:", err);
+        }
+      }, 20);
     };
 
-    const onSaveMarker = async () => {
-      await markerAdminStore.saveMarker();
-    };
-
+// 2. Enhanced onCancelEdit with retries
     const onCancelEdit = () => {
-      markerAdminStore.cancelEdit();
+      console.log("Canceling edit");
 
-      // Clear temporary marker
+      // First clear temp marker
       if (tempMarker.value) {
         tempMarker.value.remove();
         tempMarker.value = null;
       }
+
+      // Store marker ID being edited before clearing
+      const editingId = activeEditMarker.value;
+
+      // Clear local reference
+      activeEditMarker.value = null;
+
+      // Call store method to cancel
+      markerAdminStore.cancelEdit();
+
+      // Force refresh markers with retry mechanism
+      const refreshWithRetry = (attempts = 3) => {
+        if (attempts <= 0) return;
+
+        setTimeout(() => {
+          if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
+            console.log(`Refreshing markers after cancel (attempt ${4-attempts})`);
+            mapView.value.refreshMarkers();
+
+            // Force map update
+            if (map.value) {
+              map.value.invalidateSize();
+            }
+
+            // Check if the marker is visible now
+            if (editingId && !mapView.value.adminMarkers?.has(editingId)) {
+              // If marker still not visible, retry
+              refreshWithRetry(attempts - 1);
+            }
+          }
+        }, 100);
+      };
+
+      refreshWithRetry();
     };
 
+// 3. Enhanced onSaveMarker with multi-stage refresh
+    const onSaveMarker = async () => {
+      console.log("Saving marker");
+
+      // Clear temp marker
+      if (tempMarker.value) {
+        tempMarker.value.remove();
+        tempMarker.value = null;
+      }
+
+      // Clear active marker reference
+      activeEditMarker.value = null;
+
+      // Force immediate refresh to clear visuals
+      if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
+        mapView.value.refreshMarkers();
+      }
+
+      // Call store method to save
+      const success = await markerAdminStore.saveMarker();
+
+      if (success) {
+        console.log("Save successful, refreshing markers");
+
+        // Multi-stage refresh to ensure markers appear
+        // First refresh immediately
+        if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
+          mapView.value.refreshMarkers();
+        }
+
+        // Then another refresh after a delay
+        setTimeout(() => {
+          if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
+            mapView.value.refreshMarkers();
+
+            // Force map update
+            if (map.value) {
+              map.value.invalidateSize();
+            }
+          }
+        }, 150);
+
+        // Final refresh to catch any stragglers
+        setTimeout(() => {
+          if (map.value) {
+            map.value.invalidateSize();
+          }
+        }, 300);
+      }
+    };
+
+// 4. Enhanced onDeleteMarker with better feedback
     const onDeleteMarker = async () => {
       if (!confirm('Er du sikker på at du vil slette denne markøren?')) {
         return;
       }
 
-      const success = await markerAdminStore.deleteMarker(markerFormData.value.id);
+      console.log("Deleting marker:", markerFormData.value.id);
+
+      // Clear temp marker
+      if (tempMarker.value) {
+        tempMarker.value.remove();
+        tempMarker.value = null;
+      }
+
+      // Store the ID to verify deletion
+      const deletingId = markerFormData.value.id;
+
+      // Clear active marker reference
+      activeEditMarker.value = null;
+
+      // Force immediate refresh first to hide visually
+      if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
+        mapView.value.refreshMarkers();
+      }
+
+      // Call store method to delete
+      const success = await markerAdminStore.deleteMarker(deletingId);
 
       if (success) {
-        // Clear temporary marker
-        if (tempMarker.value) {
-          tempMarker.value.remove();
-          tempMarker.value = null;
+        console.log("Delete successful");
+
+        // Multi-stage refresh similar to save
+        if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
+          mapView.value.refreshMarkers();
         }
+
+        setTimeout(() => {
+          if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
+            mapView.value.refreshMarkers();
+          }
+
+          if (map.value) {
+            map.value.invalidateSize();
+          }
+        }, 150);
       }
     };
 
@@ -639,7 +778,6 @@ export default {
       }
 
       document.removeEventListener('click', closeDropdownOnOutsideClick);
-
     });
 
     return {
@@ -679,13 +817,13 @@ export default {
       clearError,
       onMapClick,
       onAddressChange,
+      activeEditMarker
     };
   }
 };
 </script>
 
 <style scoped>
-
 .custom-select-wrapper {
   position: relative;
   width: 100%;
@@ -766,15 +904,6 @@ export default {
 }
 
 /* Keep all your existing styles below */
-.marker-admin-container {
-  display: flex;
-  width: 100%;
-  height: calc(100vh - 60px);
-  gap: 16px;
-  padding: 16px;
-  position: relative;
-}
-
 .marker-admin-container {
   display: flex;
   width: 100%;

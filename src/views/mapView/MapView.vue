@@ -78,6 +78,7 @@
 <script>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useMapStore } from '@/stores/map/mapStore'
+import { useMarkerAdminStore } from '@/stores/admin/markerAdminStore'
 import { storeToRefs } from 'pinia'
 import MarkerFilter from '@/components/map/MarkerFilter.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -90,6 +91,7 @@ import { useHouseholdStore } from '@/stores/HouseholdStore.js'
 import { useLocationStore } from '@/stores/map/LocationStore.js' // Import the new store
 import { LocateFixed } from 'lucide-vue-next' // Import the icon
 import MapSearchBar from '@/components/map/MapSearchBar.vue';
+import markerConfigService from '@/service/map/markerConfigService.js'
 
 export default {
   name: 'MapView',
@@ -112,22 +114,33 @@ export default {
     isAdminMode: {
       type: Boolean,
       default: false
+    },
+    markers: {
+      type: Array,
+      default: () => []
+    },
+    editingMarkerId: {
+      type: String,
+      default: null
     }
   },
   emits: ['map-ready', 'map-click'],
   setup(props, { emit }) {
     const mapContainer = ref(null)
     const mapStore = useMapStore()
+    const markerAdminStore = props.isAdminMode ? useMarkerAdminStore() : null
     const windowWidth = ref(window.innerWidth)
     const isFilterCollapsed = ref(false)
     const userMarkers = ref(new Map())
     const userPositions = ref(new Map())
+    const adminMarkers = ref(new Map()) // For storing admin markers
     const map = ref(null)
     const mapInitialized = ref(false)
     const userStore = useUserStore()
     const householdStore = useHouseholdStore()
-    const locationStore = useLocationStore() // Use the location store
+    const locationStore = useLocationStore()
     const householdId = householdStore.currentHousehold?.id || null
+    const markersLayer = ref(null) // For admin map markers
 
     // Get location related state from the location store
     const isSharing = computed(() => locationStore.isSharing)
@@ -143,11 +156,30 @@ export default {
       return windowWidth.value < 768 // Common breakpoint for mobile
     })
 
+    // Create a computed property for visible markers (filters out the marker being edited)
+    const visibleMarkers = computed(() => {
+      if (props.isAdminMode && props.editingMarkerId && props.markers) {
+        return props.markers.filter(marker => marker.id !== props.editingMarkerId);
+      }
+      return props.markers || [];
+    });
+
     function togglePositionSharing() {
       locationStore.togglePositionSharing()
     }
 
     onMounted(async () => {
+      if (props.isAdminMode && props.markers) {
+        // Wait for map to be ready first
+        const checkInterval = setInterval(() => {
+          if (map.value) {
+            clearInterval(checkInterval);
+            console.log("Map ready, initial marker refresh");
+            refreshMarkers();
+          }
+        }, 100);
+      }
+
       isFilterCollapsed.value = isMobileView.value
 
       try {
@@ -157,18 +189,33 @@ export default {
           console.log('Map initialized successfully')
           mapInitialized.value = true
 
-          emit('map-ready', map.value);
-
-          // If in admin mode, set up click handler directly on the Leaflet map
+          // If in admin mode, set up admin-specific features
           if (props.isAdminMode) {
-            console.log("Setting up admin mode click handler");
+            console.log("Setting up admin mode in MapView");
+
+            // Create a layer group for markers
+            markersLayer.value = L.layerGroup().addTo(map.value);
+
+            // If markerAdminStore exists, store this layer
+            if (markerAdminStore) {
+              markerAdminStore.setMarkersLayer(markersLayer.value);
+            }
+
+            // Set up click handler for admin mode
             map.value.on('click', (e) => {
-              console.log("Leaflet map click:", e.latlng);
+              console.log("Admin map clicked:", e.latlng);
               emit('map-click', e);
             });
+
+            // Initial render of markers
+            refreshMarkers();
+
+            emit('map-ready', map.value);
           } else {
+            // Regular non-admin mode initialization
+            emit('map-ready', map.value);
+
             // Only process user positions if not in admin mode
-            // Process any stored positions that came in before map initialization
             userPositions.value.forEach((position, userId) => {
               const isCurrentUser = userId === userStore.user.id
               updateUserMarker(userId, position.fullName, position.longitude, position.latitude, isCurrentUser)
@@ -198,23 +245,140 @@ export default {
       window.addEventListener('resize', handleResize)
     })
 
+    const createMarkerIcon = (type) => {
+      // This is a placeholder - use your actual marker icon creation logic
+      const markerConfigs = {
+        'HEARTSTARTER': { color: '#FF0000', iconType: 'defibrillator' },
+        'SHELTER': { color: '#00FF00', iconType: 'shelter' },
+        // Add more as needed
+      };
+
+      const config = markerConfigs[type];
+      if (!config) return null;
+
+      // Assuming you have MarkerConfigService available
+      return markerConfigService.createLeafletIcon(
+        config.iconType,
+        config.color
+      );
+    };
+
+    // Function to refresh admin markers on the map
+    const refreshMarkers = () => {
+      if (!map.value || !props.isAdminMode) return;
+
+      console.log("Refreshing markers, total:", props.markers?.length, "editing:", props.editingMarkerId);
+
+      // Force map invalidation to ensure updates
+      L.Util.requestAnimFrame(function() {
+        if (map.value) {
+          // This helps refresh the map display
+          map.value.invalidateSize();
+        }
+      });
+
+      // Clear all existing markers first
+      if (adminMarkers.value) {
+        adminMarkers.value.forEach(marker => {
+          if (map.value) {
+            map.value.removeLayer(marker);
+          }
+        });
+      }
+      adminMarkers.value = new Map();  // Create fresh map
+
+      // Filter markers to exclude the one being edited
+      const markersToShow = props.editingMarkerId
+        ? props.markers.filter(m => m.id !== props.editingMarkerId)
+        : props.markers;
+
+      // Add the visible markers to the map
+      markersToShow.forEach(markerData => {
+        if (!markerData || !markerData.latitude || !markerData.longitude) return;
+
+        // Get config for this marker type
+        const configs = markerConfigService.getMarkerConfigs();
+        const config = configs[markerData.type];
+        if (!config) return;
+
+        // Create icon
+        const icon = markerConfigService.createLeafletIcon(
+          config.iconType,
+          config.color
+        );
+
+        // Create and add marker
+        try {
+          const marker = L.marker(
+            [markerData.latitude, markerData.longitude],
+            { icon }
+          );
+
+          // Add to map
+          marker.addTo(map.value);
+
+          // Store in adminMarkers
+          adminMarkers.value.set(markerData.id, marker);
+        } catch (err) {
+          console.error("Error adding marker to map:", err);
+        }
+      });
+
+      // Force another refresh
+      setTimeout(() => {
+        if (map.value) {
+          map.value.invalidateSize();
+        }
+      }, 50);
+    };
+
+
+    watch(() => props.editingMarkerId, (newId, oldId) => {
+      if (props.isAdminMode) {
+        console.log(`Editing marker changed: ${oldId} -> ${newId}`);
+        // Force immediate refresh
+        refreshMarkers();
+      }
+    });
+
+// Watch for markers array changes
+    watch(() => props.markers, () => {
+      if (props.isAdminMode) {
+        console.log('Markers array changed, refreshing map');
+        // Force immediate refresh
+        refreshMarkers();
+      }
+    }, { deep: true });
+
     watch(() => connected.value && householdId, (isConnected) => {
       if (isConnected && householdId && !props.isAdminMode) {
         subscribeToPosition(householdId, handlePositionUpdate)
       }
     })
 
-    onUnmounted(() => {
-      window.removeEventListener('resize', handleResize)
-
-      userMarkers.value.forEach((marker) => {
-        if (map.value) {
-          map.value.removeLayer(marker)
+    if (props.isAdminMode) {
+      // This ensures markers refresh after map movements
+      const onMapMoveEnd = () => {
+        if (map.value && props.isAdminMode) {
+          console.log("Map moved, refreshing admin markers");
+          refreshMarkers();
         }
-      })
+      };
 
-      mapStore.cleanupMap()
-    })
+      // Add move end event once map is initialized
+      watch(() => map.value, (newMap) => {
+        if (newMap) {
+          newMap.on('moveend', onMapMoveEnd);
+        }
+      });
+
+      // Clean up on unmount
+      onUnmounted(() => {
+        if (map.value) {
+          map.value.off('moveend', onMapMoveEnd);
+        }
+      });
+    }
 
     const handlePositionUpdate = (positionData) => {
       // Skip if in admin mode
@@ -358,10 +522,14 @@ export default {
       map,
       userMarkers,
       userPositions,
+      adminMarkers,
+      markersLayer,
+      refreshMarkers,
+      visibleMarkers,
       isAdminMode: props.isAdminMode,
-      isSharing, // Expose from location store
-      locationError, // Expose from location store
-      togglePositionSharing, // Expose from location store
+      isSharing,
+      locationError,
+      togglePositionSharing,
     }
   },
 }
