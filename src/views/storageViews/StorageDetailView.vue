@@ -1,23 +1,23 @@
 <script setup>
-import { ref, onMounted, provide, computed } from "vue";
-import { Droplet, Apple, Pill, Hammer, Package } from "lucide-vue-next";
+import { computed, onMounted, provide, ref } from 'vue'
+import { Apple, Droplet, Hammer, Package, Pill } from 'lucide-vue-next'
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
-  AccordionTrigger
-} from '@/components/ui/accordion';
-import { Button } from '@/components/ui/button';
+  AccordionTrigger,
+} from '@/components/ui/accordion'
+import { Button } from '@/components/ui/button'
 
-import StorageNavbar from "@/components/storageComponents/StorageNavbar.vue";
-import EditableNestedItemList from "@/components/storageComponents/EditableNestedItemList.vue";
-import SearchBar from '@/components/storageComponents/SearchBar.vue';
-import AddStorageItem from '@/components/storageComponents/AddStorageItem.vue';
+import StorageNavbar from '@/components/storageComponents/StorageNavbar.vue'
+import EditableNestedItemList from '@/components/storageComponents/EditableNestedItemList.vue'
+import SearchBar from '@/components/storageComponents/SearchBar.vue'
+import AddStorageItem from '@/components/storageComponents/AddStorageItem.vue'
 
-import { useStorageStore } from '@/stores/StorageStore.js';
-import { useUserStore } from '@/stores/UserStore.js';
-import { useHouseholdStore } from '@/stores/HouseholdStore.js';
-import UserService from '@/service/userService';
+import { useStorageStore } from '@/stores/StorageStore.js'
+import { useUserStore } from '@/stores/UserStore.js'
+import { useHouseholdStore } from '@/stores/HouseholdStore.js'
+import UserService from '@/service/userService'
 
 /**
  * Category mapping for accordion values
@@ -25,25 +25,25 @@ import UserService from '@/service/userService';
  * @type {Object}
  */
 const CATEGORY_TO_ACCORDION = {
-  'all': null,
-  'væske': 'vaske',
-  'mat': 'mat',
-  'medisiner': 'medisiner',
-  'redskap': 'redskap',
-  'diverse': 'diverse'
-};
+  all: null,
+  væske: 'vaske',
+  mat: 'mat',
+  medisiner: 'medisiner',
+  redskap: 'redskap',
+  diverse: 'diverse',
+}
 
-const openItem = ref(null);
-const isEditing = ref(false);
-const isLoading = ref(true);
-const error = ref(null);
-const activeCategory = ref('all');
-const searchQuery = ref('');
-const searchResults = ref(null);
+const openItem = ref(null)
+const isEditing = ref(false)
+const isLoading = ref(true)
+const error = ref(null)
+const activeCategory = ref('all')
+const searchQuery = ref('')
+const searchResults = ref(null)
 
-const storageStore = useStorageStore();
-const userStore = useUserStore();
-const householdStore = useHouseholdStore();
+const storageStore = useStorageStore()
+const userStore = useUserStore()
+const householdStore = useHouseholdStore()
 
 /**
  * Computes the capitalized category name for display in the heading
@@ -51,10 +51,10 @@ const householdStore = useHouseholdStore();
  */
 const capitalizedCategory = computed(() => {
   if (activeCategory.value === 'all') {
-    return 'Lager innhold';
+    return 'Lager innhold'
   }
-  return activeCategory.value.charAt(0).toUpperCase() + activeCategory.value.slice(1);
-});
+  return activeCategory.value.charAt(0).toUpperCase() + activeCategory.value.slice(1)
+})
 
 /**
  * Event handler for navigation item clicks
@@ -62,25 +62,25 @@ const capitalizedCategory = computed(() => {
  * @param {string} category - The category that was clicked
  */
 const handleNavItemClick = (category) => {
-  setActiveCategory(category);
-};
+  setActiveCategory(category)
+}
 
 /**
  * Sets the active category and updates the open accordion item accordingly
  * @param {string} category - The category to set as active
  */
 const setActiveCategory = (category) => {
-  activeCategory.value = category;
-  openItem.value = CATEGORY_TO_ACCORDION[category.toLowerCase()];
-};
+  activeCategory.value = category
+  openItem.value = CATEGORY_TO_ACCORDION[category.toLowerCase()]
+}
 
 /**
  * Toggles the accordion open/closed state
  * @param {string} value - The accordion item value to toggle
  */
 const toggleAccordion = (value) => {
-  openItem.value = openItem.value === value ? null : value;
-};
+  openItem.value = openItem.value === value ? null : value
+}
 
 /**
  * Handles item updates by delegating to the store
@@ -89,15 +89,15 @@ const toggleAccordion = (value) => {
  */
 const handleItemUpdate = async (id, data) => {
   try {
-    await storageStore.updateItem(id, data);
+    await storageStore.updateItem(id, data)
 
     if (searchQuery.value) {
-      handleSearch(searchQuery.value);
+      handleSearch(searchQuery.value)
     }
   } catch (e) {
-    console.error('Failed to update item:', e);
+    console.error('Failed to update item:', e)
   }
-};
+}
 
 /**
  * Handles item deletion by delegating to the store
@@ -105,15 +105,15 @@ const handleItemUpdate = async (id, data) => {
  */
 const handleItemDelete = async (id) => {
   try {
-    await storageStore.deleteItem(id);
+    await storageStore.deleteItem(id)
 
     if (searchQuery.value) {
-      handleSearch(searchQuery.value);
+      handleSearch(searchQuery.value)
     }
   } catch (e) {
-    console.error('Failed to delete item:', e);
+    console.error('Failed to delete item:', e)
   }
-};
+}
 
 /**
  * Handles item addition by delegating to the store
@@ -123,15 +123,15 @@ const handleItemDelete = async (id) => {
  */
 const handleItemAdd = async (item) => {
   try {
-    await storageStore.addItem(item.itemId, item.data);
+    await storageStore.addItem(item.itemId, item.data)
 
     if (searchQuery.value) {
-      handleSearch(searchQuery.value);
+      handleSearch(searchQuery.value)
     }
   } catch (e) {
-    console.error('Failed to add item:', e);
+    console.error('Failed to add item:', e)
   }
-};
+}
 
 /**
  * Gets items from the store by their IDs
@@ -142,13 +142,15 @@ const handleItemAdd = async (item) => {
  * @returns {Array} - The full item objects
  */
 const getItemsById = (category, itemIds) => {
-  if (!storageStore.groupedItems[category]) return [];
+  if (!storageStore.groupedItems[category]) return []
 
-  return itemIds.map(id => {
-    const originalItem = storageStore.groupedItems[category].find(item => item.id === id);
-    return originalItem || null;
-  }).filter(item => item !== null);
-};
+  return itemIds
+    .map((id) => {
+      const originalItem = storageStore.groupedItems[category].find((item) => item.id === id)
+      return originalItem || null
+    })
+    .filter((item) => item !== null)
+}
 
 /**
  * Handles search input and filters the storage items
@@ -156,40 +158,42 @@ const getItemsById = (category, itemIds) => {
  * @param {string} query - The search query
  */
 const handleSearch = (query) => {
-  searchQuery.value = query;
+  searchQuery.value = query
 
   if (!query) {
-    searchResults.value = null;
-    return;
+    searchResults.value = null
+    return
   }
 
-  const lowerQuery = query.toLowerCase();
-  const results = {};
+  const lowerQuery = query.toLowerCase()
+  const results = {}
 
   Object.entries(storageStore.groupedItems).forEach(([category, items]) => {
-    if (!items || !Array.isArray(items)) return;
+    if (!items || !Array.isArray(items)) return
 
     const matchedItemIds = items
-      .filter(item => {
-        const name = (item.name || '').toLowerCase();
-        const expiryDate = (item.expiryDate || '').toLowerCase();
-        const quantity = String(item.quantity || '');
-        const unit = (item.unit || '').toLowerCase();
+      .filter((item) => {
+        const name = (item.name || '').toLowerCase()
+        const expiryDate = (item.expiryDate || '').toLowerCase()
+        const quantity = String(item.quantity || '')
+        const unit = (item.unit || '').toLowerCase()
 
-        return name.includes(lowerQuery) ||
+        return (
+          name.includes(lowerQuery) ||
           expiryDate.includes(lowerQuery) ||
           quantity.includes(lowerQuery) ||
-          unit.includes(lowerQuery);
+          unit.includes(lowerQuery)
+        )
       })
-      .map(item => item.id);
+      .map((item) => item.id)
 
     if (matchedItemIds.length > 0) {
-      results[category] = matchedItemIds;
+      results[category] = matchedItemIds
     }
-  });
+  })
 
-  searchResults.value = results;
-};
+  searchResults.value = results
+}
 
 /**
  * Initializes the component by loading household data and storage items
@@ -197,44 +201,43 @@ const handleSearch = (query) => {
  */
 onMounted(async () => {
   try {
-    isLoading.value = true;
-    error.value = null;
+    isLoading.value = true
+    error.value = null
 
-    await householdStore.checkCurrentHousehold();
+    await householdStore.checkCurrentHousehold()
 
     if (householdStore.hasHousehold) {
-      const response = await UserService.getCurrentHouseholdByUserId(userStore.user.id);
-      const householdId = response.id;
-      storageStore.setCurrentHouseholdId(householdId);
-      await storageStore.fetchItems();
+      const response = await UserService.getCurrentHouseholdByUserId(userStore.user.id)
+      const householdId = response.id
+      storageStore.setCurrentHouseholdId(householdId)
+      await storageStore.fetchItems()
     }
-
   } catch (e) {
-    console.error('Failed to initialize storage:', e);
-    error.value = e.message || 'Failed to load storage data';
+    console.error('Failed to initialize storage:', e)
+    error.value = e.message || 'Failed to load storage data'
   } finally {
-    isLoading.value = false;
+    isLoading.value = false
   }
-});
+})
 
-provide('handleNavItemClick', handleNavItemClick);
+provide('handleNavItemClick', handleNavItemClick)
 </script>
 
 <template>
   <div class="flex flex-col min-h-screen">
     <StorageNavbar />
-    <div class="px-20 mt-6">
-      <div class="grid grid-cols-3 items-center">
-        <div class="col-span-1"></div>
+    <div class="px-4 sm:px-8 md:px-12 lg:px-20 mt-6">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
+        <div class="hidden sm:block sm:col-span-1"></div>
 
-        <div class="col-span-1 flex justify-center">
+        <div class="col-span-1 flex justify-center order-1 sm:order-2">
           <SearchBar @search="handleSearch" class="w-full" />
         </div>
 
-        <div class="col-span-1 flex justify-end">
+        <div class="col-span-1 flex justify-center sm:justify-end order-2 sm:order-3 mt-4 sm:mt-0">
           <Button
             @click="isEditing = !isEditing"
-            class="px-4 py-2 rounded text-sm font-medium w-52 text-center"
+            class="px-3 sm:px-4 py-2 rounded text-sm font-medium w-full sm:w-auto text-center"
             :class="isEditing ? 'bg-red-600 text-white' : 'bg-[#2c3e50] text-white'"
           >
             {{ isEditing ? 'Lukk' : 'Rediger - / Legg til i lager' }}
@@ -294,11 +297,7 @@ provide('handleNavItemClick', handleNavItemClick);
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
             />
-            <AddStorageItem
-              v-if="isEditing"
-              category="Væske"
-              @add-item="handleItemAdd"
-            />
+            <AddStorageItem v-if="isEditing" category="Væske" @add-item="handleItemAdd" />
           </AccordionContent>
         </AccordionItem>
 
@@ -316,15 +315,14 @@ provide('handleNavItemClick', handleNavItemClick);
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
             />
-            <AddStorageItem
-              v-if="isEditing"
-              category="Mat"
-              @add-item="handleItemAdd"
-            />
+            <AddStorageItem v-if="isEditing" category="Mat" @add-item="handleItemAdd" />
           </AccordionContent>
         </AccordionItem>
 
-        <AccordionItem v-if="activeCategory === 'all' || activeCategory === 'medisiner'" value="medisiner">
+        <AccordionItem
+          v-if="activeCategory === 'all' || activeCategory === 'medisiner'"
+          value="medisiner"
+        >
           <AccordionTrigger @click="toggleAccordion('medisiner')">
             <div class="flex items-center gap-3">
               <Pill />
@@ -338,15 +336,14 @@ provide('handleNavItemClick', handleNavItemClick);
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
             />
-            <AddStorageItem
-              v-if="isEditing"
-              category="Medisiner"
-              @add-item="handleItemAdd"
-            />
+            <AddStorageItem v-if="isEditing" category="Medisiner" @add-item="handleItemAdd" />
           </AccordionContent>
         </AccordionItem>
 
-        <AccordionItem v-if="activeCategory === 'all' || activeCategory === 'redskap'" value="redskap">
+        <AccordionItem
+          v-if="activeCategory === 'all' || activeCategory === 'redskap'"
+          value="redskap"
+        >
           <AccordionTrigger @click="toggleAccordion('redskap')">
             <div class="flex items-center gap-3">
               <Hammer />
@@ -360,15 +357,14 @@ provide('handleNavItemClick', handleNavItemClick);
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
             />
-            <AddStorageItem
-              v-if="isEditing"
-              category="Redskap"
-              @add-item="handleItemAdd"
-            />
+            <AddStorageItem v-if="isEditing" category="Redskap" @add-item="handleItemAdd" />
           </AccordionContent>
         </AccordionItem>
 
-        <AccordionItem v-if="activeCategory === 'all' || activeCategory === 'diverse'" value="diverse">
+        <AccordionItem
+          v-if="activeCategory === 'all' || activeCategory === 'diverse'"
+          value="diverse"
+        >
           <AccordionTrigger @click="toggleAccordion('diverse')">
             <div class="flex items-center gap-3">
               <Package />
@@ -382,11 +378,7 @@ provide('handleNavItemClick', handleNavItemClick);
               @update-item="handleItemUpdate"
               @delete-item="handleItemDelete"
             />
-            <AddStorageItem
-              v-if="isEditing"
-              category="Diverse"
-              @add-item="handleItemAdd"
-            />
+            <AddStorageItem v-if="isEditing" category="Diverse" @add-item="handleItemAdd" />
           </AccordionContent>
         </AccordionItem>
       </Accordion>

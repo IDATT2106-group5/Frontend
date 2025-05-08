@@ -386,20 +386,34 @@ export const useMapStore = defineStore('map', {
       }
 
       try {
-        this.showNotification("Henter din posisjon...");
+        this.showNotification("Genererer rute...");
 
         let startCoords;
 
         try {
-          startCoords = await GeolocationService.getBrowserLocationOnly({
+          const pos = await GeolocationService.getBrowserLocation({
             enableHighAccuracy: true,
-            timeout: 10000
-          }).then(pos => [pos.coords.latitude, pos.coords.longitude]);
-        } catch (geolocationError) {
-          console.error("Browser geolocation failed:", geolocationError);
-          this.showNotification("Kunne ikke hente din posisjon. Gi tillatelse til stedstjenester i nettleseren.");
-          this.routeError = "Kunne ikke hente din posisjon: " + GeolocationService.getErrorMessage(geolocationError);
-          return;
+            timeout: 10000,
+            maximumAge: 0
+          });
+          startCoords = [pos.coords.latitude, pos.coords.longitude];
+          // cache this for any future calls
+          GeolocationService._lastKnownPosition = startCoords;
+        } catch (err) {
+          console.warn("Browser geolocation failed, falling back to cache/IP:", err);
+
+          // —— 2) Fallback to cached-or-IP location ——
+          try {
+            startCoords = await GeolocationService.getCachedLocation();
+          } catch (cacheErr) {
+            console.error("No cached location available:", cacheErr);
+          }
+
+          if (!startCoords) {
+            this.routeError = "Kunne ikke hente din posisjon.";
+            this.showNotification("Kunne ikke hente din posisjon.");
+            return;
+          }
         }
 
         const endCoords = [markerData.lat, markerData.lng];
@@ -411,6 +425,21 @@ export const useMapStore = defineStore('map', {
         console.error("Error creating route to marker:", error);
         this.routeError = "Kunne ikke generere rute. " + (error.message || "");
         this.showNotification("Kunne ikke generere rute.");
+      }
+    },
+
+    /**
+     * Get user's current position as a promise
+     * @returns {Promise<Array>} User position as [lat, lng]
+     */
+    async getUserPosition() {
+      try {
+        return await GeolocationService.getUserLocation();
+      } catch (error) {
+        console.error("Error getting user position:", error);
+        this.routeError = "Kunne ikke hente din posisjon: " + GeolocationService.getErrorMessage(
+          error);
+        return null;
       }
     },
 
@@ -676,18 +705,19 @@ export const useMapStore = defineStore('map', {
      * Clean up map layers
      */
     cleanupMapLayers() {
-      // Clean up marker layers
+      // First clean up any active routes
+      this.clearRoute();
+
       this.removeAllMarkerLayers();
 
-      // Clean up incident layer
       if (this.incidentLayer && this.map) {
         this.incidentLayer.clearLayers();
         this.incidentLayer.removeFrom(this.map);
         this.incidentLayer = null;
       }
 
-      // Clean up the map
       if (this.map) {
+        this.map.off();
         MapService.cleanupMap(this.map);
         this.map = null;
       }
@@ -718,11 +748,27 @@ export const useMapStore = defineStore('map', {
           startCoords,
           endCoords
         });
+        this.routeError = "Kan ikke generere rute: mangler kart eller koordinater";
         return;
       }
 
-      try {
+      this.isGeneratingRoute = true;
+      this.routeError = null;
 
+      try {
+        console.log("Generating route from", startCoords, "to", endCoords);
+
+        // Store the coordinates
+        this.routeStart = startCoords;
+        this.routeEnd = endCoords;
+
+        // Make sure RoutingService is imported
+        const RoutingService = await import('@/service/map/routingService').then(m => m.default);
+
+        // Show the route
+        this.activeRoute = RoutingService.showRoute(this.map, startCoords, endCoords);
+
+        // Center map to fit the route
         const bounds = L.latLngBounds([
           L.latLng(startCoords[0], startCoords[1]),
           L.latLng(endCoords[0], endCoords[1])
@@ -730,6 +776,7 @@ export const useMapStore = defineStore('map', {
 
         this.map.fitBounds(bounds);
 
+        console.log("Route generated successfully");
       } catch (error) {
         console.error("Error generating route:", error);
         this.routeError = "Kunne ikke generere rute. Vennligst prøv igjen senere.";
@@ -742,13 +789,9 @@ export const useMapStore = defineStore('map', {
      * Clear the current route
      */
     clearRoute() {
-      if (RoutingService && typeof RoutingService.clearRoute === 'function') {
-        RoutingService.clearRoute();
-      }
+      RoutingService.clearRoute();
       this.activeRoute = null;
-      this.routeStart = null;
-      this.routeEnd = null;
-      this.routeError = null;
+      this.routeStart = this.routeEnd = null;
     },
 
     /**

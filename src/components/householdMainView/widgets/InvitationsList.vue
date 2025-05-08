@@ -8,15 +8,20 @@ const store = useHouseholdStore()
 const page = ref(1)
 const per = 5
 
+const pendingInvitations = computed(() =>
+  store.sentInvitations.filter(inv => inv.status === 'PENDING')
+)
+
 const total = computed(() =>
-  Math.max(1, Math.ceil(store.sentInvitations.length / per))
+  Math.max(1, Math.ceil(pendingInvitations.value.length / per))
 )
 
 const displayed = computed(() => {
   const start = (page.value - 1) * per
-  return store.sentInvitations.slice(start, start + per)
+  return pendingInvitations.value.slice(start, start + per)
 })
 </script>
+
 
 <template>
   <div class="bg-white rounded shadow p-4">

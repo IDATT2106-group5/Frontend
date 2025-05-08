@@ -1,59 +1,71 @@
 <template>
-  <div class="closest-facility-panel">
-    <h3>Finn nærmeste</h3>
-
-    <div class="type-selection">
-      <select v-model="selectedType" class="type-dropdown">
-        <option value="">Alle typer</option>
-        <option value="SHELTER">Tilfluktsrom</option>
-        <option value="HOSPITAL">Sykehus</option>
-        <option value="MEETINGPLACE">Møteplass</option>
-        <option value="FOODSTATION">Matstasjon</option>
-      </select>
+  <div :class="{ collapsed: isCollapsed }" class="closest-facility-panel">
+    <!-- Collapsed state -->
+    <div v-if="isCollapsed" class="collapsed-content" @click="toggleCollapse">
+      <div class="collapsed-text">Vis rute til</div>
+      <div class="arrow-down">↓</div>
     </div>
 
-    <button
-      @click="findClosestFacility"
-      class="find-button"
-      :disabled="isLoading || !userLocation"
-    >
-      <span v-if="!isLoading">Finn nærmeste</span>
-      <span v-else>Søker...</span>
-    </button>
+    <!-- Expanded state -->
+    <div v-else class="expanded-content">
+      <div class="panel-header">
+        <h3>Vis rute til</h3>
+        <button class="collapse-button" @click="toggleCollapse">↑</button>
+      </div>
 
-    <div v-if="locationError" class="error-message">
-      <p>{{ locationError }}</p>
-      <button @click="requestLocation" class="retry-button">
-        Prøv igjen
+      <div class="type-selection">
+        <select v-model="selectedType" class="type-dropdown">
+          <option value="">Alle typer</option>
+          <option value="SHELTER">Tilfluktsrom</option>
+          <option value="HOSPITAL">Sykehus</option>
+          <option value="MEETINGPLACE">Møteplass</option>
+          <option value="FOODSTATION">Matstasjon</option>
+        </select>
+      </div>
+
+      <button
+        :disabled="isLoading || !userLocation"
+        class="find-button"
+        @click="findClosestFacility"
+      >
+        <span v-if="!isLoading">Finn nærmeste</span>
+        <span v-else>Søker...</span>
       </button>
-    </div>
 
-    <div v-if="closestFacility" class="facility-info">
-      <h4>{{ closestFacility.name }}</h4>
-      <p v-if="closestFacility.address">{{ closestFacility.address }}</p>
-      <p class="distance">{{ formatDistance(closestFacility.distance) }} unna</p>
-
-      <div class="route-actions">
-        <button @click="showRoute" class="route-button">
-          <span v-if="!isRouteActive">Vis rute</span>
-          <span v-else>Skjul rute</span>
+      <div v-if="locationError" class="error-message">
+        <p>{{ locationError }}</p>
+        <button class="retry-button" @click="requestLocation">
+          Prøv igjen
         </button>
       </div>
-    </div>
 
-    <div v-if="routeError" class="error-message">
-      {{ routeError }}
+      <div v-if="closestFacility" class="facility-info">
+        <h4>{{ closestFacility.name }}</h4>
+        <p v-if="closestFacility.address">{{ closestFacility.address }}</p>
+        <p class="distance">{{ formatDistance(closestFacility.distance) }} unna</p>
+
+        <div class="route-actions">
+          <button class="route-button" @click="showRoute">
+            <span v-if="!isRouteActive">Vis rute</span>
+            <span v-else>Skjul rute</span>
+          </button>
+        </div>
+      </div>
+
+
+      <div v-if="routeError" class="error-message">
+        {{ routeError }}
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { useMapStore } from '@/stores/map/mapStore';
-import { storeToRefs } from 'pinia';
+import {onMounted, onUnmounted, ref} from 'vue';
+import {useMapStore} from '@/stores/map/mapStore';
+import {storeToRefs} from 'pinia';
 import MarkerService from '@/service/map/markerService';
 import GeolocationService from '@/service/map/geoLocationService';
-
 
 // Component state
 const selectedType = ref('SHELTER'); // Default to shelters
@@ -63,10 +75,16 @@ const isLoading = ref(false);
 const locationError = ref(null);
 const watchId = ref(null);
 const isRouteActive = ref(false);
+const isCollapsed = ref(false); // New state for collapse functionality
 
 // Map store
 const mapStore = useMapStore();
-const { routeError } = storeToRefs(mapStore);
+const {routeError} = storeToRefs(mapStore);
+
+// Toggle collapsed state
+const toggleCollapse = () => {
+  isCollapsed.value = !isCollapsed.value;
+};
 
 // Request user's location when component mounts
 onMounted(() => {
@@ -80,6 +98,7 @@ onUnmounted(() => {
   }
   if (isRouteActive.value) {
     mapStore.clearRoute();
+    isRouteActive.value = false;
   }
 });
 
@@ -156,14 +175,14 @@ const findClosestFacility = async () => {
 
 // Show/hide route
 const showRoute = () => {
-  if (!closestFacility.value || !userLocation.value) return;
+  if (!closestFacility.value || !userLocation.value) {
+    return;
+  }
 
   if (isRouteActive.value) {
-    // If route is already active, clear it
     mapStore.clearRoute();
     isRouteActive.value = false;
   } else {
-    // Generate a new route
     const startCoords = userLocation.value;
     const endCoords = [closestFacility.value.lat, closestFacility.value.lng];
 
@@ -174,7 +193,9 @@ const showRoute = () => {
 
 // Format distance for display
 const formatDistance = (distance) => {
-  if (!distance) return '';
+  if (!distance) {
+    return '';
+  }
 
   if (distance < 1) {
     return `${Math.round(distance * 1000)} meter`;
@@ -187,14 +208,73 @@ const formatDistance = (distance) => {
 .closest-facility-panel {
   background: white;
   border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  width: 250px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  position: absolute;
+  transition: all 0.3s ease;
+  top: 16px;
+  right: 16px;
+  max-width: 300px;
+  width: calc(100% - 20px);
+  box-sizing: border-box;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+/* Expanded state */
+.closest-facility-panel:not(.collapsed) {
+  padding: 12px;
+  width: 300px;
+}
+
+/* Collapsed state */
+.closest-facility-panel.collapsed {
+  width: auto;
+  height: auto;
+  cursor: pointer;
+  padding: 8px 14px;
+  right: 8px;
+}
+
+.closest-facility-panel .expanded-content {
+  padding: 8px;
+}
+
+.collapsed-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.arrow-down {
+  font-size: 18px;
+}
+
+.collapsed-text {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.collapse-button {
+  background: none;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 0;
+  color: #777;
 }
 
 h3 {
   margin-top: 0;
-  margin-bottom: 16px;
+  margin-bottom: 0;
   font-size: 16px;
 }
 
@@ -243,18 +323,20 @@ h3 {
 
 .route-actions {
   display: flex;
+  flex-direction: column;
   gap: 8px;
   margin-top: 12px;
 }
 
+/* Updated route button styling */
 .route-button {
   flex: 1;
   padding: 8px;
-  background-color: #4caf50;
+  background-color: #1976d2; /* Blue background */
   color: white;
-  border: none;
   border-radius: 4px;
   cursor: pointer;
+  font-weight: 500;
 }
 
 .retry-button {
@@ -278,8 +360,11 @@ h3 {
 }
 
 @media (max-width: 767px) {
-  .closest-facility-panel {
-    width: 100%;
+  .closest-facility-panel:not(.collapsed) {
+    width: 280px;
+    max-width: 100%;
+    margin: 0 8px;
+    right: 10px;
   }
 }
 </style>

@@ -170,7 +170,12 @@ class MarkerConfigService {
       ${markerData.contact_info ? `<p><strong>Kontakt:</strong> ${markerData.contact_info}</p>` : ''}
       ${markerData.description ? `<p><strong>Beskrivelse:</strong> ${markerData.description}</p>` : ''}
       <div class="marker-popup-actions">
-        <button class="marker-route-button" onclick="window.createRouteToMarker(${JSON.stringify(markerData).replace(/"/g, '&quot;')})">
+        <button
+          class="marker-route-button"
+          style="background-color: #1976d2; color: white; border-radius: 4px; padding: 8px 16px; font-size: 14px; cursor: pointer; transition: background-color 0.2s;"
+          onmouseover="this.style.backgroundColor='#1565c0'"
+          onmouseout="this.style.backgroundColor='#1976d2'"
+          onclick="window.createRouteToMarker(${JSON.stringify(markerData).replace(/"/g, '&quot;')})">
           Vis rute hit
         </button>
       </div>
