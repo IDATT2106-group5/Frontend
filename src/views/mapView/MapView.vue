@@ -514,7 +514,7 @@ export default {
 /* Map Notification */
 .map-notification {
   position: absolute;
-  top: 16px;
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
   background-color: rgba(0, 0, 0, 0.7);
