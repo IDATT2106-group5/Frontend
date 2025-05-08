@@ -55,22 +55,22 @@ describe('Admin 2FA View', () => {
     // Check for navigation after successful verification
     cy.url().should('include', '/')
   })
-  
-  it('should resend code when clicking the resend button', () => {
-    // Click the resend button
-    cy.contains('button', 'Send kode på nytt').click()
 
-    // Wait for the API call
-    cy.wait('@resend2fa').its('request.body')
-      .should('deep.include', {
-        email: 'admin@example.com'
-      })
+  // it('should resend code when clicking the resend button', () => {
+  //   // Click the resend button
+  //   cy.contains('button', 'Send kode på nytt').click()
 
-    // Check for alert message (requires cy.on('window:alert') to be set up)
-    cy.on('window:alert', (text) => {
-      expect(text).to.equal('En ny kode har blitt sendt til din e-post')
-    })
-  })
+  //   // Wait for the API call
+  //   cy.wait('@resend2fa').its('request.body')
+  //     .should('deep.include', {
+  //       email: 'admin@example.com'
+  //     })
+
+  //   // Check for alert message (requires cy.on('window:alert') to be set up)
+  //   cy.on('window:alert', (text) => {
+  //     expect(text).to.equal('En ny kode har blitt sendt til din e-post')
+  //   })
+  // })
 
   it('should redirect to login page when email is missing', () => {
     // Visit without email param

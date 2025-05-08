@@ -14,6 +14,15 @@ vi.mock('@/stores/UserStore', () => ({
   })
 }))
 
+// Mock ConfirmModal component
+vi.mock('@/components/householdMainView/modals/ConfirmModal.vue', () => ({
+  default: {
+    name: 'ConfirmModal',
+    template: '<div class="mock-modal"><button class="bg-red-600" @click="$emit(\'confirm\')">{{ confirmText }}</button></div>',
+    props: ['title', 'description', 'confirmText', 'cancelText', 'showCancel']
+  }
+}))
+
 // Create a mock router
 const createTestRouter = () =>
   createRouter({
@@ -98,22 +107,22 @@ describe('Admin2FAView.vue', () => {
     expect(router.push).toHaveBeenCalledWith('/')
   })
 
-  it('calls resendCode when resend button is clicked', async () => {
+  it('calls resendCode when resend button is clicked and confirmed', async () => {
     // Mock the resend2FACode function
     userStore.resend2FACode.mockResolvedValueOnce({})
 
-    // Mock window.alert
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {})
-
-    // Find and click resend button
+    // Find and click resend button to open modal
     const resendButton = wrapper.find('button.text-blue-600')
     await resendButton.trigger('click')
 
+    // Verify confirmation modal is displayed
+    expect(wrapper.findComponent({ name: 'ConfirmModal' }).exists()).toBe(true)
+
+    // Find and click confirm button in the modal
+    const confirmButton = wrapper.find('.bg-red-600')
+    await confirmButton.trigger('click')
+
     // Verify resend function was called with correct email
     expect(userStore.resend2FACode).toHaveBeenCalledWith('test@example.com')
-    expect(alertSpy).toHaveBeenCalledWith('En ny kode har blitt sendt til din e-post')
-
-    // Restore the original alert implementation
-    alertSpy.mockRestore()
   })
 })
