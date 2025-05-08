@@ -1,59 +1,3 @@
-<template>
-  <div class="filter-container">
-    <div class="filter-header">
-      <h3>Filtrer</h3>
-    </div>
-
-    <div v-if="markerTypes.length > 0">
-      <div class="filter-actions">
-        <Button
-          variant="outline"
-          size="sm"
-          class="show-all-btn"
-          @click="showAllMarkers"
-        >
-          Vis alle
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          class="hide-all-btn"
-          @click="hideAllMarkers"
-        >
-          Skjul alle
-        </Button>
-      </div>
-
-      <div class="filter-options">
-        <div
-          v-for="marker in markerTypes"
-          :key="marker.id"
-          class="filter-option"
-        >
-          <label class="checkbox-container">
-            <input
-              type="checkbox"
-              :checked="marker.visible"
-              @change="toggleMarker(marker.id)"
-            />
-            <span class="checkmark"></span>
-
-            <div class="marker-details">
-              <div class="marker-icon" :style="{ color: marker.color }">
-                <component :is="marker.lucideIcon" size="20" :color="marker.color" />
-              </div>
-              <div class="marker-name">{{ marker.title }}</div>
-            </div>
-          </label>
-        </div>
-      </div>
-    </div>
-    <div v-else class="empty-state">
-      Ingen markørtyper tilgjengelig
-    </div>
-  </div>
-</template>
-
 <script>
 import { useMapStore } from '@/stores/map/mapStore';
 import { storeToRefs } from 'pinia';
@@ -96,180 +40,61 @@ export default {
 };
 </script>
 
-<style scoped>
-.filter-container {
-  background-color: white;
-  border-radius: 12px;
-  padding: 16px;
-  width: 240px;
-  max-width: 100%;
-}
+<template>
+  <div class="bg-white rounded-xl p-4 w-60 max-w-full md:w-60 w-full md:rounded-xl rounded-lg md:p-4 p-3">
+    <div class="border-b border-gray-200 mb-3 pb-2">
+      <h3 class="md:text-base text-sm m-0 font-medium">Filtrer</h3>
+    </div>
 
-.filter-header {
-  border-bottom: 1px solid #eee;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-}
+    <div v-if="markerTypes.length > 0">
+      <div class="flex mb-4 gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          class="flex-1"
+          @click="showAllMarkers"
+        >
+          Vis alle
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          class="flex-1"
+          @click="hideAllMarkers"
+        >
+          Skjul alle
+        </Button>
+      </div>
 
-.filter-header h3 {
-  font-size: 16px;
-  margin: 0;
-  font-weight: 500;
-}
+      <div class="flex flex-col md:gap-3 gap-2 md:max-h-[300px] max-h-[200px] overflow-y-auto">
+        <div
+          v-for="marker in markerTypes"
+          :key="marker.id"
+          class="rounded-lg transition-colors hover:bg-gray-100"
+        >
+          <label class="relative flex items-center cursor-pointer md:p-1.5 p-1 w-full">
+            <input
+              type="checkbox"
+              :checked="marker.visible"
+              @change="toggleMarker(marker.id)"
+              class="sr-only"
+            />
+            <span class="relative inline-block md:w-[18px] md:h-[18px] w-4 h-4 border border-gray-300 rounded mr-2 bg-white" :class="{ 'border-blue-500': marker.visible }">
+              <span v-if="marker.visible" class="absolute md:left-1 left-0.5 md:top-0.5 top-0.5 md:w-2 w-1.5 md:h-3 h-2.5 border-r-2 border-b-2 border-blue-500 transform rotate-45"></span>
+            </span>
 
-.filter-actions {
-  display: flex;
-  margin-bottom: 16px;
-  gap: 8px;
-}
-
-.show-all-btn, .hide-all-btn {
-  flex: 1;
-}
-
-.filter-options {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.filter-option {
-  border-radius: 8px;
-  transition: background-color 0.2s;
-}
-
-.filter-option:hover {
-  background-color: #f5f5f5;
-}
-
-/* Checkbox styles */
-.checkbox-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  padding: 6px;
-  width: 100%;
-}
-
-.checkbox-container input {
-  position: absolute;
-  opacity: 0;
-  cursor: pointer;
-  height: 0;
-  width: 0;
-}
-
-.checkmark {
-  position: absolute;
-  left: 6px;
-  height: 18px;
-  width: 18px;
-  background-color: #eee;
-  border-radius: 3px;
-}
-
-.checkbox-container:hover input ~ .checkmark {
-  background-color: #ccc;
-}
-
-.checkbox-container input:checked ~ .checkmark {
-  background-color: #2196F3;
-}
-
-.checkmark:after {
-  content: "";
-  position: absolute;
-  display: none;
-}
-
-.checkbox-container input:checked ~ .checkmark:after {
-  display: block;
-}
-
-.checkbox-container .checkmark:after {
-  left: 6px;
-  top: 3px;
-  width: 5px;
-  height: 10px;
-  border: solid white;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
-}
-
-.marker-details {
-  display: flex;
-  align-items: center;
-  margin-left: 28px;
-}
-
-.marker-icon {
-  width: 28px;
-  height: 28px;
-  margin-right: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.marker-name {
-  font-size: 14px;
-}
-
-.empty-state {
-  padding: 12px;
-  text-align: center;
-  color: #666;
-  font-size: 14px;
-}
-
-/* Mobile styles */
-@media (max-width: 767px) {
-  .filter-container {
-    width: 100%;
-    border-radius: 8px;
-    padding: 12px;
-  }
-
-  .filter-header h3 {
-    font-size: 14px;
-  }
-
-  .filter-actions {
-    margin-bottom: 12px;
-  }
-
-  .filter-options {
-    gap: 8px;
-    max-height: 200px;
-  }
-
-  .checkbox-container {
-    padding: 8px 4px;
-  }
-
-  .checkmark {
-    height: 16px;
-    width: 16px;
-  }
-
-  .checkbox-container .checkmark:after {
-    left: 5px;
-    top: 2px;
-    width: 4px;
-    height: 8px;
-  }
-
-  .marker-icon {
-    width: 24px;
-    height: 24px;
-    margin-right: 8px;
-  }
-
-  .marker-name {
-    font-size: 13px;
-  }
-}
-</style>
+            <div class="flex items-center ml-2">
+              <div class="md:w-7 w-6 md:h-7 h-6 md:mr-2.5 mr-2 flex items-center justify-center" :style="{ color: marker.color }">
+                <component :is="marker.lucideIcon" :size="isMobileView ? 16 : 20" :color="marker.color" />
+              </div>
+              <div class="md:text-sm text-xs">{{ marker.title }}</div>
+            </div>
+          </label>
+        </div>
+      </div>
+    </div>
+    <div v-else class="py-3 text-center text-gray-500 md:text-sm text-xs">
+      Ingen markørtyper tilgjengelig
+    </div>
+  </div>
+</template>

@@ -102,7 +102,7 @@ const hasMoreItems = computed(() => {
       v-for="(news, index) in filteredNews"
       :key="index"
       class="border rounded-lg p-4 mb-4 shadow-sm fill-white bg-white"
-      :class="{ 'border-blue-200': !news.read, 'border-white': news.read }"
+      :class="{ 'border-blue-400': !news.read, 'border-white': news.read }"
     >
       <h2 class="font-bold text-lg mb-1">{{ news.title }}</h2>
       <p class="text-sm text-gray-500 mb-2">
