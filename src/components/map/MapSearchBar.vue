@@ -1,18 +1,18 @@
 <template>
-  <div class="search-container">
-    <div class="search-input-container">
+  <div class="relative w-full max-w-full md:max-w-[400px] z-[1001]">
+    <div class="relative flex items-center">
       <input
         v-model="searchInput"
         type="search"
         placeholder="Søk etter adresse eller sted..."
-        class="search-input"
+        class="w-full py-2 px-3 md:py-2.5 md:px-4 border-none rounded-lg bg-white shadow-md text-xs md:text-sm transition-shadow focus:outline-none focus:shadow-lg [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-cancel-button]:hidden"
         @keydown="onKeyDown"
         :disabled="isSearching"
       />
-      <div v-if="isSearching" class="search-spinner"></div>
+      <div v-if="isSearching" class="absolute right-3 w-4 h-4 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
       <button
         v-else-if="searchInput"
-        class="search-clear-button"
+        class="absolute right-10 bg-transparent border-none text-gray-500 text-lg cursor-pointer p-0 flex items-center justify-center w-[18px] h-[18px] hover:text-gray-700"
         @click="clearSearch"
         aria-label="Tøm søk"
       >
@@ -20,31 +20,31 @@
       </button>
       <button
         v-if="searchInput && !isSearching"
-        class="search-button"
+        class="absolute right-3 bg-transparent border-none cursor-pointer p-0 flex items-center justify-center w-6 h-6"
         @click="triggerSearch"
         aria-label="Søk"
       >
-        <SearchIcon class="search-icon" size="16" />
+        <SearchIcon class="text-gray-600 transition-colors hover:text-black" size="16" />
       </button>
     </div>
 
     <!-- Search results dropdown -->
-    <div v-if="searchResults.length > 0" class="search-results">
+    <div v-if="searchResults.length > 0" class="absolute top-full left-0 right-0 bg-white rounded-b-lg shadow-lg mt-1 max-h-[250px] md:max-h-[300px] overflow-y-auto z-[2000]">
       <div
         v-for="result in searchResults"
         :key="result.id"
-        class="search-result-item"
+        class="py-2.5 px-3 md:py-3 md:px-4 cursor-pointer border-b border-gray-100 last:border-b-0 last:rounded-b-lg transition-colors hover:bg-gray-50"
         @click="selectResult(result)"
       >
-        <div class="search-result-name">{{ result.name }}</div>
-        <div class="search-result-address">
+        <div class="font-medium text-xs md:text-sm mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">{{ result.name }}</div>
+        <div class="text-[10px] md:text-xs text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis">
           {{ formatAddress(result.address) }}
         </div>
       </div>
     </div>
 
     <!-- Error message -->
-    <div v-if="searchError" class="search-error">
+    <div v-if="searchError" class="bg-red-50 text-red-600 py-2 px-3 rounded-md mt-2 text-xs md:text-sm shadow-md">
       {{ searchError }}
     </div>
   </div>
@@ -138,8 +138,12 @@ export default {
 
     // Close search results when clicking outside
     const handleClickOutside = (event) => {
-      const searchContainer = document.querySelector('.search-container');
-      if (searchContainer && !searchContainer.contains(event.target)) {
+      // Use the current element instead of searching by class
+      const el = event.target;
+      const searchContainer = el.closest('.relative.w-full.max-w-\\[400px\\]');
+
+      // If click was outside search container
+      if (!searchContainer) {
         mapStore.searchResults = [];
       }
     };
@@ -178,172 +182,3 @@ export default {
   }
 };
 </script>
-
-<style scoped>
-.search-container {
-  position: relative;
-  width: 100%;
-  max-width: 400px;
-  z-index: 1001;
-}
-
-.search-input-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-/* Hide browser's default clear button for search inputs */
-.search-input::-webkit-search-cancel-button {
-  -webkit-appearance: none;
-  appearance: none;
-  display: none;
-}
-
-.search-input {
-  width: 100%;
-  padding: 10px 36px 10px 16px;
-  border: none;
-  border-radius: 8px;
-  background-color: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  font-size: 14px;
-  transition: box-shadow 0.2s ease;
-}
-
-.search-input:focus {
-  outline: none;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
-}
-
-.search-spinner {
-  position: absolute;
-  right: 12px;
-  width: 16px;
-  height: 16px;
-  border: 2px solid #f3f3f3;
-  border-top: 2px solid #3498db;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-.search-clear-button {
-  position: absolute;
-  right: 40px;
-  background: none;
-  border: none;
-  color: #777;
-  font-size: 18px;
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-}
-
-.search-clear-button:hover {
-  color: #333;
-}
-
-.search-button {
-  position: absolute;
-  right: 12px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-}
-
-.search-icon {
-  color: #555;
-  transition: color 0.2s;
-}
-
-.search-button:hover .search-icon {
-  color: #000;
-}
-
-.search-results {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background-color: white;
-  border-radius: 0 0 8px 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  margin-top: 4px;
-  max-height: 300px;
-  overflow-y: auto;
-  z-index: 2000;
-}
-
-.search-result-item {
-  padding: 12px 16px;
-  cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
-  transition: background-color 0.2s;
-}
-
-.search-result-item:last-child {
-  border-bottom: none;
-  border-radius: 0 0 8px 8px;
-}
-
-.search-result-item:hover {
-  background-color: #f8f8f8;
-}
-
-.search-result-name {
-  font-weight: 500;
-  font-size: 14px;
-  margin-bottom: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.search-result-address {
-  font-size: 12px;
-  color: #666;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.search-error {
-  background-color: #fff3f3;
-  color: #e53935;
-  padding: 8px 12px;
-  border-radius: 6px;
-  margin-top: 8px;
-  font-size: 13px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@media (max-width: 768px) {
-  .search-container {
-    max-width: 100%;
-  }
-
-  .search-input {
-    padding: 8px 32px 8px 12px;
-    font-size: 13px;
-  }
-
-  .search-result-item {
-    padding: 10px 12px;
-  }
-}
-</style>
