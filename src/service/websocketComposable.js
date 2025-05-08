@@ -41,7 +41,7 @@ export default function useWebSocket() {
         onConnected: () => {
           connected.value = true
           if (userStore.user?.id) {
-            fetchNotifications(userStore.user.id)
+            fetchNotifications()
           }
         },
         onDisconnected: () => {
@@ -50,7 +50,7 @@ export default function useWebSocket() {
         onNotification: (message) => {
           console.log('Notification received', message)
           if (userStore.user?.id) {
-            fetchNotifications(userStore.user.id)
+            fetchNotifications()
           }
           if (message.type === 'INCIDENT') {
             currentIncident.value = message
@@ -111,18 +111,16 @@ export default function useWebSocket() {
     notificationCount.value = 0
   }
 
-  async function fetchNotifications(userId) {
-    if (!userId || !userStore.token) return
+  async function fetchNotifications() {
+    if (!userStore.token) return
 
     try {
-      const requestData = { userId: userId }
       const response = await fetch('http://localhost:8080/api/notifications/get', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${userStore.token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestData),
       })
 
       const data = await response.json()

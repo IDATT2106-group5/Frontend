@@ -93,7 +93,7 @@ export const useHouseholdStore = defineStore('household', {
           this.hasHousehold = false;
           return false;
         }
-        const response = await HouseholdService.getHouseholdDetailsByUserId(userStore.user.id);
+        const response = await HouseholdService.getHouseholdDetailsByUserId();
         this.currentHousehold = {
           ...response.household,
           ownerId: response.household.owner.id
