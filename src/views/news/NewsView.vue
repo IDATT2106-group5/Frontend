@@ -1,7 +1,7 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useNewsStore } from '@/stores/NewsStore.js'
+import { useNewsStore } from '@/stores/news/NewsStore.js'
 
 const newsStore = useNewsStore()
 const itemsToShow = ref(5) // Number of news items to display initially
@@ -11,7 +11,7 @@ const currentFilter = ref('all') // Current filter for news items ('all', 'unrea
  * Fetches news items when the component is mounted.
  */
 onMounted(() => {
-  newsStore.fetchNews()
+  newsStore.fetchAllNews()
 })
 
 /**
@@ -50,7 +50,7 @@ function markAsRead(news) {
  * @returns {Array} The filtered list of news items.
  */
 const allFilteredNews = computed(() => {
-  if (currentFilter.value === 'all') return newsStore.allNews
+  if (currentFilter.value === 'all') return newsStore.getAllNews
   if (currentFilter.value === 'unread') return newsStore.unreadNews
   if (currentFilter.value === 'read') return newsStore.readNews
   return []

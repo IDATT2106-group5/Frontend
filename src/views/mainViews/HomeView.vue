@@ -20,7 +20,7 @@ import { useDateStore } from '@/stores/DateStore'
  * Imports the news store to manage news related actions.
  * @see useNewsStore
  */
-import { useNewsStore } from '@/stores/NewsStore'
+import { useNewsStore } from '@/stores/news/NewsStore'
 
 /**
  * Imports the household store to manage household related actions.
