@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { Home } from 'lucide-vue-next'
 import { useHouseholdStore } from '@/stores/HouseholdStore'
+import AlreadyInHousehold from '@/components/householdMainView/AlreadyInHousehold.vue'
 
 const joinHouseholdId = ref('')
 const joinError      = ref('')
@@ -100,27 +101,31 @@ async function sendJoinRequest() {
 
 <template>
   <div class="flex flex-col items-center justify-center min-h-screen bg-gray-50 px-4">
-    <Home class="w-20 h-20 text-blue-700 mb-4" />
+    <!-- If already in a household, show that component -->
+    <AlreadyInHousehold v-if="householdStore.hasHousehold" />
 
-    <h1 class="text-2xl font-bold mb-2">Søk om å bli med i husstand</h1>
-    <p class="text-teal-800 mb-4">Skriv inn 8-tegns husstands-ID:</p>
+    <!-- Otherwise, show the join form -->
+    <div v-else class="w-full max-w-md space-y-4 text-center">
+      <Home class="w-20 h-20 text-blue-700 mb-4 mx-auto" />
 
-    <div class="w-full max-w-md space-y-4">
+      <h1 class="text-2xl font-bold mb-2">Søk om å bli med i husstand</h1>
+      <p class="text-teal-800 mb-4">Skriv inn 8-tegns husstands-ID:</p>
+
       <!-- Input + inline error -->
       <div>
         <label for="joinHouseholdId" class="block text-sm font-medium text-gray-700 mb-1">
           Husstands ID
         </label>
         <input
+          id="joinHouseholdId"
           v-model="joinHouseholdId"
           @input="onInput"
           @paste="onPaste"
           @blur="onBlur"
-          id="joinHouseholdId"
           type="text"
           inputmode="text"
           maxlength="8"
-          placeholder="A1234CDE"
+          placeholder="ABCD1234"
           class="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
         />
         <p v-if="joinError" class="mt-1 text-red-600 text-sm">
