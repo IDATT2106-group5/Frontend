@@ -8,11 +8,14 @@ import { useRouter, RouterLink } from "vue-router"
 
 const showPassword = ref(false)
 const loginError = ref("")
+const isSubmitting = ref(false)  
 const userStore = useUserStore()
 const router = useRouter()
 
 async function onSubmit(event) {
   event.preventDefault()
+  if (isSubmitting.value) return        
+  isSubmitting.value = true
   loginError.value = ""
 
   const formData = new FormData(event.target)
@@ -32,6 +35,8 @@ async function onSubmit(event) {
   } catch (error) {
     console.error("Login failed:", error)
     loginError.value = "Innlogging feilet. Sjekk brukernavn eller passord."
+  } finally {
+    isSubmitting.value = false
   }
 }
 </script>
@@ -87,20 +92,25 @@ async function onSubmit(event) {
         <Button
           type="submit"
           class="w-1/2 bg-black text-white h-10 flex items-center justify-center"
-          :disabled="userStore.isLoading"
-          >
-          <Loader v-if="userStore.isLoading" class="h-4 w-4 mr-2 animate-spin" aria-hidden="true"/>
-          <span>{{ userStore.isLoading ? 'Logger inn...' : 'Login' }}</span>
+          :disabled="userStore.isLoading || isSubmitting"
+        >
+          <Loader
+            v-if="userStore.isLoading || isSubmitting"
+            class="h-4 w-4 mr-2 animate-spin"
+            aria-hidden="true"
+          />
+          <span>
+            {{ (userStore.isLoading || isSubmitting) ? 'Logger inn...' : 'Login' }}
+          </span>
         </Button>
 
         <RouterLink
-          v-if="!userStore.isLoading"
+          v-if="!(userStore.isLoading || isSubmitting)"
           to="/register"
           class="w-1/2 text-center border-2 border-gray-300 bg-white text-black hover:bg-gray-300 rounded h-10 flex items-center justify-center"
         >
           Registrer
         </RouterLink>
-
         <span
           v-else
           class="w-1/2 text-center border-2 border-gray-300 bg-gray-100 text-gray-400 rounded h-10 flex items-center justify-center cursor-not-allowed"
