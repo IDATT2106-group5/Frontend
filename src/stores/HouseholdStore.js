@@ -579,7 +579,7 @@ export const useHouseholdStore = defineStore('household', {
         this.isLoading = true;
         this._verifyOwnership();
 
-        await HouseholdService.transferOwnership(this.currentHousehold.id, userId);
+        await HouseholdService.transferOwnership(userId);
 
         await this.checkCurrentHousehold();
         return true;
