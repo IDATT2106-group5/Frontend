@@ -9,6 +9,7 @@ import RoutingService from '@/service/map/routingService';
 import GeolocationService from '@/service/map/geoLocationService.js';
 
 
+
 import L from 'leaflet';
 
 export const useMapStore = defineStore('map', {
@@ -50,7 +51,7 @@ export const useMapStore = defineStore('map', {
     routeStart: null,
     routeEnd: null,
     isGeneratingRoute: false,
-    routeError: null
+    routeError: null,
   }),
 
   getters: {
@@ -313,10 +314,6 @@ export const useMapStore = defineStore('map', {
       return marker;
     },
 
-    /**
-     * Create a route from user's location to a selected map marker
-     * @param {Object} markerData - The marker to route to
-     */
     async createRouteToMarker(markerData) {
       if (!markerData || !markerData.lat || !markerData.lng) {
         console.error("Invalid marker data for routing:", markerData);
@@ -325,26 +322,42 @@ export const useMapStore = defineStore('map', {
       }
 
       try {
-        this.showNotification("Henter din posisjon...");
+        this.showNotification("Genererer rute...");
 
         let startCoords;
 
+        // —— 1) Force a fresh browser GPS fix ——
         try {
-          startCoords = await GeolocationService.getBrowserLocationOnly({
+          const pos = await GeolocationService.getBrowserLocation({
             enableHighAccuracy: true,
-            timeout: 10000
-          }).then(pos => [pos.coords.latitude, pos.coords.longitude]);
-        } catch (geolocationError) {
-          console.error("Browser geolocation failed:", geolocationError);
-          this.showNotification("Kunne ikke hente din posisjon. Gi tillatelse til stedstjenester i nettleseren.");
-          this.routeError = "Kunne ikke hente din posisjon: " + GeolocationService.getErrorMessage(geolocationError);
-          return;
+            timeout: 10000,
+            maximumAge: 0
+          });
+          startCoords = [pos.coords.latitude, pos.coords.longitude];
+          // cache this for any future calls
+          GeolocationService._lastKnownPosition = startCoords;
+        } catch (err) {
+          console.warn("Browser geolocation failed, falling back to cache/IP:", err);
+
+          // —— 2) Fallback to cached-or-IP location ——
+          try {
+            startCoords = await GeolocationService.getCachedLocation();
+          } catch (cacheErr) {
+            console.error("No cached location available:", cacheErr);
+          }
+
+          if (!startCoords) {
+            this.routeError = "Kunne ikke hente din posisjon.";
+            this.showNotification("Kunne ikke hente din posisjon.");
+            return;
+          }
         }
 
+        // Destination is still your marker’s lat/lng
         const endCoords = [markerData.lat, markerData.lng];
 
+        // Generate the route
         await this.generateRoute(startCoords, endCoords);
-
         this.showNotification(`Rute til ${markerData.name || 'markør'} generert`);
       } catch (error) {
         console.error("Error creating route to marker:", error);
@@ -352,6 +365,7 @@ export const useMapStore = defineStore('map', {
         this.showNotification("Kunne ikke generere rute.");
       }
     },
+
 
     /**
      * Get user's current position as a promise
@@ -542,6 +556,7 @@ export const useMapStore = defineStore('map', {
       });
     },
 
+
     /**
      * Toggle visibility for a specific marker type
      * @param {string} markerId - ID of the marker type to toggle
@@ -676,6 +691,9 @@ export const useMapStore = defineStore('map', {
      * Clean up map layers
      */
     cleanupMapLayers() {
+      // First clean up any active routes
+      this.clearRoute();
+
       // Clean up marker layers
       this.removeAllMarkerLayers();
 
@@ -686,8 +704,10 @@ export const useMapStore = defineStore('map', {
         this.incidentLayer = null;
       }
 
-      // Clean up the map
+      // Clean up the map - do this last
       if (this.map) {
+        // Remove any event listeners first
+        this.map.off();
         MapService.cleanupMap(this.map);
         this.map = null;
       }
@@ -735,7 +755,7 @@ export const useMapStore = defineStore('map', {
         // Make sure RoutingService is imported
         const RoutingService = await import('@/service/map/routingService').then(m => m.default);
 
-        // Show the route
+        // Show the route (with instructions initially hidden)
         this.activeRoute = RoutingService.showRoute(this.map, startCoords, endCoords);
 
         // Center map to fit the route
@@ -756,14 +776,31 @@ export const useMapStore = defineStore('map', {
     },
 
     /**
-     * Clear the current route
+     * Clear any existing route from the map
      */
     clearRoute() {
-      RoutingService.clearRoute();
-      this.activeRoute = null;
-      this.routeStart = null;
-      this.routeEnd = null;
-      this.routeError = null;
+      if (this.routingControl) {
+        try {
+          // First, remove any event listeners
+          if (this.routingControl._map) {
+            this.routingControl._map.off('zoomend', this.routingControl._onZoomEnd);
+          }
+
+          // Remove from map
+          this.routingControl.remove();
+
+          // Clean up references
+          this.routingControl = null;
+
+        } catch (error) {
+          console.warn("Error cleaning up routing control:", error);
+        }
+      }
+
+      // Also clean up the container reference
+      if (this.routingContainer) {
+        this.routingContainer = null;
+      }
     },
 
     /**
