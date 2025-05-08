@@ -1,55 +1,3 @@
-<template>
-  <div class="relative w-full max-w-full md:max-w-[400px] z-[1001]">
-    <div class="relative flex items-center">
-      <input
-        v-model="searchInput"
-        type="search"
-        placeholder="Søk etter adresse eller sted..."
-        class="w-full py-2 px-3 md:py-2.5 md:px-4 border-none rounded-lg bg-white shadow-md text-xs md:text-sm transition-shadow focus:outline-none focus:shadow-lg [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-cancel-button]:hidden"
-        @keydown="onKeyDown"
-        :disabled="isSearching"
-      />
-      <div v-if="isSearching" class="absolute right-3 w-4 h-4 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
-      <button
-        v-else-if="searchInput"
-        class="absolute right-10 bg-transparent border-none text-gray-500 text-lg cursor-pointer p-0 flex items-center justify-center w-[18px] h-[18px] hover:text-gray-700"
-        @click="clearSearch"
-        aria-label="Tøm søk"
-      >
-        ×
-      </button>
-      <button
-        v-if="searchInput && !isSearching"
-        class="absolute right-3 bg-transparent border-none cursor-pointer p-0 flex items-center justify-center w-6 h-6"
-        @click="triggerSearch"
-        aria-label="Søk"
-      >
-        <SearchIcon class="text-gray-600 transition-colors hover:text-black" size="16" />
-      </button>
-    </div>
-
-    <!-- Search results dropdown -->
-    <div v-if="searchResults.length > 0" class="absolute top-full left-0 right-0 bg-white rounded-b-lg shadow-lg mt-1 max-h-[250px] md:max-h-[300px] overflow-y-auto z-[2000]">
-      <div
-        v-for="result in searchResults"
-        :key="result.id"
-        class="py-2.5 px-3 md:py-3 md:px-4 cursor-pointer border-b border-gray-100 last:border-b-0 last:rounded-b-lg transition-colors hover:bg-gray-50"
-        @click="selectResult(result)"
-      >
-        <div class="font-medium text-xs md:text-sm mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">{{ result.name }}</div>
-        <div class="text-[10px] md:text-xs text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis">
-          {{ formatAddress(result.address) }}
-        </div>
-      </div>
-    </div>
-
-    <!-- Error message -->
-    <div v-if="searchError" class="bg-red-50 text-red-600 py-2 px-3 rounded-md mt-2 text-xs md:text-sm shadow-md">
-      {{ searchError }}
-    </div>
-  </div>
-</template>
-
 <script>
 import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { useMapStore } from '@/stores/map/mapStore';
@@ -182,3 +130,55 @@ export default {
   }
 };
 </script>
+
+<template>
+  <div class="relative w-full max-w-full md:max-w-[400px] z-[1001]">
+    <div class="relative flex items-center">
+      <input
+        v-model="searchInput"
+        type="search"
+        placeholder="Søk etter adresse eller sted..."
+        class="w-full py-2 px-3 md:py-2.5 md:px-4 border-none rounded-lg bg-white shadow-md text-xs md:text-sm transition-shadow focus:outline-none focus:shadow-lg [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-cancel-button]:hidden"
+        @keydown="onKeyDown"
+        :disabled="isSearching"
+      />
+      <div v-if="isSearching" class="absolute right-3 w-4 h-4 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
+      <button
+        v-else-if="searchInput"
+        class="absolute right-10 bg-transparent border-none text-gray-500 text-lg cursor-pointer p-0 flex items-center justify-center w-[18px] h-[18px] hover:text-gray-700"
+        @click="clearSearch"
+        aria-label="Tøm søk"
+      >
+        ×
+      </button>
+      <button
+        v-if="searchInput && !isSearching"
+        class="absolute right-3 bg-transparent border-none cursor-pointer p-0 flex items-center justify-center w-6 h-6"
+        @click="triggerSearch"
+        aria-label="Søk"
+      >
+        <SearchIcon class="text-gray-600 transition-colors hover:text-black" size="16" />
+      </button>
+    </div>
+
+    <!-- Search results dropdown -->
+    <div v-if="searchResults.length > 0" class="absolute top-full left-0 right-0 bg-white rounded-b-lg shadow-lg mt-1 max-h-[250px] md:max-h-[300px] overflow-y-auto z-[2000]">
+      <div
+        v-for="result in searchResults"
+        :key="result.id"
+        class="py-2.5 px-3 md:py-3 md:px-4 cursor-pointer border-b border-gray-100 last:border-b-0 last:rounded-b-lg transition-colors hover:bg-gray-50"
+        @click="selectResult(result)"
+      >
+        <div class="font-medium text-xs md:text-sm mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">{{ result.name }}</div>
+        <div class="text-[10px] md:text-xs text-gray-500 whitespace-nowrap overflow-hidden text-ellipsis">
+          {{ formatAddress(result.address) }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Error message -->
+    <div v-if="searchError" class="bg-red-50 text-red-600 py-2 px-3 rounded-md mt-2 text-xs md:text-sm shadow-md">
+      {{ searchError }}
+    </div>
+  </div>
+</template>

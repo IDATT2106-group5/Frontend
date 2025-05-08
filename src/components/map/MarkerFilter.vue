@@ -1,3 +1,45 @@
+<script>
+import { useMapStore } from '@/stores/map/mapStore';
+import { storeToRefs } from 'pinia';
+import Button from '@/components/ui/button/Button.vue';
+
+export default {
+  name: 'MarkerFilter',
+  components: {
+    Button
+  },
+  props: {
+    isMobileView: {
+      type: Boolean,
+      default: false
+    }
+  },
+  setup() {
+    const mapStore = useMapStore();
+    const { markerTypes } = storeToRefs(mapStore);
+
+    const toggleMarker = (markerId) => {
+      mapStore.toggleMarkerVisibility(markerId);
+    };
+
+    const showAllMarkers = () => {
+      mapStore.setAllMarkersVisibility(true);
+    };
+
+    const hideAllMarkers = () => {
+      mapStore.setAllMarkersVisibility(false);
+    };
+
+    return {
+      markerTypes,
+      toggleMarker,
+      showAllMarkers,
+      hideAllMarkers
+    };
+  }
+};
+</script>
+
 <template>
   <div class="bg-white rounded-xl p-4 w-60 max-w-full md:w-60 w-full md:rounded-xl rounded-lg md:p-4 p-3">
     <div class="border-b border-gray-200 mb-3 pb-2">
@@ -56,45 +98,3 @@
     </div>
   </div>
 </template>
-
-<script>
-import { useMapStore } from '@/stores/map/mapStore';
-import { storeToRefs } from 'pinia';
-import Button from '@/components/ui/button/Button.vue';
-
-export default {
-  name: 'MarkerFilter',
-  components: {
-    Button
-  },
-  props: {
-    isMobileView: {
-      type: Boolean,
-      default: false
-    }
-  },
-  setup() {
-    const mapStore = useMapStore();
-    const { markerTypes } = storeToRefs(mapStore);
-
-    const toggleMarker = (markerId) => {
-      mapStore.toggleMarkerVisibility(markerId);
-    };
-
-    const showAllMarkers = () => {
-      mapStore.setAllMarkersVisibility(true);
-    };
-
-    const hideAllMarkers = () => {
-      mapStore.setAllMarkersVisibility(false);
-    };
-
-    return {
-      markerTypes,
-      toggleMarker,
-      showAllMarkers,
-      hideAllMarkers
-    };
-  }
-};
-</script>
