@@ -5,7 +5,6 @@ import AdminUserOverview from "@/components/adminComponents/AdminUsersOverview.v
 import { useUserStore } from '@/stores/UserStore'
 import { useRouter } from 'vue-router'
 import { useAdminStore } from "@/stores/AdminStore";
-import AdminService from '@/service/adminService'
 import { CheckCircle, XCircle, Loader } from 'lucide-vue-next';
 
 const router = useRouter()
