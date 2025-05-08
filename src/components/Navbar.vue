@@ -11,10 +11,10 @@ import {
   Newspaper,
   Package,
   ShoppingCart,
-  User,
+  User
 } from 'lucide-vue-next'
 
-import { onBeforeUnmount, onMounted, ref, watch, computed } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import { RouterLink, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/UserStore'
@@ -35,7 +35,7 @@ const {
   showIncidentPopup,
   currentIncident,
   closeIncidentPopup,
-  connected,
+  connected
 } = useWebSocket()
 
 const { isSharing, startPositionSharing } = useLocationStore()
@@ -45,8 +45,7 @@ function toggleNotifications() {
   if (showNotifications.value) {
     resetNotificationCount()
 
-    // Mark all unread notifications as read
-    notifications.value.forEach(notification => {
+    notifications.value.forEach((notification) => {
       if (!notification.read) {
         markAsRead(notification.id)
       }
@@ -89,10 +88,28 @@ watch(
     if (isSharing && isConnected) {
       startPositionSharing()
     }
-  },
+  }
 )
 
-onBeforeUnmount(() => {})
+function getNotificationRoute(notification) {
+  switch (notification.type) {
+    case 'INVITATION':
+      return '/household'
+    case 'MEMBERSHIP_REQUEST':
+      return '/household'
+    case 'HOUSEHOLD':
+      return '/household'
+    case 'INCIDENT':
+      return '/map'
+    case 'STOCK_CONTROL':
+      return '/storage'
+    default:
+      return '/'
+  }
+}
+
+onBeforeUnmount(() => {
+})
 
 const notificationIcons = {
   INVITATION: Mail,
@@ -100,7 +117,7 @@ const notificationIcons = {
   INCIDENT: AlarmCheck,
   STOCK_CONTROL: Package,
   HOUSEHOLD: Home,
-  INFO: Info,
+  INFO: Info
 }
 </script>
 
@@ -123,10 +140,10 @@ const notificationIcons = {
         </div>
         <div class="p-6">
           <p class="text-lg mb-4">{{ currentIncident.message }}</p>
-          <p v-show=!locationStore.isSharing class="text-sm text-gray-500 mb-4">
+          <p v-show="!locationStore.isSharing" class="text-sm text-gray-500 mb-4">
             Del posisjon for å tillate husstanden din til å se posisjonen din
           </p>
-          <p v-show=locationStore.isSharing class="text-sm text-gray-500 mb-4">
+          <p v-show="locationStore.isSharing" class="text-sm text-gray-500 mb-4">
             Din posisjon er delt med husstanden din, gå til kartet for å se om de er i faresonen
           </p>
           <p class="text-sm text-gray-500 mb-6">
@@ -134,7 +151,7 @@ const notificationIcons = {
           </p>
           <div class="flex justify-center gap-3 pt-4">
             <Button
-              v-show=!locationStore.isSharing
+              v-show="!locationStore.isSharing"
               @click="startPositionSharing"
               variant="default"
               class="ml-2 bg-blue-600 hover:bg-blue-700"
@@ -294,22 +311,22 @@ const notificationIcons = {
         :key="notification.id"
         class="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer"
         :class="{ 'bg-blue-50': !notification.read }"
-        @click="handleMarkAsRead(notification.id)"
+        @click="router.push(getNotificationRoute(notification))"
       >
-        <div class="flex">
-          <div class="mr-3 text-gray-700">
-            <component :is="notificationIcons[notification.type] || Bell" class="w-5 h-5" />
-          </div>
-          <div class="flex-1">
-            <div class="flex justify-between items-start">
-              <span class="font-medium">{{ notification.message }}</span>
-              <span class="text-xs text-gray-500">{{
+      <div class="flex">
+        <div class="mr-3 text-gray-700">
+          <component :is="notificationIcons[notification.type] || Bell" class="w-5 h-5" />
+        </div>
+        <div class="flex-1">
+          <div class="flex justify-between items-start">
+            <span class="font-medium">{{ notification.message }}</span>
+            <span class="text-xs text-gray-500">{{
                 formatTimestamp(notification.timestamp)
               }}</span>
-            </div>
           </div>
         </div>
       </div>
     </div>
+  </div>
   </div>
 </template>
