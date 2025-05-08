@@ -303,6 +303,12 @@ export const useHouseholdStore = defineStore('household', {
       }
     },
 
+    /**
+ * Sends an invitation email & refreshes list.
+ * @param {string} email
+ * @returns {Promise<object>} the raw service response
+ * @throws {object} with `.response.data.message` on failure
+ */
     async inviteMember(email) {
       try {
         this._verifyOwnership();

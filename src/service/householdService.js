@@ -277,7 +277,16 @@ class HouseholdService extends BaseService {
     }
   }
 
-  
+    /**
+   * Search for a household by its ID.
+   *
+   * @param  {{ householdId: string }} options
+   * @param  {string} options.householdId  alphanumeric household identifier
+   * @throws {Error}   if `householdId` is not a nonempty alphanumeric string,
+   *                   or if the backend returns a 400/404
+   * @returns {Promise<{ id: string|number, name: string } | null>}
+   *                   the matching household record, or `null` if none found
+   */
   async searchHouseholdById({ householdId }) {
     if (typeof householdId !== 'string' || !/^[A-Za-z0-9]+$/.test(householdId)) {
       throw new Error('Ugyldig husstands-ID')
