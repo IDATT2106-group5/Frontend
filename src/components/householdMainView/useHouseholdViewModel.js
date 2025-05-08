@@ -1,5 +1,4 @@
-// Component responsible for the logic for handling household-related actions and state management
-import { ref, computed, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useHouseholdStore } from '@/stores/HouseholdStore'
 
@@ -7,59 +6,45 @@ export default function useHousehold() {
   const router = useRouter()
   const householdStore = useHouseholdStore()
 
-  const isLoading = ref(true)
-  const error = ref('')
-  const hasHousehold = ref(false)
-
-  const showAddForm = ref(false)
-  const showInviteForm = ref(false)
-  const showEditForm = ref(false)
-
+  // Use store's reactive state directly
+  const isLoading = computed(() => householdStore.isLoading)
+  const error = computed(() => householdStore.error)
+  const hasHousehold = computed(() => householdStore.hasHousehold)
   const householdName = computed(() => householdStore.currentHousehold?.name || '')
   const householdAddress = computed(() => householdStore.currentHousehold?.address || '')
   const householdId = computed(() => householdStore.currentHousehold?.id || '')
   const isOwner = computed(() => householdStore.isCurrentUserOwner)
 
-  onMounted(async () => {
-    try {
-      const ok = await householdStore.checkCurrentHousehold()
-      hasHousehold.value = !!ok
+  // UI control states
+  const showAddForm = ref(false)
+  const showInviteForm = ref(false)
+  const showEditForm = ref(false)
 
-      if (ok) {
-        await Promise.all([
-          householdStore.fetchSentInvitations(),
-          householdStore.fetchJoinRequests()
-        ])
-      }
-    } catch (e) {
-      error.value = e instanceof Error ? e.message : String(e)
-    } finally {
-      isLoading.value = false
-    }
+  // Load household data on mount
+  onMounted(() => {
+    householdStore.loadHouseholdData()
   })
 
+  // UI control methods
   const openAddMemberForm = () => { showAddForm.value = true }
   const openInviteForm = () => { showInviteForm.value = true }
   const openEditHouseholdForm = () => { showEditForm.value = true }
 
   const deleteHousehold = async () => {
-    if (!confirm('Er du sikker på at du vil slette husstanden? Dette kan ikke angres.')) return
     try {
       await householdStore.deleteHousehold()
-      router.push('/household/create')
+      await householdStore.loadHouseholdData()
     } catch (e) {
-      error.value = e instanceof Error ? e.message : String(e)
+      console.error('Feil ved sletting av husstand:', e)
     }
   }
-
+  
   const leaveHousehold = async () => {
-    if (!confirm('Er du sikker på at du vil forlate husstanden?')) return
     try {
       await householdStore.leaveHousehold()
-      alert('Du har forlatt husstanden')
-      router.push('/household/join')
+      await householdStore.loadHouseholdData()
     } catch (e) {
-      error.value = e instanceof Error ? e.message : String(e)
+      console.error('Feil ved å forlate husstand:', e)
     }
   }
 
