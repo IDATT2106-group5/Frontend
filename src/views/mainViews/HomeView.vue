@@ -172,7 +172,7 @@ onUnmounted(() => {
     <section class="bg-[#2c3e50] text-white py-8 px-4">
       <h2 class="text-3xl md:text-4xl font-bold text-center mb-6">Siste nytt</h2>
       <div
-        v-for="(news, index) in newsStore.news"
+        v-for="(news, index) in newsStore.news.slice(0,3)"
         :key="index"
         class="bg-white text-black p-4 rounded flex flex-col sm:flex-row justify-between gap-2 mb-3"
         @click="$router.push('/news')"
