@@ -71,7 +71,7 @@ const adminButtons = computed(() => {
   </div>
 
   <div v-else class="min-h-screen p-6 font-sans bg-background">
-    <h1 class="text-3xl font-bold text-blue-900 mb-8 text-center">Admin dashbord</h1>
+    <h1 class="text-3xl font-bold mb-8 text-center" style="color: #3A465E;">Admin dashboard</h1>
 
     <!-- Button Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-4xl mx-auto">
