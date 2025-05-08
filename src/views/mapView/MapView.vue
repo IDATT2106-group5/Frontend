@@ -3,7 +3,7 @@
     <div id="map" ref="mapContainer"></div>
 
     <!-- Location Services Control -->
-    <div class="location-services-container">
+    <div class="location-services-container" v-if="!isAdminMode">
       <Button
         @click="togglePositionSharing"
         variant="default"
@@ -32,7 +32,7 @@
       </div>
     </transition>
 
-    <ClosestFacilityFinder v-if="!isLoadingMarkers && !markersLoadError" />
+    <ClosestFacilityFinder v-if="!isLoadingMarkers && !markersLoadError && !isAdminMode" />
 
     <!-- Add the search bar -->
     <div class="map-search-container">
@@ -133,7 +133,7 @@ export default {
     const { subscribeToPosition, fetchHouseholdPositions, connected } = useWebSocket()
 
     // Use storeToRefs for reactive properties
-    const { layerOptions, activeLayerId, isLoadingMarkers, markersLoadError, notification, activeRoute } =
+    const { isLoadingMarkers, markersLoadError, notification, activeRoute } =
       storeToRefs(mapStore)
 
     const isMobileView = computed(() => {
