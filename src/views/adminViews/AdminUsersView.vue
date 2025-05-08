@@ -12,24 +12,24 @@ const router = useRouter()
 const userStore = useUserStore()
 const adminStore = useAdminStore()
 
-const successMessage = ref('');
-const showSuccess = computed(() => !!successMessage.value);
-const clearSuccessTimeout = ref(null);
-const inviteFormRef = ref(null);
-const adminUsersOverviewRef = ref(null);
+const successMessage = ref('')
+const showSuccess = computed(() => !!successMessage.value)
+const clearSuccessTimeout = ref(null)
+const inviteFormRef = ref(null)
+const adminUsersOverviewRef = ref(null)
 
 /**
  * Shows a success message temporarily
  * @param {string} message - The success message to display
  */
 function showSuccessMessage(message) {
-  successMessage.value = message;
+  successMessage.value = message
 
-  if (clearSuccessTimeout.value) clearTimeout(clearSuccessTimeout.value);
+  if (clearSuccessTimeout.value) clearTimeout(clearSuccessTimeout.value)
 
   clearSuccessTimeout.value = setTimeout(() => {
-    successMessage.value = '';
-  }, 5000);
+    successMessage.value = ''
+  }, 5000)
 }
 
 /**
@@ -40,22 +40,19 @@ function showSuccessMessage(message) {
  * @param {string} adminData.fullName - The name of the admin user.
  */
 async function handleInvite(adminData) {
-  console.log('New admin invitation:', adminData);
-
   try {
-    successMessage.value = '';
-    adminStore.error = null;
+    successMessage.value = ''
 
-    const response = await adminStore.inviteNewAdmin(adminData);
+    const response = await adminStore.inviteNewAdmin(adminData)
 
     if (response && response.message) {
-      showSuccessMessage(response.message);
-      adminStore.fetchAdmins();
+      showSuccessMessage(response.message)
+      adminStore.fetchAdmins()
     }
   } catch (error) {
-    console.error("Error inviting admin:", error);
+    console.error("Error inviting admin:", error)
   } finally {
-    inviteFormRef.value.resetForm();
+    inviteFormRef.value.resetForm()
   }
 }
 
@@ -64,19 +61,18 @@ async function handleInvite(adminData) {
  * @param {string} email - Email address of the admin
  */
 async function handlePasswordReset(email) {
-  console.log('Password reset requested for:', email);
+  console.log('Password reset requested for:', email)
 
   try {
-    adminStore.error = null;
+    const response = adminStore.resetPasswordAdmin(email)
 
-    await AdminService.resetPassword(email);
-    showSuccessMessage(`Nytt passord sendt til: ${email}`);
-
+    if (response) {
+      showSuccessMessage(`Nytt passord sendt til: ${email}`)
+    }
   } catch (error) {
     console.error('Kunne ikke tilbakestille passord:', error);
-    adminStore.error = `Kunne ikke sende nytt passord: ${error.message || 'Ukjent feil'}`;
+    adminStore.error = `Kunne ikke sende nytt passord: ${error.message || 'Ukjent feil'}`
 
-    // If there's an error, mark the reset as failed in the component
     if (adminUsersOverviewRef.value) {
       adminUsersOverviewRef.value.markResetFailed(email);
     }

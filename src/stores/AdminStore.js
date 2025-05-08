@@ -3,6 +3,7 @@ import { useUserStore } from '@/stores/UserStore'
 import AdminService from '@/service/adminService'
 import RegisterAdminService from '@/service/admin/registerAdminService'
 import IncidentService from '@/service/incidentService'
+import adminService from '@/service/adminService'
 
 export const useAdminStore = defineStore('admin', {
   state: () => ({
@@ -73,6 +74,26 @@ export const useAdminStore = defineStore('admin', {
       } finally {
         this.isLoading = false
       }
-    }
+    },
+
+    async resetPasswordAdmin(email) {
+      this.isLoading = true
+      this.error = null
+      try {
+        const response = await adminService.resetPassword(email)
+
+        if (response) {
+          console.log("[Response from password reset] ", response)
+          return response
+        }
+        return null
+      } catch (error) {
+        console.error('[AdminStore] Failed to reset password:', error)
+        this.error = error.message || 'Noe gikk galt ved tilbakestilling av passord'
+        throw error
+      } finally {
+        this.isLoading = false
+      }
+    },
   }
 })
