@@ -550,14 +550,12 @@ export default {
 
     // Enhanced onEditMarker with forced marker updates
     const onEditMarker = (marker) => {
-      console.log("Editing marker:", marker.id);
 
       // Set active marker ID FIRST to hide original immediately
       activeEditMarker.value = marker.id;
 
       // Immediate refresh to hide original marker
       if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
-        console.log("Hiding original marker immediately");
         mapView.value.refreshMarkers();
       }
 
@@ -596,7 +594,6 @@ export default {
 
     // Enhanced onCancelEdit with retries
     const onCancelEdit = () => {
-      console.log("Canceling edit");
 
       // First clear temp marker
       if (tempMarker.value) {
@@ -612,12 +609,10 @@ export default {
 
       // Call store method to cancel
       mapStore.cancelEdit();
-
     };
 
     // Enhanced onSaveMarker with multi-stage refresh
     const onSaveMarker = async () => {
-      console.log("Saving marker");
 
       if (tempMarker.value) {
         tempMarker.value.remove();
@@ -632,9 +627,7 @@ export default {
       const success = await mapStore.saveMarker();
 
       if (success) {
-        console.log("Save successful, refreshing markers");
 
-        // Final refresh to catch any stragglers
         setTimeout(() => {
           if (map.value) {
             map.value.invalidateSize();
@@ -649,7 +642,6 @@ export default {
         return;
       }
 
-      console.log("Deleting marker:", markerFormData.value.id);
 
       // Clear temp marker
       if (tempMarker.value) {
@@ -671,24 +663,6 @@ export default {
       // Call store method to delete
       const success = await mapStore.deleteMarker(deletingId);
 
-      if (success) {
-        console.log("Delete successful");
-
-        // Multi-stage refresh similar to save
-        if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
-          mapView.value.refreshMarkers();
-        }
-
-        setTimeout(() => {
-          if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
-            mapView.value.refreshMarkers();
-          }
-
-          if (map.value) {
-            map.value.invalidateSize();
-          }
-        }, 150);
-      }
     };
 
     const clearSuccess = () => {
@@ -714,7 +688,6 @@ export default {
       if (newMap && props.isAdminMode) {
         // Set up map move event for admin mode
         newMap.on('moveend', () => {
-          console.log("Map moved, refreshing markers");
           mapStore.refreshMarkerLayers();
         });
       }
