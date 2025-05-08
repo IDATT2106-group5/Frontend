@@ -43,7 +43,7 @@ const incidentStore = useIncidentAdminStore()
  * Fetches user data from the backend.
  */
 onMounted(async () => {
-  await newsStore.fetchNews()
+  await newsStore.fetchPaginatedNews(0,3)
   dateStore.startClock()
   await incidentStore.fetchIncidents()
   if (!userStore.user) {
@@ -74,7 +74,6 @@ const incident = computed(() =>
  * @returns {string|string}
  */
 const calculateTimeDifference = (createdAt) => {
-  if (!createdAt) return 'Just now'
 
   const now = new Date(dateStore.currentDateTime)
   const createdTime = new Date(createdAt)
@@ -170,29 +169,29 @@ onUnmounted(() => {
     </section>
 
     <!-- Latest News -->
-<!--    <section class="bg-[#2c3e50] text-white py-8 px-4">-->
-<!--      <h2 class="text-3xl md:text-4xl font-bold text-center mb-6">Siste nytt</h2>-->
-<!--      <div-->
-<!--        v-for="(news, index) in newsStore.newsItems.slice(0, 3)"-->
-<!--        :key="index"-->
-<!--        class="bg-white text-black p-4 rounded flex flex-col sm:flex-row justify-between gap-2 mb-3"-->
-<!--        @click="$router.push('/news')"-->
-<!--      >-->
-<!--        <p class="font-semibold">{{ news.title }}</p>-->
-<!--        <span class="text-red-600 font-bold text-right sm:text-left">{{-->
-<!--          calculateTimeDifference(news.created_at)-->
-<!--        }}</span>-->
-<!--      </div>-->
+    <section class="bg-[#2c3e50] text-white py-8 px-4">
+      <h2 class="text-3xl md:text-4xl font-bold text-center mb-6">Siste nytt</h2>
+      <div
+        v-for="(news, index) in newsStore.news"
+        :key="index"
+        class="bg-white text-black p-4 rounded flex flex-col sm:flex-row justify-between gap-2 mb-3"
+        @click="$router.push('/news')"
+      >
+        <p class="font-semibold">{{ news.title }}</p>
+        <span class="text-red-600 font-bold text-right sm:text-left">{{
+          calculateTimeDifference(news.createdAt)
+        }}</span>
+      </div>
 
-<!--      <div class="text-center mt-6">-->
-<!--        <button-->
-<!--          class="bg-[#2c3e50] text-white px-4 py-2 rounded border border-white"-->
-<!--          @click="$router.push('/news')"-->
-<!--        >-->
-<!--          Alle nyheter-->
-<!--        </button>-->
-<!--      </div>-->
-<!--    </section>-->
+      <div class="text-center mt-6">
+        <button
+          class="bg-[#2c3e50] text-white px-4 py-2 rounded border border-white"
+          @click="$router.push('/news')"
+        >
+          Alle nyheter
+        </button>
+      </div>
+    </section>
     <!-- Preparedness -->
     <section class="py-10 px-4 bg-gray-100 text-center">
       <h2 class="text-3xl md:text-5xl font-bold mb-6 text-[#2c3e50]">Beredskap</h2>
