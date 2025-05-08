@@ -119,43 +119,54 @@ async function handleDelete() {
 }
 
 // Join household functionality
-const searchForHousehold = async () => {
-  joinError.value = ''
-  houseStore.error = null
-  joinSuccess.value = ''
-  requestSent.value = false
+async function searchForHousehold() {
+  joinError.value      = ''
+  joinSuccess.value    = ''
   foundHousehold.value = null
-  joinIsLoading.value = true
-
-  console.log('📤 Searching with householdId:', joinHouseholdId.value)
+  requestSent.value    = false
+  joinIsLoading.value  = true
 
   if (!joinHouseholdId.value) {
-    joinError.value = 'Husstands-ID kan ikke være tomt';
-    return;
+    joinError.value = 'Husstands-ID kan ikke være tomt'
+    joinIsLoading.value = false
+    return
   }
-
   if (joinHouseholdId.value === householdId.value) {
-    joinError.value = 'Dette er din nåværende husstand';
-    return;
+    joinError.value = 'Dette er din nåværende husstand'
+    joinIsLoading.value = false
+    return
   }
 
   try {
     const found = await houseStore.searchHouseholdById(joinHouseholdId.value)
-    console.log('✅ Found household:', found)
 
     if (found && found.id) {
-      foundHousehold.value = { id: found.id, name: found.name || 'Ukjent navn' }
-      joinSuccess.value = `Husstand funnet: ${found.name || 'Husstand ' + found.id}`
+      foundHousehold.value = {
+        id:   found.id,
+        name: found.name || 'Ukjent navn'
+      }
+      joinSuccess.value = `Husstand funnet: ${found.name || found.id}`
     } else {
       joinError.value = 'Ingen husstand funnet'
     }
+
   } catch (err) {
-    console.error('❌ Search error:', err)
-    joinError.value = houseStore.error || 'Kunne ikke finne husstand'
+    if (
+      err.message === 'Ingen husstand funnet' ||
+      err.message === 'Ugyldig husstands-ID' ||
+      err.response?.status === 400 ||
+      err.response?.status === 404
+    ) {
+      joinError.value = 'Ingen husstand funnet'
+    } else {
+      console.error('Search error:', err)
+      joinError.value = 'Ingen hustand funnet'
+    }
   } finally {
     joinIsLoading.value = false
   }
 }
+
 
 const sendJoinRequest = async () => {
   if (!foundHousehold.value || !foundHousehold.value.id) {

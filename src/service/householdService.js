@@ -287,26 +287,30 @@ class HouseholdService extends BaseService {
    * @returns {Promise<{ id: string|number, name: string } | null>}
    *                   the matching household record, or `null` if none found
    */
-  async searchHouseholdById({ householdId }) {
-    if (typeof householdId !== 'string' || !/^[A-Za-z0-9]+$/.test(householdId)) {
-      throw new Error('Ugyldig husstands-ID')
-    }
-
-    try {
-      const response = await this.post('search', { householdId })
-
-      if (!response || !response.id) {
-        return null
+    async searchHouseholdById({ householdId }) {
+      if (typeof householdId !== 'string' || !/^[A-Za-z0-9]+$/.test(householdId)) {
+        throw new Error('Ugyldig husstands-ID');
       }
-      return response
-    } catch (err) {
-      if (err.response?.status === 400 || err.response?.status === 404) {
-        throw err
+    
+      try {
+        const response = await this.post('search', { householdId });
+    
+        if (!response || !response.id) {
+          // API returned no match
+          throw new Error('Ingen husstand funnet');
+        }
+        return response;
+    
+      } catch (err) {
+        const status = err.response?.status;
+        // Convert any 400/404 or our own “not found” into the friendly message
+        if (status === 400 || status === 404 || err.message === 'Ingen husstand funnet') {
+          throw new Error('Ingen husstand funnet');
+        }
+        console.error('Error searching for household:', err);
+        throw err;
       }
-      console.error('Error searching for household:', err)
-      throw err
     }
-  }
   
 }
 

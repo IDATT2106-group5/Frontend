@@ -673,26 +673,26 @@ export const useHouseholdStore = defineStore('household', {
      * @throws {Error} If the input is invalid or the search fails due to a backend error.
      */
     async searchHouseholdById(householdId) {
+      this.isLoading = true;
       try {
-        this.isLoading = true;
-    
-        if (!householdId) {
-          throw new Error('Ugyldig husstands-ID format');
+        if (!householdId || typeof householdId !== 'string') {
+          throw new Error('Ugyldig husstands-ID');
         }
-
         const household = await HouseholdService.searchHouseholdById({ householdId });
-    
+        // 3) Handle empty result
         if (!household || !household.id) {
-          return null;
+          throw new Error('Ingen husstand funnet');
         }
     
-        const { id, name } = household;
-        this.foundHousehold = { id, name };
-        return { id, name };
+        return { id: household.id, name: household.name };
     
       } catch (err) {
-        this.error = err.response?.data?.error || err.message || 'Kunne ikke søke etter husstand';
-        return null; 
+        const status = err.response?.status;
+        if (status === 400 || status === 404) {
+          throw new Error('Ingen husstand funnet');
+        }
+        throw err;
+    
       } finally {
         this.isLoading = false;
       }
