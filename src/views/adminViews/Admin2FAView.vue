@@ -4,6 +4,7 @@ import { useUserStore } from "@/stores/UserStore"
 import { useRouter } from "vue-router"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import ConfirmModal from '@/components/householdMainView/modals/ConfirmModal.vue'
 
 const props = defineProps({
   email: String,
@@ -14,6 +15,7 @@ const router = useRouter()
 const userStore = useUserStore()
 const code = ref(['', '', '', '', '', ''])
 
+const showResendConfirmModal = ref(false)
 if (props.emailMissing) {
   router.replace('/login');
 }
@@ -28,7 +30,6 @@ const focusNext = (index, event) => {
     }
   }
 }
-
 
 /**
  * Handles the submission event for the form.
@@ -59,21 +60,38 @@ async function onSubmit(event) {
   }
 }
 
+/**
+ * Opens the resend confirmation modal
+ */
+function openResendModal() {
+  showResendConfirmModal.value = true
+}
 
 /**
  * Resends the two-factor authentication (2FA) code to the user.
+ * Only executed after confirmation.
  *
  * @async
  * @returns {Promise<void>} Resolves when the code is successfully resent.
  */
 async function resendCode() {
+  showResendConfirmModal.value = false
+
   try {
     await userStore.resend2FACode(props.email)
-    alert("En ny kode har blitt sendt til din e-post")
   } catch (error) {
     console.error("Failed to resend code:", error)
+    userStore.error = "Kunne ikke sende ny kode. Prøv igjen senere."
   }
 }
+
+/**
+ * Cancel the resend operation
+ */
+function cancelResend() {
+  showResendConfirmModal.value = false
+}
+
 </script>
 
 <template>
@@ -110,14 +128,22 @@ async function resendCode() {
       <div class="text-center text-sm text-gray-600">
         <p>Har du ikke mottatt koden?</p>
         <button
-          @click.prevent="resendCode"
+          @click.prevent="openResendModal"
           class="text-blue-600 hover:underline mt-1"
         >
           Send kode på nytt
         </button>
       </div>
     </form>
+
+    <ConfirmModal
+      v-if="showResendConfirmModal"
+      title="Send kode på nytt"
+      description="Er du sikker på at du vil sende en ny kode til din e-post?"
+      confirmText="Send"
+      cancelText="Avbryt"
+      @confirm="resendCode"
+      @cancel="cancelResend"
+    />
   </main>
 </template>
-
-
