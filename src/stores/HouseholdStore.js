@@ -313,7 +313,6 @@ export const useHouseholdStore = defineStore('household', {
         this._verifyOwnership();
         const response = await RequestService.sendInvitation({
           email: email,
-          householdId: this.currentHousehold.id
         });
 
         await this.fetchSentInvitations();
@@ -370,7 +369,7 @@ export const useHouseholdStore = defineStore('household', {
       }
 
       try {
-        const invites = await RequestService.getSentInvitationsByHousehold(this.currentHousehold.id);
+        const invites = await RequestService.getSentInvitationsByHousehold();
 
         this.sentInvitations = Array.isArray(invites)
           ? invites.map(invite => {
@@ -399,7 +398,7 @@ export const useHouseholdStore = defineStore('household', {
       if (!this.currentHousehold?.id) return;
 
       try {
-        const requests = await RequestService.getReceivedJoinRequests(this.currentHousehold.id);
+        const requests = await RequestService.getReceivedJoinRequests();
         this.ownershipRequests = Array.isArray(requests)
           ? requests.map(req => ({
               id: req.id,
@@ -431,7 +430,7 @@ export const useHouseholdStore = defineStore('household', {
         const userId = userStore.user.id;
 
 
-        const response = await RequestService.getReceivedInvitationsByUser(userId);
+        const response = await RequestService.getReceivedInvitationsByUser();
 
 
 
@@ -716,7 +715,6 @@ export const useHouseholdStore = defineStore('household', {
         }
 
         const request = {
-          userId: userStore.user.id,
           householdId: householdId
         };
 
