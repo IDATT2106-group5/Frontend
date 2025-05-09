@@ -229,7 +229,6 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
           variant: 'success',
         })
         await this.fetchIncidents();
-        useMapStore().initIncidents();
         this.isCreating = false;
         return true;
       } catch (error) {
@@ -269,7 +268,6 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
         })
         this.editingIncidentId = null;
         await this.fetchIncidents();
-        useMapStore().initIncidents();
         this.isEditing = false;
         return true;
       } catch (error) {
@@ -412,12 +410,17 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
      * @description Cancel editing/creating
      * @returns {void}
      */
-    cancelEdit() {
+    async cancelEdit() {
       this.isEditing = false;
       this.isCreating = false;
       this.error = null;
       this.success = null;
+
+      // Important: Set editingIncidentId to null to display the original incident again
       this.editingIncidentId = null;
+
+      // Update the map display to show the original incident
+      useMapStore().updateIncidentsOnMap();
     },
 
     /**
