@@ -117,7 +117,7 @@ class HouseholdService extends BaseService {
    * @returns {Promise<Object>} API response.
    * @throws {Error} If trying to update a registered member or request fails.
    */
-  async updateUnregisteredMember(householdId, memberId, data) {
+  async updateUnregisteredMember(memberId, data) {
     try {
       if (data.isRegistered) {
         throw new Error("Cannot update registered members.");
