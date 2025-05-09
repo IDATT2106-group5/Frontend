@@ -180,11 +180,13 @@ async function doRemove() {
       >
         <Button
           v-if="!member.isRegistered && !isOwner"
+          data-cy="edit-member-button"
           variant="ghost"
           size="sm"
           @click="startEdit"
         >
-          <Edit class="h-4 w-4" />
+          <Edit 
+          class="h-4 w-4" />
         </Button>
         <Button
           v-if="!isOwner"

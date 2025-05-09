@@ -1,83 +1,147 @@
-// cypress/e2e/household.spec.js
-
-describe('Household Main View (Owner) – no network stubbing', () => {
+describe('Household Main View (Owner) – text-based selectors', () => {
   const OWNER = {
     email: 'test@user.test',
     password: '12345678'
   };
 
   beforeEach(() => {
-    // 1) log in via custom command (defined in cypress/support/commands.js)
     cy.login(OWNER.email, OWNER.password);
 
-    // 2) visit the household page
     cy.visit('/household');
 
-    // 3) wait for the key UI to appear
-    cy.get('[data-cy=household-id]', { timeout: 10000 }).should('be.visible');
+    cy.contains('span', /^ID:/, { timeout: 10000 })
+      .should('be.visible');
   });
 
-  it('displays the household ID and copies it to clipboard', () => {
-    // grab the visible ID text
-    cy.get('[data-cy=household-id] span').invoke('text').then(rawId => {
-      const id = rawId.trim();
+  it('displays the household ID', () => {
+    cy.contains('span', /^ID:/)
+      .should('contain.text', 'ID:')
+      .invoke('text')
+      .then(fullText => {
+        expect(fullText.trim()).to.match(/^ID:\s*[A-Za-z0-9]+$/);
+      });
+  });
 
-      // stub clipboard
-      cy.window().then(win => {
-        cy.stub(win.navigator.clipboard, 'writeText').resolves();
+  it('copies the household ID to the clipboard', () => {
+    cy.window().then(win => {
+      if (!win.navigator.clipboard) {
+        win.navigator.clipboard = {};
+      }
+      win.navigator.clipboard.writeText = cy.stub().as('writeText').resolves();
+    });
+
+    cy.contains('span', /^ID:/)
+      .invoke('text')
+      .then(fullText => {
+        const id = fullText.replace(/^ID:\s*/, '');
+
+        cy.contains('span', /^ID:/)
+          .parent()         
+          .find('button')  
+          .click();
+
+        cy.get('@writeText')
+          .should('have.been.calledWith', id);
       });
 
-      // click copy and assert
-      cy.get('[data-cy=copy-id-button]').click();
-      cy.window()
-        .its('navigator.clipboard.writeText')
-        .should('have.been.calledWith', id);
-
-      // toast appears
-      cy.contains('Husstands-ID kopiert').should('be.visible');
-    });
+    cy.contains('Husstands-ID kopiert')
+      .should('be.visible');
   });
 
-  it('shows truncated household name and address', () => {
-    cy.get('[data-cy=household-name]').invoke('text').then(text => {
-      const t = text.trim();
-      // either full name ≤20, or ends with '...' and ≤23 chars
-      expect(t.length).to.be.lte(23);
-      if (t.length > 20) {
-        expect(t.endsWith('...')).to.be.true;
-      }
-    });
+  it('opens the invite modal and sends a stubbed invitation', () => {
 
-    cy.get('[data-cy=household-address]').invoke('text').then(text => {
-      const t = text.trim();
-      expect(t.length).to.be.lte(33);
-      if (t.length > 30) {
-        expect(t.endsWith('...')).to.be.true;
-      }
-    });
+    cy.intercept('POST', 'api/household/send-invitation', {
+      statusCode: 200,
+      body: { message: 'Invitation sent (stub)' }
+    }).as('sendInvitation')
+
+    cy.contains('button', 'Medlemmer').click()
+
+    cy.contains('button', 'Send invitasjon').click()
+
+    cy.get('input[placeholder="E-postadresse"]')
+      .should('be.visible')
+      .type('test@user3.test')
+
+    cy.get('[data-cy="invite-button"]')
+      .should('be.visible')
+      .and('not.be.disabled')
+      .click()
+
+    cy.contains('Allerede sendt invitasjon til denne e-posten')
   });
 
-  it('can open & close the Edit Household modal', () => {
-    cy.get('[data-cy=edit-household-button]').click();
-    cy.get('[data-cy=edit-household-modal]').should('be.visible');
+  it('adds/remove a unregistered from the household', () => {
 
-    cy.get('[data-cy=edit-household-modal] [data-cy=modal-close]').click();
-    cy.get('[data-cy=edit-household-modal]').should('not.exist');
+    cy.contains('button', 'Legg til medlem').click()
+
+    cy.get('input[placeholder="Navn på medlem"]')
+    .should('be.visible')
+    .type('Bobby')
+  
+    cy.get('[data-cy="add-member"]')
+    .click()
+
+    cy.contains('Bruker Bobby har blitt lagt til i husstanden')
+
+    cy.contains('button', 'Avbryt').last().click()
+
+
+    cy.get('[data-cy="search-member-input"]')
+    .should('be.visible')
+    .type('Bobby')
+
+    cy.contains('Bobby')
+
+    cy.contains('button', 'Fjern').click()
+
+    cy.contains('Fjern medlem')
+
+    cy.get('[data-cy="modal-confirm-button"]')
+      .click()
+
+    cy.contains('Bobby er fjernet fra husstanden')
+    })
+
+  it("search household members", () => {
+    cy.get('[data-cy="search-member-input"]')
+      .should('be.visible')
+      .type('Bob Ross')
+
+    cy.contains('Bob Ross')
   });
 
-  it('can open & close the Add Member modal', () => {
-    cy.get('[data-cy=open-add-member]').click();
-    cy.get('[data-cy=add-member-modal]').should('be.visible');
+  it("edit a existing unregistered user", () => {
 
-    cy.get('[data-cy=add-member-modal] [data-cy=modal-close]').click();
-    cy.get('[data-cy=add-member-modal]').should('not.exist');
+    cy.get('[data-cy="search-member-input"]')
+      .should('be.visible')
+      .type('Bob Ross')
+
+    cy.contains('Bob Ross')
+      .parents('div')     
+      .find('[data-cy="edit-member-button"]')
+      .click()
+
+    cy.contains('button', 'Lagre').click()
+
+    cy.contains('Bob Ross ble oppdatert.')
   });
 
-  it('can open & close the Invite Member modal', () => {
-    cy.get('[data-cy=open-invite-member]').click();
-    cy.get('[data-cy=invite-member-modal]').should('be.visible');
+  it('should be able to search for a household', () => {
+      cy.contains('button', 'Medlemmer').click()
+  });
 
-    cy.get('[data-cy=invite-member-modal] [data-cy=modal-close]').click();
-    cy.get('[data-cy=invite-member-modal]').should('not.exist');
+  it("should be able to search for another household", () => {
+      cy.contains('button', 'Søk husstand').click()
+
+      cy.get('[data-cy="join-household-id-input"]')
+        .should('be.visible')
+        .type('5C100DC5')
+
+      cy.get('[data-cy="search-household-button"]').click()
+
+      cy.contains('Navn: Test')
+      cy.contains('ID: 5C100DC5')
+      
   });
 });

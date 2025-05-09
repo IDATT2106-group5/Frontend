@@ -276,6 +276,7 @@ const sendJoinRequest = async () => {
                   v-model="joinHouseholdId"
                   @input="onJoinHouseholdIdInput"
                   id="joinHouseholdId"
+                  data-cy="join-household-id-input"
                   type="text"
                   placeholder="ABCD1234"
                   maxlength="8"
@@ -287,6 +288,7 @@ const sendJoinRequest = async () => {
               </p>
               <button
                 @click="searchForHousehold"
+                data-cy="search-household-button"
                 class="w-full text-sm bg-gray-700 text-white py-2 rounded hover:bg-gray-800"
                 :disabled="joinIsLoading"
               >
