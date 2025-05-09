@@ -1,6 +1,8 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { Pencil, Save, Trash } from 'lucide-vue-next'
+import { toast } from '@/components/ui/toast/index.js'
+import ConfirmModal from '@/components/householdMainView/modals/ConfirmModal.vue'
 
 const props = defineProps({
   items: {
@@ -25,6 +27,8 @@ const props = defineProps({
  */
 const emit = defineEmits(['update-item', 'delete-item'])
 
+const confirmDeleteOpen = ref(false)
+const itemToDelete = ref(null)
 const openSubItems = ref([])
 const editingItem = ref(null)
 const editingData = ref({
@@ -270,24 +274,68 @@ function startEditing(item) {
  * @param {string|number} itemId - The ID of the item being edited
  */
 function saveItemEdit(itemId) {
-  const updatedData = {
-    expiryDate: formatDateForDisplay(editingData.value.expiryDate),
-    quantity: parseFloat(editingData.value.quantity),
+  try {
+    const updatedData = {
+      expiryDate: formatDateForDisplay(editingData.value.expiryDate),
+      quantity: parseFloat(editingData.value.quantity),
+    }
+
+    emit('update-item', itemId, updatedData)
+    editingItem.value = null
+
+    toast({
+      title: 'Oppdaterte vare',
+      description: 'Du har oppdatert en vare i husstandslageret.',
+      variant: 'success',
+    })
+  } catch (error) {
+    console.error('Error saving item edit:', error)
+    toast({
+      title: 'Feil',
+      description: 'Klarte ikke oppdatere vare i husstandslageret.',
+      variant: 'destructive',
+    })
   }
-
-  emit('update-item', itemId, updatedData)
-
-  editingItem.value = null
 }
 
 /**
- * Deletes an item
- * Emits a delete-item event to the parent component
- *
+ * Opens the delete confirmation modal
  * @param {string|number} itemId - The ID of the item to delete
  */
-function deleteItem(itemId) {
-  emit('delete-item', itemId)
+function openDeleteConfirm(itemId) {
+  itemToDelete.value = itemId
+  confirmDeleteOpen.value = true
+}
+
+/**
+ * Deletes an item after confirmation
+ */
+function confirmDeleteItem() {
+  try {
+    emit('delete-item', itemToDelete.value)
+    toast({
+      title: 'Slettet vare',
+      description: 'Du har slettet en vare i husstandslageret.',
+      variant: 'success',
+    })
+    confirmDeleteOpen.value = false
+    itemToDelete.value = null
+  } catch (error) {
+    console.error('Error deleting item:', error)
+    toast({
+      title: 'Feil',
+      description: 'Klarte ikke slette vare i husstandslageret.',
+      variant: 'destructive',
+    })
+  }
+}
+
+/**
+ * Cancels the delete operation
+ */
+function cancelDelete() {
+  confirmDeleteOpen.value = false
+  itemToDelete.value = null
 }
 </script>
 
@@ -414,7 +462,7 @@ function deleteItem(itemId) {
                   class="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-gray-600 hover:text-green-600 cursor-pointer flex-shrink-0"
                 />
                 <Trash
-                  @click.stop="deleteItem(item.id)"
+                  @click.stop="openDeleteConfirm(item.id)"
                   class="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-gray-600 hover:text-red-600 cursor-pointer flex-shrink-0"
                 />
               </div>
@@ -532,7 +580,7 @@ function deleteItem(itemId) {
               class="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-gray-600 hover:text-green-600 cursor-pointer flex-shrink-0"
             />
             <Trash
-              @click.stop="deleteItem(item.id)"
+              @click.stop="openDeleteConfirm(item.id)"
               class="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-gray-600 hover:text-red-600 cursor-pointer flex-shrink-0"
             />
           </div>
@@ -542,4 +590,13 @@ function deleteItem(itemId) {
 
     <p v-else class="text-gray-500 italic text-center mt-2 sm:mt-4">Ingen varer funnet.</p>
   </div>
+
+  <ConfirmModal
+    v-if="confirmDeleteOpen"
+    title="Slett vare"
+    description="Er du sikker på at du vil slette denne varen fra husstandslageret? Dette kan ikke angres."
+    confirm-text="Slett"
+    @cancel="cancelDelete"
+    @confirm="confirmDeleteItem"
+  />
 </template>
