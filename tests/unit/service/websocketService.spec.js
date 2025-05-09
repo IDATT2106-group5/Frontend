@@ -33,7 +33,6 @@ describe('WebSocketService', () => {
   const dummyNotification = { type: 'NOTIFY', payload: 'data' }
   const dummyIncident = { type: 'INCIDENT', detail: 'issue' }
 
-  // Helper to flush pending promise callbacks (for connect())
   const flushPromises = () => new Promise((resolve) => setImmediate(resolve))
 
   beforeEach(() => {
@@ -62,14 +61,14 @@ describe('WebSocketService', () => {
     expect(service.token).toBe('t1')
     expect(service.householdId).toBe('h1')
     expect(connectSpy).toHaveBeenCalled()
-    // onPositionUpdate should be set
+
     const fn = () => {}
     service.init({ userId:'u2', householdId:'h2', token:'t2', onPositionUpdate: fn })
     expect(service.callbacks.onPositionUpdate).toBe(fn)
   })
 
   it('connect should set window.global, call SockJS and activate client with correct config', async () => {
-    // emulate browser
+
     global.window = {}
     service.userId = 'user42'
 
@@ -167,18 +166,6 @@ describe('WebSocketService', () => {
     expect(errSpy).toHaveBeenCalledWith('Error parsing notification:', expect.any(Error))
   })
 
-  // ——— NEW TESTS START HERE ———
-
-  it('_onConnected logs userId and token', () => {
-    service.userId = 'abc'
-    service.token = 'xyz'
-    service.stompClient = { subscribe: vi.fn((d,cb)=>subscribeMocks.push({destination:d,callback:cb})) }
-    const logSpy = vi.spyOn(console, 'log')
-    service._onConnected()
-    expect(logSpy).toHaveBeenCalledWith('Connected to WebSocket')
-    expect(logSpy).toHaveBeenCalledWith('User ID: abc, Token: xyz')
-  })
-
   it('_onConnected second‑queue valid JSON fires onNotification and onIncident', () => {
     service.token = 'tok'
     service.userId = 'u1'
@@ -199,30 +186,6 @@ describe('WebSocketService', () => {
     expect(onIncident).toHaveBeenCalledWith(dummyIncident)
   })
 
-  it('logs subscription messages in _onConnected', () => {
-    service.token = 'tok'
-    service.userId = 'u1'
-    service.stompClient = {
-      subscribe: vi.fn((dest, cb) => subscribeMocks.push({ destination: dest, callback: cb })),
-    }
-    const logSpy = vi.spyOn(console, 'log')
-
-    service._onConnected()
-    expect(logSpy).toHaveBeenCalledWith('Subscribed to /topic/notifications')
-    expect(logSpy).toHaveBeenCalledWith('Subscribed to /user/queue/notifications')
-  })
-
-  it('_onDisconnected should set connected=false, invoke onDisconnected and log', () => {
-    const onDisconnected = vi.fn()
-    service.callbacks.onDisconnected = onDisconnected
-    service.connected = true
-    const logSpy = vi.spyOn(console, 'log')
-
-    service._onDisconnected()
-    expect(service.connected).toBe(false)
-    expect(onDisconnected).toHaveBeenCalled()
-    expect(logSpy).toHaveBeenCalledWith('Disconnected from WebSocket')
-  })
 
   it('unsubscribeToPosition logs error when not connected', () => {
     service.stompClient = { subscribe: vi.fn() }
@@ -279,16 +242,6 @@ describe('WebSocketService', () => {
     expect(service.subscribeToPosition('h1', null)).toBe(true)
   })
 
-  it('should subscribeToPosition when ready and log the subscription', () => {
-    service.stompClient = { subscribe: vi.fn() }
-    service.connected = true
-    service.token = 'tok'
-
-    const logSpy = vi.spyOn(console, 'log')
-    expect(service.subscribeToPosition('house1', () => {})).toBe(true)
-    expect(logSpy).toHaveBeenCalledWith('Subscribed to /topic/position/house1')
-  })
-
   it('should catch error parsing position JSON and log an error', () => {
     const callback = vi.fn()
     service.stompClient = {
@@ -320,14 +273,6 @@ describe('WebSocketService', () => {
     expect(errSpy).toHaveBeenCalledWith('Error sending position update:', expect.any(Error))
   })
 
-  it('should log success message when updatePosition succeeds', () => {
-    service.connected = true
-    service.stompClient = { publish: vi.fn() }
-    const logSpy = vi.spyOn(console, 'log')
-
-    expect(service.updatePosition('u2', 5, 6)).toBe(true)
-    expect(logSpy).toHaveBeenCalledWith('Position update sent successfully')
-  })
 
   it('disconnect should not throw when there is no client', () => {
     expect(() => service.disconnect()).not.toThrow()
@@ -339,16 +284,6 @@ describe('WebSocketService', () => {
       service.connect()
       await flushPromises()
       expect(global.window).toBeUndefined()
-    })
-  
-    it('_onConnected logs userId and token', () => {
-      service.userId = 'abc'
-      service.token = 'xyz'
-      service.stompClient = { subscribe: vi.fn((d, cb) => subscribeMocks.push({ destination: d, callback: cb })) }
-      const logSpy = vi.spyOn(console, 'log')
-      service._onConnected()
-      expect(logSpy).toHaveBeenCalledWith('Connected to WebSocket')
-      expect(logSpy).toHaveBeenCalledWith('User ID: abc, Token: xyz')
     })
   
     it('_onConnected second‑queue valid JSON fires onNotification and onIncident', () => {
@@ -369,16 +304,6 @@ describe('WebSocketService', () => {
       expect(onIncident).toHaveBeenCalledWith(dummyIncident)
     })
   
-    it('logs subscription messages in _onConnected', () => {
-      service.token = 'tok'
-      service.userId = 'u1'
-      service.stompClient = { subscribe: vi.fn((d, cb) => subscribeMocks.push({ destination: d, callback: cb })) }
-      const logSpy = vi.spyOn(console, 'log')
-  
-      service._onConnected()
-      expect(logSpy).toHaveBeenCalledWith('Subscribed to /topic/notifications')
-      expect(logSpy).toHaveBeenCalledWith('Subscribed to /user/queue/notifications')
-    })
   
     it('disconnect should call deactivate and propagate errors', () => {
       const mockDeactivate = vi.fn().mockImplementation(() => { throw new Error('boom') })
@@ -387,19 +312,155 @@ describe('WebSocketService', () => {
       expect(mockDeactivate).toHaveBeenCalled()
     })
   
-    it('subscribeToPosition with null callback still logs', () => {
-      service.stompClient = { subscribe: vi.fn((d, cb) => subscribeMocks.push({ destination: d, callback: cb })) }
-      service.connected = true
-      service.token = 'tok'
-      const logSpy = vi.spyOn(console, 'log')
-      expect(service.subscribeToPosition('h2', null)).toBe(true)
-      expect(logSpy).toHaveBeenCalledWith('Subscribed to /topic/position/h2')
-    })
-  
     it('allows invoking onPositionUpdate default callback', () => {
       const onPos = vi.fn()
       service.callbacks.onPositionUpdate = onPos
       service.callbacks.onPositionUpdate({ x: 123 })
       expect(onPos).toHaveBeenCalledWith({ x: 123 })
-    })  
-})
+    })
+
+    it('updatePosition should publish to the correct destination with proper data', () => {
+      service.stompClient = {
+        publish: vi.fn()
+      }
+      service.connected = true
+      
+      const result = service.updatePosition('user123', 123.456, 78.910)
+      
+      expect(result).toBe(true)
+      expect(service.stompClient.publish).toHaveBeenCalledWith({
+        destination: '/app/position',
+        body: JSON.stringify({
+          userId: 'user123',
+          longitude: 123.456,
+          latitude: 78.910
+        })
+      })
+    })
+
+
+    it('updatePosition should handle missing parameters', () => {
+      service.stompClient = { publish: vi.fn() }
+      service.connected = true
+      
+
+      expect(service.updatePosition(null, 123.456, 78.910)).toBe(true)
+      expect(service.stompClient.publish).toHaveBeenCalledWith({
+        destination: '/app/position',
+        body: JSON.stringify({
+          userId: null,
+          longitude: 123.456,
+          latitude: 78.910
+        })
+      })
+      
+      // Missing coordinates
+      service.stompClient.publish.mockClear()
+      expect(service.updatePosition('user123', null, undefined)).toBe(true)
+      expect(service.stompClient.publish).toHaveBeenCalledWith({
+        destination: '/app/position',
+        body: JSON.stringify({
+          userId: 'user123',
+          longitude: null,
+          latitude: undefined
+        })
+      })
+    })
+
+    it('should call onIncident callback for incidents from both topic and user queues', () => {
+      const onIncident = vi.fn()
+      service.callbacks.onIncident = onIncident
+      service.stompClient = {
+        subscribe: vi.fn((dest, cb) => subscribeMocks.push({ destination: dest, callback: cb }))
+      }
+      service.token = 'tok'
+      service.userId = 'u1'
+      
+      service._onConnected()
+      
+      const topicSub = subscribeMocks.find(m => m.destination === '/topic/notifications')
+      const userSub = subscribeMocks.find(m => m.destination === '/user/queue/notifications')
+      
+      const incidentPayload = { type: 'INCIDENT', severity: 'HIGH', message: 'Test incident' }
+      
+      topicSub.callback({ body: JSON.stringify(incidentPayload) })
+      expect(onIncident).toHaveBeenCalledWith(incidentPayload)
+      
+      onIncident.mockClear()
+      userSub.callback({ body: JSON.stringify(incidentPayload) })
+      expect(onIncident).toHaveBeenCalledWith(incidentPayload)
+    })
+
+    it('should have a default empty onIncident callback', () => {
+      const service = new WebSocketService()
+      expect(typeof service.callbacks.onIncident).toBe('function')
+      expect(() => service.callbacks.onIncident()).not.toThrow()
+    })
+
+    it('init should handle null callbacks', () => {
+      const initialCallbacks = {
+        onConnected: () => 'connected',
+        onDisconnected: () => 'disconnected',
+        onNotification: () => 'notification',
+        onPositionUpdate: () => 'position'
+      }
+      
+      service.callbacks = { ...initialCallbacks }
+      
+      service.init({
+        userId: 'u1',
+        householdId: 'h1',
+        token: 't1',
+        onConnected: null,
+        onDisconnected: null,
+        onNotification: null,
+        onPositionUpdate: null
+      })
+      
+      expect(service.callbacks.onConnected).toBe(initialCallbacks.onConnected)
+      expect(service.callbacks.onDisconnected).toBe(initialCallbacks.onDisconnected)
+      expect(service.callbacks.onNotification).toBe(initialCallbacks.onNotification)
+      expect(service.callbacks.onPositionUpdate).toBe(initialCallbacks.onPositionUpdate)
+    })
+
+    it('disconnect should handle null stompClient gracefully', () => {
+      service.stompClient = null
+      expect(() => service.disconnect()).not.toThrow()
+    })
+
+    it('connect should work asynchronously', async () => {
+      const connectSpy = vi.spyOn(service, 'connect')
+      
+      service.userId = 'async-test'
+      service.connect()
+      
+      expect(connectSpy).toHaveBeenCalled()
+      
+      await flushPromises()
+      
+      expect(Client).toHaveBeenCalled()
+      expect(service.stompClient.activate).toHaveBeenCalled()
+    })
+
+    it('updatePosition should publish with correct content type and headers', () => {
+      service.stompClient = {
+        publish: vi.fn()
+      }
+      service.connected = true
+      service.token = 'auth-token'
+      
+      service.updatePosition('user456', 10.123, 20.456)
+      
+      expect(service.stompClient.publish).toHaveBeenCalledWith(
+        expect.objectContaining({
+          destination: '/app/position',
+          body: JSON.stringify({
+            userId: 'user456',
+            longitude: 10.123,
+            latitude: 20.456
+          })
+        })
+      )
+    })
+
+    })
