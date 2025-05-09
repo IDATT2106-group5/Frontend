@@ -30,11 +30,9 @@ describe('useDateStore', () => {
         it('creates an interval that updates currentDateTime every minute', () => {
       const initial = new Date('2025-05-05T12:00:00');
       vi.setSystemTime(initial);
-      // Reinitialize store to pick up fake time
       store = useDateStore();
       store.startClock();
 
-      // Advance time by 1 minute
       vi.advanceTimersByTime(60000);
       expect(store.currentDateTime.getTime()).toBe(initial.getTime() + 60000);
     });
