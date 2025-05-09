@@ -20,7 +20,7 @@ class ItemService extends BaseService {
    * @param {string} [searchTerm=''] - Optional search term to filter results.
    * @returns {Promise<Object>} An object containing paginated items and `isEmpty` flag.
    */
-async getPaginatedItems(page = 0, size = 5, searchTerm = '') {
+async getPaginatedItems(page = 0, size = 15, searchTerm = '') {
   try {
     const queryParams = new URLSearchParams({
       page: page.toString(),

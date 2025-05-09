@@ -110,6 +110,6 @@ describe('ItemStore', () => {
   const result = await store.searchItems('water')
   expect(result).toEqual([{ id: 9 }])
   expect(store.items).toEqual([{ id: 9 }])
-  expect(ItemService.getPaginatedItems).toHaveBeenCalledWith(0, 5, 'water') 
+  expect(ItemService.getPaginatedItems).toHaveBeenCalledWith(0, 15, 'water')
 })
 })
