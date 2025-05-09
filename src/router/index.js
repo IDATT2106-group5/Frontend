@@ -212,18 +212,7 @@ const routes = [
     name: 'not-authorized',
     component: notAuthorizedView
   },
-  {
-    path: '/after',
-    name: 'after',
-    component: AfterView
-  },
-  {
-    path: '/under',
-    name: 'under',
-    component: SeekSafetyView
-  },
 ]
-
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes
