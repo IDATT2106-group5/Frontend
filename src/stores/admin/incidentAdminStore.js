@@ -103,8 +103,11 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
         }));
         this.applyFilters();
       } catch (error) {
-        this.error = 'Kunne ikke laste krisesituasjoner. Vennligst prøv igjen senere.';
-        console.error('Error in fetchIncidents:', error);
+        toast({
+          title: 'Feil',
+          description: 'Klarte ikke laste krisesituasjoner.',
+          variant: 'destructive',
+        })
       } finally {
         this.isLoading = false;
       }
@@ -274,7 +277,6 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
           this.editingIncidentId = null;
           this.error = error.response.data.error;
         } else {
-          this.error = 'Kunne ikke oppdatere krisesituasjon. Vennligst prøv igjen senere.';
           toast({
             title: 'Feil',
             description: 'Klarte ikke oppdatere krise.',
@@ -341,14 +343,13 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
         if (error.response && error.response.data && error.response.data.error) {
           this.error = error.response.data.error;
         } else {
-          this.error = 'Kunne ikke slette krisesituasjon. Vennligst prøv igjen senere.';
+          console.error('Error in deleteIncident:', error);
+          toast({
+            title: 'Feil',
+            description: 'Klarte ikke slette krise.',
+            variant: 'destructive',
+          })
         }
-        console.error('Error in deleteIncident:', error);
-        toast({
-          title: 'Feil',
-          description: 'Klarte ikke seltte krise.',
-          variant: 'destructive',
-        })
         return false;
       } finally {
         this.isLoading = false;
