@@ -27,7 +27,6 @@ class HouseholdService extends BaseService {
       return response
     } catch (error) {
       if (error.response?.status !== 400) {
-        console.error('Error fetching household details by user ID:', error)
       }
       throw error
     }
@@ -54,7 +53,6 @@ class HouseholdService extends BaseService {
           isRegistered: true
         }
       } else {
-        console.log('Adding unregistered member:', data)
         await this.post('add-unregistered-member', {
           fullName: data.fullName
         })
@@ -301,7 +299,6 @@ class HouseholdService extends BaseService {
       if (status === 400 || status === 404 || err.message === 'Ingen husstand funnet') {
         throw new Error('Ingen husstand funnet')
       }
-      console.error('Error searching for household:', err)
       throw err
     }
   }

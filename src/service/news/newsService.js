@@ -23,7 +23,6 @@ class NewsService extends BaseService {
       const response = await this.get(`get/?page=${page}&size=${size}`)
       const data = response
 
-      console.log(data)
 
       return {
         news: data.news || [],
@@ -31,7 +30,6 @@ class NewsService extends BaseService {
         totalElements: data.totalElements || 0,
       }
     } catch (error) {
-      console.error('[ScenarioService] Failed to fetch scenarios:', error)
     }
   }
 
@@ -46,7 +44,6 @@ class NewsService extends BaseService {
     try {
       return await this.get(`${id}`)
     } catch (error) {
-      console.error('[ScenarioService] Failed to fetch scenario by ID:', error)
       throw error
     }
   }
@@ -62,7 +59,6 @@ class NewsService extends BaseService {
     try {
       return await this.post('create', NewsData)
     } catch (error) {
-      console.error('[ScenarioService] Failed to create scenario:', error)
       throw error
     }
   }
@@ -71,7 +67,6 @@ class NewsService extends BaseService {
     try {
       return await this.post(`delete/${id}`)
     } catch (error) {
-      console.error('[ScenarioService] Failed to delete scenario:', error)
       throw error
     }
   }
@@ -88,7 +83,6 @@ class NewsService extends BaseService {
     try {
       return await this.post(`edit/${id}`, newsData)
     } catch (error) {
-      console.error('[ScenarioService] Failed to update scenario:', error)
       throw error
     }
   }

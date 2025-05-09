@@ -58,7 +58,6 @@ export default function useWebSocket() {
         },
       })
     } catch (error) {
-      console.error('Failed to initialize WebSocket:', error)
     }
   }
 
@@ -101,7 +100,6 @@ export default function useWebSocket() {
         notificationCount.value = Math.max(0, notificationCount.value - 1)
       }
     } catch (error) {
-      console.error('Error marking notification as read:', error)
     }
   }
 
@@ -125,7 +123,6 @@ export default function useWebSocket() {
       notifications.value = data
       notificationCount.value = data.filter((n) => !n.read).length
     } catch (error) {
-      console.error('Error fetching notifications:', error)
     }
   }
 
@@ -143,7 +140,6 @@ export default function useWebSocket() {
       const data = await response.json()
       return data
     } catch (error) {
-      console.error('Error fetching position update:', error)
       return []
     }
   }

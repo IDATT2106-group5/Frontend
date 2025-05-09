@@ -38,11 +38,11 @@ import ScenarioList from '@/components/scenario/ScenarioList.vue'
 import ScenarioAdminView from '@/views/scenarioView/ScenarioAdminView.vue'
 import EditScenarioList from '@/components/scenario/EditScenarioList.vue'
 import ScenarioInfo from '@/components/scenario/ScenarioInfo.vue'
-import NyhetsView from '@/views/nyheter/NyhetsView.vue'
 import BeforeView from '@/views/informationViews/BeforeView.vue'
 import UnderView from '@/views/informationViews/UnderView.vue'
 import AfterView from '@/views/informationViews/AfterView.vue'
-
+import NewsView from '@/views/news/NewsView.vue'
+import NewsAdminView from '@/views/news/NewsAdminView.vue'
  
 
 const routes = [
@@ -51,7 +51,7 @@ const routes = [
   { path: '/about', name: 'about', component: AboutView },
   { path: '/contact', name: 'contact', component: ContactView },
   { path: '/questions', name: 'questions', component: QuestionsView },
-  { path: '/nyheter', name: 'NyhetsView', component: NyhetsView },
+  { path: '/nyheter', name: 'NewsView', component: NewsView },
   { path: '/quiz', name: 'quiz', component: QuizView },
   { path: '/seek-safety', name: 'seek-safety', component: SeekSafetyView },
   { path: '/emergency-tips', name: 'emergency-tips', component: EmergencyTipsView },

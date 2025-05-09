@@ -9,7 +9,7 @@ export default class WebSocketService {
       onDisconnected: () => {},
       onNotification: () => {},
       onPositionUpdate: () => {},
-      onIncident: () => {}, // Add default empty callback for incident
+      onIncident: () => {}, 
     }
     this.userId = null
     this.token = null
@@ -66,12 +66,10 @@ export default class WebSocketService {
         const data = JSON.parse(message.body)
         this.callbacks.onNotification(data)
 
-        // Check for incident type and call the specific handler
         if (data && data.type === 'INCIDENT') {
           this.callbacks.onIncident(data)
         }
       } catch (error) {
-        console.error('Error parsing notification:', error)
         this.callbacks.onNotification()
       }
     })
@@ -82,12 +80,10 @@ export default class WebSocketService {
           const data = JSON.parse(message.body)
           this.callbacks.onNotification(data)
 
-          // Check for incident type and call the specific handler
           if (data && data.type === 'INCIDENT') {
             this.callbacks.onIncident(data)
           }
         } catch (error) {
-          console.error('Error parsing notification:', error)
           this.callbacks.onNotification()
         }
       })
@@ -114,12 +110,10 @@ export default class WebSocketService {
           const data = JSON.parse(message.body)
           if (callback) callback(data)
         } catch (error) {
-          console.error('Error parsing position data:', error)
         }
       })
       return true
     } else {
-      console.error('Cannot subscribe to position: STOMP client not connected')
       return false
     }
   }
@@ -139,11 +133,9 @@ export default class WebSocketService {
         })
         return true
       } catch (error) {
-        console.error('Error sending position update:', error)
         return false
       }
     } else {
-      console.error('Cannot send position update: STOMP client not connected')
       return false
     }
   }
