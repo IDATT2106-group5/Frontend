@@ -1,20 +1,16 @@
-// stores/LocationStore.js
 import { defineStore } from 'pinia'
 import { ref, watch } from 'vue'
 import { useUserStore } from '@/stores/UserStore'
 import useWebSocket from '@/service/websocketComposable.js'
 
 export const useLocationStore = defineStore('location', () => {
-  // State
   const isSharing = ref(localStorage.getItem('isSharing') === 'true')
   const locationError = ref(null)
   const positionUpdateInterval = ref(null)
 
-  // Get dependencies
   const userStore = useUserStore()
   const { updatePosition, connected } = useWebSocket()
 
-  // Methods
   function updateUserPosition() {
     if (!connected.value) {
       if (locationError.value !== 'Ingen tilkobling til server') {
