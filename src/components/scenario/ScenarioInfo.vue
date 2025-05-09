@@ -17,16 +17,42 @@ import {
 export default {
   name: 'ScenarioInfo',
 
+  /**
+   * @function setup
+   * @description Vue Composition API setup function that handles component logic
+   * @returns {Object} Reactive properties and methods for the component template
+   */
   setup() {
     const scenarioStore = useScenarioStore()
     const route = useRoute()
     const router = useRouter()
 
+    /**
+     * @computed loading
+     * @description Tracks the loading state from the scenario store
+     * @returns {Boolean} True if the scenario is being loaded, false otherwise
+     */
     const loading = computed(() => scenarioStore.isLoading)
+
+    /**
+     * @computed error
+     * @description Retrieves any error state from the scenario store
+     * @returns {String|null} Error message or null if no error
+     */
     const error = computed(() => scenarioStore.getError)
+
+    /**
+     * @computed scenario
+     * @description Gets the currently selected scenario from the store
+     * @returns {Object|null} The scenario object or null if none is selected
+     */
     const scenario = computed(() => scenarioStore.getSelectedScenario)
 
-    // Map icon names to components
+    /**
+     * @constant {Object} iconMap
+     * @description Maps icon names to their corresponding component references
+     * Used for dynamically displaying the correct icon for the scenario
+     */
     const iconMap = {
       AlertTriangle,
       AlertOctagon,
@@ -38,16 +64,30 @@ export default {
       ShieldAlert,
     }
 
-    // Get the appropriate icon component
+    /**
+     * @function getIconComponent
+     * @description Retrieves the appropriate icon component based on icon name
+     * @param {String} iconName - The name of the icon to retrieve
+     * @returns {Component} The icon component or a default if not found
+     */
     const getIconComponent = (iconName) => {
-      return iconMap[iconName] || AlertTriangle // Default to AlertTriangle if icon not found
+      return iconMap[iconName] || AlertTriangle
     }
 
-    // Go back to all scenarios
+    /**
+     * @function goBackToScenarios
+     * @description Navigates back to the scenarios list page
+     */
     const goBackToScenarios = () => {
       router.push('/scenarios')
     }
 
+    /**
+     * @function onMounted
+     * @description Lifecycle hook that fetches the specific scenario when component mounts
+     * Extracts the scenario ID from route parameters and loads the corresponding scenario
+     * @async
+     */
     onMounted(async () => {
       const scenarioId = parseInt(route.params.id)
       if (!isNaN(scenarioId)) {
