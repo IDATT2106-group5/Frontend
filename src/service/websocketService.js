@@ -125,7 +125,7 @@ export default class WebSocketService {
     this.connected = false
     this.callbacks.onDisconnected()
   }
-  
+
   /**
    * Disconnects the WebSocket client.
    */
@@ -156,7 +156,7 @@ export default class WebSocketService {
     }
     return false
   }
-  
+
   /**
    * Publishes the user's position to the backend.
    *
@@ -165,8 +165,8 @@ export default class WebSocketService {
    * @param {number} latitude - User's latitude.
    * @returns {boolean} True if publish was successful.
    */
-  updatePosition(userId, longitude, latitude) {
-    const positionData = { userId, longitude, latitude }
+  updatePosition(token, longitude, latitude) {
+    const positionData = { token, longitude, latitude }
     if (this.stompClient && this.connected) {
       try {
         this.stompClient.publish({

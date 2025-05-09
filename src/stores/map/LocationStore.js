@@ -1,6 +1,6 @@
 // stores/LocationStore.js
 import { defineStore } from 'pinia'
-import { ref, watch, onUnmounted } from 'vue'
+import { ref, watch } from 'vue'
 import { useUserStore } from '@/stores/UserStore'
 import useWebSocket from '@/service/websocketComposable.js'
 
@@ -8,7 +8,7 @@ export const useLocationStore = defineStore('location', () => {
   // State
   const isSharing = ref(localStorage.getItem('isSharing') === 'true')
   const locationError = ref(null)
-  let positionUpdateInterval = null
+  const positionUpdateInterval = ref(null)
 
   // Get dependencies
   const userStore = useUserStore()
@@ -29,18 +29,12 @@ export const useLocationStore = defineStore('location', () => {
     }
 
     navigator.geolocation.getCurrentPosition(
-      (position) => {
+      async (position) => {
         const { latitude, longitude } = position.coords
-        const userId = userStore.user?.id
 
-        if (!userId) {
-          console.debug('No user ID available, location sharing paused')
-          return
-        }
+        console.debug('Updating position for current user')
+        await updatePosition(userStore.token, longitude.toString(), latitude.toString())
 
-        console.debug('Updating position for user ID:', userId)
-        updatePosition(userId, longitude.toString(), latitude.toString())
-        locationError.value = null
       },
       (error) => {
         console.error('Geolocation error:', error)
@@ -65,8 +59,10 @@ export const useLocationStore = defineStore('location', () => {
         enableHighAccuracy: true,
         timeout: 10000,
         maximumAge: 30000,
-      }
+      },
     )
+
+    locationError.value = null
   }
 
   function startPositionSharing() {
@@ -74,23 +70,21 @@ export const useLocationStore = defineStore('location', () => {
       locationError.value = 'Geolocation is not supported by your browser'
       return
     }
-
-    if (positionUpdateInterval) {
-      clearInterval(positionUpdateInterval)
+    if (positionUpdateInterval.value) {
+      clearInterval(positionUpdateInterval.value)
     }
 
-    updateUserPosition()
-
-    positionUpdateInterval = setInterval(updateUserPosition, 30000)
+    positionUpdateInterval.value = setInterval(updateUserPosition, 30000)
     isSharing.value = true
     localStorage.setItem('isSharing', 'true')
     console.debug('Position sharing started')
   }
 
   function stopPositionSharing() {
-    if (positionUpdateInterval) {
-      clearInterval(positionUpdateInterval)
-      positionUpdateInterval = null
+    updateUserPosition()
+    if (positionUpdateInterval.value) {
+      clearInterval(positionUpdateInterval.value)
+      positionUpdateInterval.value = null
     }
     isSharing.value = false
     localStorage.setItem('isSharing', 'false')
@@ -106,7 +100,7 @@ export const useLocationStore = defineStore('location', () => {
   }
 
   function attemptReconnect() {
-    if (isSharing.value && !positionUpdateInterval && connected.value) {
+    if (isSharing.value && !positionUpdateInterval.value && connected.value) {
       console.debug('Attempting to reconnect position sharing')
       startPositionSharing()
       return true
@@ -117,36 +111,36 @@ export const useLocationStore = defineStore('location', () => {
   watch(
     () => userStore.user?.id,
     (userId) => {
-      if (userId && isSharing.value && !positionUpdateInterval) {
+      if (userId && isSharing.value && !positionUpdateInterval.value) {
         console.log('User authenticated, starting position sharing')
         startPositionSharing()
-      } else if (!userId && positionUpdateInterval) {
+      } else if (!userId && positionUpdateInterval.value) {
         console.log('User logged out, stopping position sharing')
         stopPositionSharing()
       }
-    }
+    },
   )
 
   watch(
     () => connected.value,
     (isConnected) => {
-      const now = Date.now();
+      const now = Date.now()
 
       if (isConnected) {
-        if (isSharing.value && !positionUpdateInterval) {
-          console.debug('WebSocket connected, restarting position sharing');
-          startPositionSharing();
+        if (isSharing.value && !positionUpdateInterval.value) {
+          console.debug('WebSocket connected, restarting position sharing')
+          startPositionSharing()
         }
 
         if (locationError.value === 'No connection to server') {
-          locationError.value = null;
+          locationError.value = null
         }
       } else {
         if (now - lastConnectionLogTime > connectionLogThreshold) {
-          console.debug('WebSocket disconnected, will reconnect automatically');
+          console.debug('WebSocket disconnected, will reconnect automatically')
         }
       }
-    }
+    },
   )
 
   if (isSharing.value && userStore.user?.id) {
@@ -160,9 +154,6 @@ export const useLocationStore = defineStore('location', () => {
     isSharing,
     locationError,
     startPositionSharing,
-    stopPositionSharing,
     togglePositionSharing,
-    updateUserPosition,
-    attemptReconnect
   }
 })
