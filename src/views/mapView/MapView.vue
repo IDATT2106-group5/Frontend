@@ -20,9 +20,6 @@
           {{ isSharing ? 'Stedstjenester på' : 'Stedstjenester av' }}
         </span>
       </Button>
-      <div v-if="locationError" class="location-error-message">
-        {{ locationError }}
-      </div>
     </div>
 
     <!-- Add notification display with proper v-if check -->
@@ -32,13 +29,14 @@
       </div>
     </transition>
 
-    <ClosestFacilityFinder v-if="!isLoadingMarkers && !markersLoadError && !isAdminMode" />
+    <ClosestFacilityFinder
+      v-if="!isLoadingMarkers && !markersLoadError && !isAdminMode && isSharing"
+    />
 
     <!-- Add the search bar -->
     <div class="map-search-container">
       <MapSearchBar />
     </div>
-
 
     <!-- Loading indicator -->
     <div v-if="isLoadingMarkers" class="map-loading-overlay">
@@ -55,7 +53,11 @@
     </div>
 
     <!-- Marker Filter -->
-    <div class="marker-filter-container" :class="{ collapsed: isFilterCollapsed }" v-if="!isAdminMode">
+    <div
+      class="marker-filter-container"
+      :class="{ collapsed: isFilterCollapsed }"
+      v-if="!isAdminMode"
+    >
       <Button
         v-if="isMobileView"
         @click="toggleFilterCollapse"
@@ -86,8 +88,7 @@ import { useUserStore } from '@/stores/UserStore.js'
 import { useHouseholdStore } from '@/stores/HouseholdStore.js'
 import { useLocationStore } from '@/stores/map/LocationStore.js'
 import { LocateFixed } from 'lucide-vue-next'
-import MapSearchBar from '@/components/map/MapSearchBar.vue';
-import markerConfigService from '@/service/map/markerConfigService.js'
+import MapSearchBar from '@/components/map/MapSearchBar.vue'
 
 export default {
   name: 'MapView',
@@ -96,29 +97,29 @@ export default {
     MarkerFilter,
     Button,
     LocateFixed,
-    MapSearchBar
+    MapSearchBar,
   },
   props: {
     center: {
       type: Array,
-      default: () => [63.4305, 10.3951]
+      default: () => [63.4305, 10.3951],
     },
     zoom: {
       type: Number,
-      default: 13
+      default: 13,
     },
     isAdminMode: {
       type: Boolean,
-      default: false
+      default: false,
     },
     markers: {
       type: Array,
-      default: () => []
+      default: () => [],
     },
     editingMarkerId: {
       type: String,
-      default: null
-    }
+      default: null,
+    },
   },
   emits: ['map-ready', 'map-click'],
   setup(props, { emit }) {
@@ -137,13 +138,11 @@ export default {
 
     // Get location related state from the location store
     const isSharing = computed(() => locationStore.isSharing)
-    const locationError = computed(() => locationStore.locationError)
 
     const { subscribeToPosition, fetchHouseholdPositions, connected } = useWebSocket()
 
     // Use storeToRefs for reactive properties
-    const { isLoadingMarkers, markersLoadError, notification, activeRoute } =
-      storeToRefs(mapStore)
+    const { isLoadingMarkers, markersLoadError, notification, activeRoute } = storeToRefs(mapStore)
 
     const isMobileView = computed(() => {
       return windowWidth.value < 768 // Common breakpoint for mobile
@@ -164,12 +163,18 @@ export default {
           mapInitialized.value = true
 
           // Common map initialization - emit map-ready event
-          emit('map-ready', map.value);
+          emit('map-ready', map.value)
 
           // Process user positions for both admin and regular mode
           userPositions.value.forEach((position, userId) => {
             const isCurrentUser = userId === userStore.user.id
-            updateUserMarker(userId, position.fullName, position.longitude, position.latitude, isCurrentUser)
+            updateUserMarker(
+              userId,
+              position.fullName,
+              position.longitude,
+              position.latitude,
+              isCurrentUser,
+            )
           })
 
           if (connected.value && householdId) {
@@ -190,25 +195,25 @@ export default {
 
           // Admin-specific setup
           if (props.isAdminMode) {
-            console.log("Setting up admin mode in MapView");
+            console.log('Setting up admin mode in MapView')
 
             // Set up click handler for admin mode
             map.value.on('click', (e) => {
-              console.log("Admin map clicked:", e.latlng);
-              emit('map-click', e);
-            });
+              console.log('Admin map clicked:', e.latlng)
+              emit('map-click', e)
+            })
 
             // Sync admin markers to the map store if provided
             if (props.markers && props.markers.length > 0) {
-              syncAdminMarkersToStore();
+              syncAdminMarkersToStore()
             }
           }
 
           // Add additional timeout to ensure markers are refreshed after map is ready
           setTimeout(() => {
-            mapStore.refreshMarkerLayers();
-            console.log("Forced marker refresh after timeout");
-          }, 500);
+            mapStore.refreshMarkerLayers()
+            console.log('Forced marker refresh after timeout')
+          }, 500)
         }
       } catch (error) {
         console.error('Map initialization failed:', error)
@@ -219,13 +224,13 @@ export default {
 
     // Function to sync admin markers to the map store for unified handling
     const syncAdminMarkersToStore = () => {
-      if (!props.isAdminMode || !props.markers || !props.markers.length) return;
+      if (!props.isAdminMode || !props.markers || !props.markers.length) return
 
-      console.log("Syncing admin markers to map store:", props.markers.length);
+      console.log('Syncing admin markers to map store:', props.markers.length)
 
       // Convert admin markers to the format expected by the map store
       // and add them to a special admin layer in the store
-      const adminMarkers = props.markers.map(marker => ({
+      const adminMarkers = props.markers.map((marker) => ({
         id: marker.id,
         lat: marker.latitude,
         lng: marker.longitude,
@@ -238,56 +243,82 @@ export default {
         // Add a flag to identify admin markers
         isAdminMarker: true,
         // Add editingMarkerId to allow filtering
-        editingMarkerId: props.editingMarkerId
-      }));
+        editingMarkerId: props.editingMarkerId,
+      }))
 
       // Update the store with these markers
-      mapStore.setAdminMarkers(adminMarkers);
-    };
+      mapStore.setAdminMarkers(adminMarkers)
+    }
 
     // Watch for changes in the markers prop from the parent component
-    watch(() => props.markers, () => {
-      if (props.isAdminMode && map.value) {
-        console.log('Admin markers changed, syncing to map store');
-        syncAdminMarkersToStore();
-      }
-    }, { deep: true });
+    watch(
+      () => props.markers,
+      () => {
+        if (props.isAdminMode && map.value) {
+          console.log('Admin markers changed, syncing to map store')
+          syncAdminMarkersToStore()
+        }
+      },
+      { deep: true },
+    )
+    watch(
+      () => isSharing.value,
+      (newValue) => {
+        // Update user marker if needed
+        if (userPositions.value.has(userStore.user.id)) {
+          const position = userPositions.value.get(userStore.user.id)
+          const name = position.fullName.split(' ')[0]
+          updateUserMarker(userStore.user.id, name, position.longitude, position.latitude, true)
+        }
+
+        // Call the map store method to update all marker popups
+        if (map.value) {
+          mapStore.updateMarkerPopups(newValue)
+        }
+      },
+    )
 
     // Watch for changes in the editingMarkerId
-    watch(() => props.editingMarkerId, (newId, oldId) => {
-      if (props.isAdminMode && map.value) {
-        console.log(`Editing marker changed: ${oldId} -> ${newId}`);
-        syncAdminMarkersToStore();
-      }
-    });
+    watch(
+      () => props.editingMarkerId,
+      (newId, oldId) => {
+        if (props.isAdminMode && map.value) {
+          console.log(`Editing marker changed: ${oldId} -> ${newId}`)
+          syncAdminMarkersToStore()
+        }
+      },
+    )
 
-    watch(() => connected.value && householdId, (isConnected) => {
-      if (isConnected && householdId) {
-        subscribeToPosition(householdId, handlePositionUpdate)
-      }
-    })
+    watch(
+      () => connected.value && householdId,
+      (isConnected) => {
+        if (isConnected && householdId) {
+          subscribeToPosition(householdId, handlePositionUpdate)
+        }
+      },
+    )
 
-    // When the map changes (after initialization), set up the map move handler
-    watch(() => map.value, (newMap) => {
-      if (newMap && props.isAdminMode) {
-        // Set up map move event for admin mode
-        newMap.on('moveend', () => {
-          console.log("Map moved, refreshing markers");
-          mapStore.refreshMarkerLayers();
-        });
-      }
-    });
+    watch(
+      () => map.value,
+      (newMap) => {
+        if (newMap && props.isAdminMode) {
+          newMap.on('moveend', () => {
+            console.log('Map moved, refreshing markers')
+            mapStore.refreshMarkerLayers()
+          })
+        }
+      },
+    )
 
     // Clean up on unmount
     onUnmounted(() => {
       if (map.value && props.isAdminMode) {
-        map.value.off('moveend');
+        map.value.off('moveend')
       }
-      window.removeEventListener('resize', handleResize);
-    });
+      window.removeEventListener('resize', handleResize)
+    })
 
     const handlePositionUpdate = (positionData) => {
-
       console.log('Handling position update:', positionData)
 
       if (!positionData) {
@@ -315,7 +346,7 @@ export default {
       userPositions.value.set(userId, {
         latitude: parsedLat,
         longitude: parsedLong,
-        fullName: fullName
+        fullName: fullName,
       })
 
       if (mapInitialized.value && map.value) {
@@ -328,43 +359,74 @@ export default {
     }
 
     function updateUserMarker(userId, name, longitude, latitude, isCurrentUser = false) {
-
       // First check if marker already exists
       if (userMarkers.value.has(userId)) {
         const marker = userMarkers.value.get(userId)
+
+        // If this is the current user and sharing status changed, we need to remove and recreate the marker
+        if (isCurrentUser && !isSharing.value) {
+          // Remove the marker from the map
+          if (map.value && typeof map.value.removeLayer === 'function') {
+            map.value.removeLayer(marker)
+          }
+          userMarkers.value.delete(userId)
+          console.log(`Removed marker for user ${userId} due to sharing turned off`)
+          return
+        }
+
+        // Otherwise just update the position
         marker.setLatLng([latitude, longitude])
         console.log(`Updated existing marker for user ${userId}`)
         return
       }
 
+      // Don't create marker for current user when not sharing
+      if (isCurrentUser && !isSharing.value) {
+        console.log(`Skipping marker creation for current user (sharing off)`)
+        return
+      }
+
       try {
-        let markerIcon
+        let markerIcon = null
 
         if (isCurrentUser) {
           markerIcon = L.divIcon({
             className: 'user-position-marker current-user-marker',
             html: `<div style="position: relative; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center;">
-                <style>
-                  @keyframes pulsate {
-                    0% { transform: scale(0.8); opacity: 0.8; }
-                    100% { transform: scale(2); opacity: 0; }
-                  }
-                </style>
-                <div style="position: absolute; top: 5px; left: 5px; width: 30px; height: 30px; background-color: rgba(0,196,255,0.55); border-radius: 50%; animation: pulsate 1.5s ease-out infinite;"></div>
-                <div style="position: relative; background-color: #009dff; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
-                  Me
-                </div>
-              </div>`,
+          <style>
+            @keyframes pulsate {
+              0% { transform: scale(0.8); opacity: 0.8; }
+              100% { transform: scale(2); opacity: 0; }
+            }
+          </style>
+          <div style="position: absolute; top: 5px; left: 5px; width: 30px; height: 30px; background-color: rgba(0,196,255,0.55); border-radius: 50%; animation: pulsate 1.5s ease-out infinite;"></div>
+          <div style="position: relative; background-color: #009dff; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
+            Me
+          </div>
+        </div>`,
             iconSize: [40, 40],
             iconAnchor: [20, 20],
           })
         } else {
+          // Add icon for other users
           markerIcon = L.divIcon({
-            className: 'user-position-marker',
-            html: `<div style="background-color: #ff4d4f; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">${name}</div>`,
-            iconSize: [30, 30],
-            iconAnchor: [15, 15],
+            className: 'user-position-marker other-user-marker',
+            html: `
+          <div style="position: relative; width: 40px; height: 40px; display: flex; justify-content: center; align-items: center;">
+            <div style="position: relative; background-color: #FF8C00; color: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.3);">
+              ${name.substring(0, 2)}
+            </div>
+          </div>
+        `,
+            iconSize: [40, 40],
+            iconAnchor: [20, 20],
           })
+        }
+
+        // Only proceed if markerIcon is properly defined
+        if (!markerIcon) {
+          console.error(`Could not create marker icon for user ${userId}`)
+          return
         }
 
         const newMarker = L.marker([latitude, longitude], {
@@ -425,9 +487,8 @@ export default {
       userMarkers,
       userPositions,
       isAdminMode: props.isAdminMode,
-      isSharing, // Expose from location store
-      locationError, // Expose from location store
-      togglePositionSharing, // Expose from location store
+      isSharing,
+      togglePositionSharing,
       activeRoute,
     }
   },
@@ -523,10 +584,18 @@ export default {
 }
 
 @keyframes fade-in-out {
-  0% { opacity: 0; }
-  15% { opacity: 1; }
-  85% { opacity: 1; }
-  100% { opacity: 0; }
+  0% {
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 .marker-filter-container {
@@ -679,8 +748,12 @@ export default {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 767px) {
@@ -710,6 +783,3 @@ export default {
   }
 }
 </style>
-
-
-
