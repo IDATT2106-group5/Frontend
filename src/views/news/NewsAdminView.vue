@@ -48,6 +48,16 @@ export default {
         url: '',
         isCrisis: false,
       },
+      
+      /** @type {Object} Form validation errors */
+      validationErrors: {
+        title: '',
+        content: '',
+        url: ''
+      },
+
+      /** @type {Boolean} Form submission attempted */
+      submitted: false,
     }
   },
 
@@ -86,6 +96,16 @@ export default {
     errorMessage() {
       return this.newsStore.getError ? this.newsStore.getError.message : ''
     },
+
+    /**
+     * Check if form is valid
+     * @returns {Boolean} True if form is valid, false otherwise
+     */
+    isFormValid() {
+      return !this.validationErrors.title && 
+             !this.validationErrors.content && 
+             !this.validationErrors.url;
+    }
   },
 
   /**
@@ -104,6 +124,9 @@ export default {
      * @param {Object|null} newsItem - The news item to edit, or null for new item
      */
     openEditModal(newsItem = null) {
+      // Reset validation state
+      this.resetValidation();
+      
       if (newsItem) {
         this.isEditing = true
         this.currentNews = {
@@ -129,6 +152,54 @@ export default {
     closeModal() {
       this.showEditModal = false
       this.isEditing = false
+      this.resetValidation();
+    },
+
+    /**
+     * Reset validation state
+     */
+    resetValidation() {
+      this.submitted = false;
+      this.validationErrors = {
+        title: '',
+        content: '',
+        url: ''
+      };
+    },
+
+    /**
+     * Validate the form
+     * @returns {Boolean} True if form is valid, false otherwise
+     */
+    validateForm() {
+      let isValid = true;
+      
+      // Reset validation errors
+      this.validationErrors = {
+        title: '',
+        content: '',
+        url: ''
+      };
+      
+      // Validate title
+      if (!this.currentNews.title.trim()) {
+        this.validationErrors.title = 'Tittel er påkrevd';
+        isValid = false;
+      }
+      
+      // Validate content
+      if (!this.currentNews.content.trim()) {
+        this.validationErrors.content = 'Innhold er påkrevd';
+        isValid = false;
+      }
+      
+      // Validate URL
+      if (!this.currentNews.url.trim()) {
+        this.validationErrors.url = 'URL er påkrevd';
+        isValid = false;
+      }
+      
+      return isValid;
     },
 
     /**
@@ -166,6 +237,13 @@ export default {
      * @returns {Promise<void>}
      */
     async saveNewsItem() {
+      this.submitted = true;
+      
+      // Validate form
+      if (!this.validateForm()) {
+        return;
+      }
+      
       const newsItem = {
         ...this.currentNews,
       };
@@ -302,13 +380,19 @@ export default {
         </h2>
 
         <div class="mb-4">
-          <label for="title" class="block font-medium mb-1">Tittel</label>
+          <label for="title" class="block font-medium mb-1">
+            Tittel <span class="text-red-500">*</span>
+          </label>
           <input
             type="text"
             id="title"
             v-model="currentNews.title"
             class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            :class="{ 'border-red-500': validationErrors.title }"
           />
+          <p v-if="validationErrors.title" class="text-red-500 text-sm mt-1">
+            {{ validationErrors.title }}
+          </p>
         </div>
 
         <div class="mb-4">
@@ -322,23 +406,35 @@ export default {
         </div>
 
         <div class="mb-4">
-          <label for="content" class="block font-medium mb-1">Innhold</label>
+          <label for="content" class="block font-medium mb-1">
+            Innhold <span class="text-red-500">*</span>
+          </label>
           <textarea
             id="content"
             v-model="currentNews.content"
             class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            :class="{ 'border-red-500': validationErrors.content }"
             rows="5"
           ></textarea>
+          <p v-if="validationErrors.content" class="text-red-500 text-sm mt-1">
+            {{ validationErrors.content }}
+          </p>
         </div>
 
         <div class="mb-4">
-          <label for="url" class="block font-medium mb-1">URL</label>
+          <label for="url" class="block font-medium mb-1">
+            URL <span class="text-red-500">*</span>
+          </label>
           <input
             type="text"
             id="url"
             v-model="currentNews.url"
             class="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            :class="{ 'border-red-500': validationErrors.url }"
           />
+          <p v-if="validationErrors.url" class="text-red-500 text-sm mt-1">
+            {{ validationErrors.url }}
+          </p>
         </div>
 
         <div class="flex justify-end gap-4 mt-6">
