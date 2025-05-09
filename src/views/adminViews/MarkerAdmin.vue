@@ -33,10 +33,8 @@ export default {
     const mapCenter = ref([63.4305, 10.3951]); // Trondheim
     const mapZoom = ref(13);
 
-    // Initialize the mapStore
     const mapStore = useMapStore();
 
-    // Get reactive properties from the store
     const {
       markers,
       filteredMarkers,
@@ -51,13 +49,14 @@ export default {
     const searchTerm = ref('');
     const filterType = ref('');
 
-    // Get marker configurations
     const markerConfigs = MarkerConfigService.getMarkerConfigs();
 
-    // Computed properties
     const markerTypes = computed(() => mapStore.adminMarkerTypes);
 
-    // Close dropdown when clicking outside
+    /**
+   * Closes the custom select dropdown when clicking outside of it.
+   * @param {MouseEvent} e
+   */
     const closeDropdownOnOutsideClick = (e) => {
       const customSelect = document.querySelector('.custom-select-wrapper');
       if (customSelect && !customSelect.contains(e.target)) {
@@ -65,48 +64,59 @@ export default {
       }
     };
 
-    // Toggle dropdown state
+    /**
+   * Toggles the visibility of the type dropdown.
+   */
     const toggleDropdown = () => {
       dropdownOpen.value = !dropdownOpen.value;
     };
 
-    // Get marker type name by id
+    /**
+     * Returns the name of the marker type based on its ID.
+     * @param {string} typeId
+     * @returns {string}
+     */
     const getMarkerTypeName = (typeId) => {
       const type = markerTypes.value.find(t => t.id === typeId);
       return type ? type.name : '';
     };
 
-    // Select marker type
+    /**
+   * Sets the selected marker type in the form and closes the dropdown.
+   * @param {string} typeId
+   */
     const selectMarkerType = (typeId) => {
       markerFormData.value.type = typeId;
       dropdownOpen.value = false;
     };
 
-    // Methods
+    /**
+     * Handles Leaflet map readiness.
+     * @param {L.Map} leafletMap
+     */
     const onMapReady = (leafletMap) => {
-      // Store the map instance
       map.value = leafletMap;
 
-      // Add click handler for setting marker position
       map.value.on('click', onMapClick);
     };
 
+    /**
+   * Handles map click events when editing or creating a marker.
+   * Updates coordinates and address.
+   * @param {L.LeafletMouseEvent} e
+   */
     const onMapClick = async (e) => {
-      // Only proceed if in edit or create mode
       if (!isEditing.value && !isCreating.value) {
         return;
       }
 
       const { lat, lng } = e.latlng;
 
-      // Update form data with the new coordinates
       markerFormData.value.latitude = lat;
       markerFormData.value.longitude = lng;
 
-      // Also update through the store to ensure reactivity
       mapStore.updateMarkerCoordinates(lat, lng);
 
-      // Update or create temporary marker
       if (tempMarker.value) {
         tempMarker.value.setLatLng([lat, lng]);
       } else {
@@ -114,7 +124,6 @@ export default {
         tempMarker.value = L.marker([lat, lng], { icon }).addTo(map.value);
       }
 
-      // Perform reverse geocoding to get address information
       try {
         await mapStore.updateAddressFromCoordinates(lat, lng);
       } catch (error) {
@@ -122,25 +131,29 @@ export default {
       }
     };
 
+    /**
+   * Creates a Leaflet icon based on marker type config.
+   * @param {string} type
+   * @returns {L.Icon | null}
+   */
     const createMarkerIcon = (type) => {
-      // Get configuration for this marker type
       const config = markerConfigs[type];
       if (!config) return null;
 
-      // Create Leaflet icon using MarkerConfigService
       return MarkerConfigService.createLeafletIcon(
         config.iconType,
         config.color
       );
     };
 
+    /**
+   * Updates marker coordinates based on address input using debounce.
+   */
     const onAddressChange = debounce(async () => {
-      // Only proceed if we have at least some address information
       if (!markerFormData.value.address && !markerFormData.value.postalCode && !markerFormData.value.city) {
         return;
       }
 
-      // Build a complete address string for geocoding
       const addressQuery = [
         markerFormData.value.address,
         markerFormData.value.postalCode,
@@ -155,16 +168,14 @@ export default {
         const coordinates = await mapStore.updateCoordinatesFromAddress(addressQuery);
 
         if (coordinates && tempMarker.value && map.value) {
-          // Update the marker position on the map
           tempMarker.value.setLatLng([coordinates.lat, coordinates.lng]);
 
-          // Center the map on the new position
           map.value.setView([coordinates.lat, coordinates.lng], map.value.getZoom());
         }
       } catch (error) {
         console.error('Error geocoding address:', error);
       }
-    }, 500); // 500ms debounce to avoid too many API calls when typing
+    }, 500); 
 
     function debounce(func, wait) {
       let timeout;
@@ -178,40 +189,64 @@ export default {
       };
     }
 
+    /**
+     * Returns the Lucide icon name for a given marker type.
+     * @param {string} type
+     * @returns {string|null}
+     */
     const getMarkerIcon = (type) => {
       return markerConfigs[type]?.lucideIcon || null;
     };
 
+    /**
+     * Returns the color associated with a marker type.
+     * @param {string} type
+     * @returns {string}
+     */
     const getMarkerColor = (type) => {
       return markerConfigs[type]?.color || '#333333';
     };
 
+    /**
+     * Updates the search term in the store.
+     */
     const onSearchChange = () => {
       mapStore.setSearchTerm(searchTerm.value);
     };
 
+    /**
+     * Updates the filter type in the store and hides the dropdown.
+     */
     const onFilterChange = () => {
       mapStore.setFilterType(filterType.value);
       showFilterDropdown.value = false;
     };
 
+    
+    /**
+     * Toggles the filter dropdown visibility.
+     */
     const toggleFilterDropdown = () => {
       showFilterDropdown.value = !showFilterDropdown.value;
     };
 
+    /**
+     * Toggles the description tips section in the form.
+     */
     const toggleDescriptionTips = () => {
       showDescriptionTips.value = !showDescriptionTips.value;
     };
 
+  /**
+   * Initializes a new marker creation and focuses the map.
+   */
     const onAddNew = () => {
       mapStore.initNewMarker();
 
-      // Center map at default location
       if (map.value) {
         map.value.setView([markerFormData.value.latitude, markerFormData.value.longitude], 14);
       }
 
-      // Create temporary marker
       if (tempMarker.value) {
         tempMarker.value.remove();
       }
@@ -223,32 +258,28 @@ export default {
       ).addTo(map.value);
     };
 
-    // Enhanced onEditMarker with forced marker updates
+    /**
+     * Loads an existing marker into edit mode and places a temp marker on the map.
+     * @param {object} marker
+     */
     const onEditMarker = (marker) => {
-
-      // Set active marker ID FIRST to hide original immediately
       activeEditMarker.value = marker.id;
 
-      // Immediate refresh to hide original marker
       if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
         mapView.value.refreshMarkers();
       }
 
-      // Then call store method
       mapStore.editMarker(marker);
 
-      // Remove any existing temp marker
       if (tempMarker.value) {
         tempMarker.value.remove();
         tempMarker.value = null;
       }
 
-      // Center map at marker location
       if (map.value) {
         map.value.setView([marker.latitude, marker.longitude], 16);
       }
 
-      // Create temporary marker with small delay to ensure map is ready
       setTimeout(() => {
         try {
           const icon = createMarkerIcon(marker.type);
@@ -258,7 +289,6 @@ export default {
               { icon }
             ).addTo(map.value);
 
-            // Force map to update to ensure marker is visible
             map.value.invalidateSize();
           }
         } catch (err) {
@@ -267,39 +297,33 @@ export default {
       }, 20);
     };
 
-    // Enhanced onCancelEdit with retries
+    /**
+     * Cancels marker editing and removes the temporary marker.
+     */
     const onCancelEdit = () => {
 
-      // First clear temp marker
       if (tempMarker.value) {
         tempMarker.value.remove();
         tempMarker.value = null;
       }
 
-      // Clear local reference
       activeEditMarker.value = null;
 
-      // Call store method to cancel
       mapStore.cancelEdit();
     };
 
-    // Enhanced onSaveMarker with multi-stage refresh
+    /**
+     * Saves the current marker and clears temp state.
+     */
     const onSaveMarker = async () => {
-
       if (tempMarker.value) {
         tempMarker.value.remove();
         tempMarker.value = null;
       }
-
       activeEditMarker.value = null;
       mapStore.refreshMarkerLayers();
-
-
-      // Call store method to save
       const success = await mapStore.saveMarker();
-
       if (success) {
-
         setTimeout(() => {
           if (map.value) {
             map.value.invalidateSize();
@@ -308,86 +332,92 @@ export default {
       }
     };
 
+    /**
+     * Opens confirmation modal before deleting a marker.
+     */
     const onDeleteMarker = () => {
-      // Store the ID of the marker to delete
       markerToDelete.value = markerFormData.value.id;
-      // Open the confirmation modal
       confirmDeleteModalOpen.value = true;
     };
 
+    /**
+     * Confirms marker deletion and removes it from the map and store.
+     */
     const confirmMarkerDeletion = async () => {
-      // Clear temp marker
       if (tempMarker.value) {
         tempMarker.value.remove();
         tempMarker.value = null;
       }
-
-      // Store the ID to verify deletion
       const deletingId = markerToDelete.value;
-
-      // Clear active marker reference
       activeEditMarker.value = null;
 
-      // Force immediate refresh first to hide visually
       if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
         mapView.value.refreshMarkers();
       }
-
-      // Call store method to delete
       await mapStore.deleteMarker(deletingId);
-
-      // Close the modal
       confirmDeleteModalOpen.value = false;
       markerToDelete.value = null;
     };
 
+    /**
+     * Cancels the delete confirmation modal.
+     */
     const cancelMarkerDeletion = () => {
       confirmDeleteModalOpen.value = false;
       markerToDelete.value = null;
     };
 
+    /**
+     * Clears success message in store.
+     */
     const clearSuccess = () => {
       mapStore.clearSuccess();
     };
 
+    /**
+     * Clears error message in store.
+     */
     const clearError = () => {
       mapStore.clearError();
     };
 
-
-
-    // Watch for changes to marker type to update icon
+    /**
+     * Updates marker icon when type changes.
+     */
     watch(() => markerFormData.value.type, (newType) => {
       if (tempMarker.value && map.value) {
-        // Update the icon
         const icon = createMarkerIcon(newType);
         tempMarker.value.setIcon(icon);
       }
     });
 
+    /**
+     * Refreshes marker layers when map is moved (only in admin mode).
+     */
     watch(() => map.value, (newMap) => {
       if (newMap && props.isAdminMode) {
-        // Set up map move event for admin mode
         newMap.on('moveend', () => {
           mapStore.refreshMarkerLayers();
         });
       }
     });
 
-    // Lifecycle hooks
+    /**
+     * Fetches markers and sets up listeners on component mount.
+     */
     onMounted(async () => {
-      // Fetch markers
       await mapStore.fetchMarkers();
 
-      // Initialize search and filter
       searchTerm.value = mapStore.searchTerm;
       filterType.value = mapStore.filterType;
 
       document.addEventListener('click', closeDropdownOnOutsideClick);
     });
 
+    /**
+     * Cleans up temporary marker and event listeners on component unmount.
+     */
     onUnmounted(() => {
-      // Clean up marker if needed
       if (tempMarker.value) {
         tempMarker.value.remove();
         tempMarker.value = null;

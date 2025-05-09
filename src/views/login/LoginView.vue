@@ -12,6 +12,13 @@ const isSubmitting = ref(false)
 const userStore = useUserStore()
 const router = useRouter()
 
+/**
+ * Handles form submission for logging in a user.
+ * Prevents double submissions, extracts credentials, attempts login,
+ * and navigates or displays an error based on the result.
+ * 
+ * @param {Event} event - The submit event from the login form.
+ */
 async function onSubmit(event) {
   event.preventDefault()
   if (isSubmitting.value) return        

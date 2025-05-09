@@ -13,7 +13,10 @@ const userStore = useUserStore()
 
 const isAuthenticated = computed(() => userStore.isLoggedIn)
 
-// Invitation handlers
+/**
+ * Accept a received household invitation.
+ * @param {string} invId - The ID of the invitation to accept.
+ */
 const acceptInvitation = async (invId) => {
   try {
     await houseStore.acceptInvitation(invId)
@@ -23,6 +26,11 @@ const acceptInvitation = async (invId) => {
     toast({ title: 'Feil', description: 'Kunne ikke akseptere invitasjonen.', variant: 'destructive' })
   }
 }
+
+/**
+ * Decline a received household invitation.
+ * @param {string} invId - The ID of the invitation to decline.
+ */
 const declineInvitation = async (invId) => {
   try {
     await houseStore.declineInvitation(invId)
@@ -32,8 +40,14 @@ const declineInvitation = async (invId) => {
   }
 }
 
-// navigation
+/**
+ * Navigate to the household creation view.
+ */
 const goCreate = () => router.push('/household/create')
+
+/**
+ * Navigate to the household join view.
+ */
 const goJoin = () => router.push('/household/join')
 </script>
 

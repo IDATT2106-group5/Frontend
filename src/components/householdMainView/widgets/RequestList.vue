@@ -10,15 +10,28 @@ const isOwner = computed(() => store.isCurrentUserOwner)
 const page = ref(1)
 const perPage = 5
 
+/**
+ * Total number of pages based on ownership requests.
+ * @type {import('vue').ComputedRef<number>}
+ */
 const totalPages = computed(() =>
   Math.max(1, Math.ceil(store.ownershipRequests.length / perPage))
 )
 
+/**
+ * Slice of requests shown on the current page.
+ * @type {import('vue').ComputedRef<Array<{ id: string, email: string, status: string }>>}
+ */
 const displayedRequests = computed(() => {
   const start = (page.value - 1) * perPage
   return store.ownershipRequests.slice(start, start + perPage)
 })
 
+/**
+ * Accepts a join request and updates the request status to 'ACCEPTED'.
+ * @param {{ id: string, email: string, status: string }} request - The join request to accept.
+ * @returns {Promise<void>}
+ */
 const acceptRequestAndAddUser = async request => {
   try {
     await store.updateJoinRequestStatus(request.id, 'ACCEPTED')

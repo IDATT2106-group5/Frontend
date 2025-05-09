@@ -6,6 +6,9 @@ import { useHouseholdStore } from '@/stores/HouseholdStore'
 const router = useRouter()
 const householdStore = useHouseholdStore()
 
+/**
+ * Navigate to the current household's overview page.
+ */
 const goToHousehold = () => {
   router.push('/household')
 }

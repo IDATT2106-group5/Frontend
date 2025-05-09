@@ -7,6 +7,11 @@ const name = ref('')
 const showDropdown = ref(false)
 const hoveredIndex = ref(-1)
 
+/**
+ * Computes up to 5 suggestions of non-owner members based on input text.
+ * Filters by name or email match.
+ * @type {import('vue').ComputedRef<Array<{ id: string, fullName: string, email: string }>>}
+ */
 const suggestions = computed(() => {
   const q = name.value.trim().toLowerCase()
   if (!q) return []
@@ -22,6 +27,9 @@ const suggestions = computed(() => {
 
 const selected = ref(null)
 
+/**
+ * Watcher to update the selected member and dropdown state based on input changes.
+ */
 watch(name, (val) => {
   const match = suggestions.value.find(m => m.fullName === val) || null
   selected.value = match
@@ -29,12 +37,20 @@ watch(name, (val) => {
   hoveredIndex.value = -1
 })
 
+/**
+ * Select a member suggestion and populate the input.
+ * @param {{ fullName: string, id: string, email: string }} s - The selected suggestion
+ */
 function selectSuggestion(s) {
   name.value = s.fullName
   selected.value = s
   showDropdown.value = false
 }
 
+/**
+ * Handle keyboard navigation and selection in the suggestion dropdown.
+ * @param {KeyboardEvent} e
+ */
 function handleKeydown(e) {
   if (!showDropdown.value || !suggestions.value.length) return
 
@@ -53,6 +69,10 @@ function handleKeydown(e) {
   }
 }
 
+/**
+ * Triggers the transfer of ownership to the selected member.
+ * Clears the form after success.
+ */
 async function give() {
   if (!selected.value) return
   try {

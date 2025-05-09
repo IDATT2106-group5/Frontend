@@ -10,14 +10,17 @@ import PersonVernPopUp from '@/views/mainViews/PersonVernPopUp.vue'
 
 const showPersonvern = ref(false)
 
+/**
+ * Called on component mount.
+ * - Sets up hCaptcha callbacks.
+ * - Attempts to render the hCaptcha widget.
+ */
 onMounted(() => {
-  // Called when hCaptcha is completed successfully
   window.hcaptchaCallback = (token) => {
     console.log('hCaptcha token received:', token);
     formData.hCaptchaToken = token
   }
 
-  // Called if token expires or there's an error
   window.hcaptchaReset = () => {
     formData.hCaptchaToken = ''
   }
@@ -30,7 +33,6 @@ onMounted(() => {
         'error-callback': window.hcaptchaReset
       });
     } else {
-      // Retry after short delay if script isn't ready
       setTimeout(renderCaptcha, 300);
     }
   }
@@ -61,6 +63,11 @@ const status = reactive({
   errorMessage: ''
 })
 
+/**
+ * Validation rules for form fields.
+ * Includes required fields, pattern checks, password confirmation,
+ * and privacy agreement validation.
+ */
 const rules = computed(() => {
   return {
     email: {
@@ -96,11 +103,24 @@ const rules = computed(() => {
 
 const v$ = useVuelidate(rules, formData)
 
+/**
+ * Returns the first validation error message for a field.
+ * 
+ * @param {import('@vuelidate/core').Validation} field - The field to extract error messages from.
+ * @returns {string} - The first error message, or an empty string if none exist.
+ */
 const getErrorMessage = (field) => {
   if (!field.$errors || field.$errors.length === 0) return '';
   return field.$errors[0].$message;
 }
 
+/**
+ * Handles user registration:
+ * - Validates the form
+ * - Checks hCaptcha token
+ * - Calls the user store's register method
+ * - Updates status with error or redirects on success
+ */
 const onSubmit = async () => {
   const result = await v$.value.$validate()
 

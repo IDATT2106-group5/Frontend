@@ -20,7 +20,11 @@ const success = ref('')
 const isLoading = ref(false)
 const tokenValid = ref(false)
 
-// Validation
+/**
+ * Returns validation rules for the new and confirm password fields.
+ * - `newPassword` must be required and at least 8 characters.
+ * - `confirmPassword` must be required and match `newPassword`.
+ */
 const rules = computed(() => ({
   newPassword: {
     required: helpers.withMessage('Passord er påkrevd', required),
@@ -32,13 +36,28 @@ const rules = computed(() => ({
   }
 }))
 
+
+/**
+ * Sets up Vuelidate with the defined rules and fields.
+ */
 const v$ = useVuelidate(rules, { newPassword, confirmPassword })
 
+
+/**
+ * Returns the first error message for a given validated field.
+ * 
+ * @param {import('@vuelidate/core').Validation} field - The validated field.
+ * @returns {string} - The first validation error message, or an empty string.
+ */
 const getErrorMessage = (field) => {
   const errors = field?.$errors
   return errors?.length ? errors[0].$message : ''
 }
 
+/**
+ * Validates the reset token when the component is mounted.
+ * If invalid, sets an appropriate error message.
+ */
 onMounted(async () => {
   if (!token.value) {
     error.value = 'Mangler token i lenken.'
@@ -52,6 +71,10 @@ onMounted(async () => {
   }
 })
 
+/**
+ * Submits the new password to the backend after validating input.
+ * Displays success or error messages and redirects to login if successful.
+ */
 const resetPassword = async () => {
   error.value = ''
   success.value = ''

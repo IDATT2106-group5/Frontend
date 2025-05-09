@@ -61,6 +61,9 @@ const joinIsLoading = ref(false)
 const foundHousehold = ref(null)
 const requestSent = ref(false)
 
+/**
+ * Lifecycle hook to fetch received invitations if the user has no household.
+ */
 onMounted(async () => {
   if (!hasHousehold.value) {
     try {
@@ -71,6 +74,9 @@ onMounted(async () => {
   }
 })
 
+/**
+ * Copies the household ID to clipboard and shows a toast notification.
+ */
 function copyHouseholdId() {
   navigator.clipboard.writeText(householdId.value)
     .then(() => {
@@ -81,15 +87,27 @@ function copyHouseholdId() {
     })
 }
 
+/**
+ * Decides which modal to show when attempting to leave the household.
+ * If user is owner, shows an error modal instead of leave confirmation.
+ */
 function handleLeaveButtonClick() {
   isOwner.value ? ownerLeaveErrorOpen.value = true : confirmLeaveOpen.value = true
 }
 
+/**
+ * Sanitizes and uppercases the input for household ID search.
+ */
 function onJoinHouseholdIdInput(e) {
   joinHouseholdId.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '')
   joinError.value = ''
 }
 
+/**
+ * Accepts an invitation to join a household and reloads household data.
+ * 
+ * @param {string} invId - Invitation ID.
+ */
 const acceptInvitation = async (invId) => {
   try {
     await houseStore.acceptInvitation(invId)
@@ -99,6 +117,12 @@ const acceptInvitation = async (invId) => {
     toast({ title: 'Feil', description: 'Kunne ikke akseptere invitasjonen.', variant: 'destructive' })
   }
 }
+
+/**
+ * Declines a household invitation.
+ * 
+ * @param {string} invId - Invitation ID.
+ */
 const declineInvitation = async (invId) => {
   try {
     await houseStore.declineInvitation(invId)
@@ -108,6 +132,10 @@ const declineInvitation = async (invId) => {
   }
 }
 
+/**
+ * Handles leaving the current household.
+ * Displays a toast on success or failure.
+ */
 async function handleLeave() {
   confirmLeaveOpen.value = false
   try {
@@ -118,6 +146,11 @@ async function handleLeave() {
   }
 }
 
+
+/**
+ * Handles deletion of the current household.
+ * Displays a toast on success or failure.
+ */
 async function handleDelete() {
   confirmDeleteOpen.value = false
   try {
@@ -128,6 +161,10 @@ async function handleDelete() {
   }
 }
 
+/**
+ * Searches for a household using the entered ID.
+ * Sets found household or displays error.
+ */
 async function searchForHousehold() {
   joinError.value = ''
   joinSuccess.value = ''
@@ -165,6 +202,9 @@ async function searchForHousehold() {
   }
 }
 
+/**
+ * Sends a join request to a found household.
+ */
 const sendJoinRequest = async () => {
   if (!foundHousehold.value?.id) {
     joinError.value = 'Du må først søke etter en gyldig husstand'
