@@ -1,373 +1,3 @@
-<template>
-  <div class="incident-admin-container">
-    <div v-if="success" class="alert alert-success">
-      {{ success }}
-      <Button variant="ghost" size="icon" class="close-btn" @click="clearSuccess">×</Button>
-    </div>
-
-    <div v-if="error" class="alert alert-error">
-      {{ error }}
-      <Button variant="ghost" size="icon" class="close-btn" @click="clearError">×</Button>
-    </div>
-
-    <div class="left-panel">
-      <div v-if="!isEditing && !isCreating" class="incident-list-panel">
-        <h1>Aktive kriseområder</h1>
-
-        <Button
-          variant="default"
-          class="add-new-btn"
-          @click="onAddNew"
-        >
-          + Legg til ny krisesituasjon
-        </Button>
-
-        <div class="search-filter-container">
-          <input
-            type="text"
-            v-model="searchTerm"
-            class="search-input"
-            placeholder="Søk hendelser..."
-            @input="onSearchChange"
-          />
-
-          <div class="filter-dropdown">
-            <Button
-              variant="outline"
-              class="filter-button"
-              @click="toggleFilterDropdown"
-            >
-              Filtrer krisetyper <span class="dropdown-arrow">▼</span>
-            </Button>
-
-            <div v-if="showFilterDropdown" class="filter-options">
-              <div class="filter-option">
-                <input
-                  type="radio"
-                  id="all-types"
-                  name="filter"
-                  value=""
-                  v-model="filterSeverity"
-                  @change="onFilterChange"
-                />
-                <label for="all-types" class="filter-label">Alle typer</label>
-              </div>
-
-              <div
-                v-for="level in severityLevels"
-                :key="level.id"
-                class="filter-option"
-              >
-                <input
-                  type="radio"
-                  :id="level.id"
-                  name="filter"
-                  :value="level.id"
-                  v-model="filterSeverity"
-                  @change="onFilterChange"
-                />
-                <div class="filter-label-with-icon">
-                  <div
-                    class="severity-indicator"
-                    :style="{backgroundColor: getSeverityColor(level.id)}"
-                  ></div>
-                  <label :for="level.id" class="filter-label">{{ level.name }}</label>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="incidents-container">
-          <div
-            v-for="incident in filteredIncidents"
-            :key="incident.id"
-            class="incident-item"
-          >
-            <div
-              class="severity-indicator"
-              :style="{backgroundColor: getSeverityColor(incident.severity)}"
-            ></div>
-            <div class="incident-info">
-              <div class="incident-title">{{ incident.name }}</div>
-              <p>{{ formatDateForDisplay(incident.startedAt) }}</p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              class="edit-btn"
-              @click="onEditIncident(incident)"
-            >
-              Rediger
-            </Button>
-          </div>
-
-          <div v-if="filteredIncidents.length === 0" class="empty-incidents">
-            <p>Ingen krisesituasjoner funnet</p>
-          </div>
-        </div>
-      </div>
-
-      <div v-else class="incident-form-panel">
-        <h1>{{ isCreating ? 'Ny krisesituasjon' : 'Rediger krisesituasjon' }}</h1>
-
-        <p class="click-info">Klikk på kartet for å justere kriseområdets midtpunkt. Bruk glidebryteren eller skriv inn antall km for å endre radius.</p>
-
-        <form @submit.prevent="onSaveIncident">
-          <div class="form-group">
-            <label for="name">Tittel</label>
-            <Input
-              id="name"
-              v-model="incidentFormData.name"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="scenario">Scenario</label>
-            <select
-              id="scenario"
-              v-model="selectedScenarioId"
-              class="form-control"
-            >
-              <option :value="null">Velg scenario</option>
-              <option
-                v-for="scenario in scenarios"
-                :key="scenario.id"
-                :value="scenario.id"
-              >
-                {{ scenario.name }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Added address fields -->
-          <div class="form-group">
-            <label for="address">Adresse</label>
-            <Input
-              id="address"
-              v-model="incidentFormData.address"
-              @input="onAddressChange"
-            />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="postalCode">Postkode</label>
-              <Input
-                id="postalCode"
-                v-model="incidentFormData.postalCode"
-                @input="onAddressChange"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="city">Sted</label>
-              <Input
-                id="city"
-                v-model="incidentFormData.city"
-                @input="onAddressChange"
-              />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="description" class="description-label">
-              Beskrivelse
-              <Button
-                variant="ghost"
-                size="sm"
-                type="button"
-                class="info-btn"
-                @click="toggleDescriptionTips"
-              >
-                ?
-              </Button>
-            </label>
-
-            <div v-if="showDescriptionTips" class="tips-box">
-              <h4 class="tips-title">Tips for en effektiv krisebeskrivelse:</h4>
-
-              <button
-                type="button"
-                class="close-tips-btn"
-                @click="toggleDescriptionTips"
-              >
-                x
-              </button>
-
-              <ul class="tips-list">
-                <li>Vær konkret om hva som har skjedd</li>
-                <li>Beskriv omfanget av krisen tydelig</li>
-                <li>Nevn hvilke områder som er berørt</li>
-                <li>Inkluder informasjon om igangsatte tiltak</li>
-                <li>Gi anslag på forventet varighet hvis mulig</li>
-              </ul>
-            </div>
-
-            <textarea
-              id="description"
-              v-model="incidentFormData.description"
-              class="form-control"
-              rows="4"
-            ></textarea>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="startedAt">Start tidspunkt</label>
-              <div class="datetime-inputs">
-                <input
-                  type="date"
-                  v-model="startDate"
-                  class="date-input"
-                />
-                <input
-                  type="time"
-                  v-model="startTime"
-                  class="time-input"
-                />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="endedAt">Slutt tidspunkt (valgfritt)</label>
-              <div class="datetime-inputs">
-                <input
-                  type="date"
-                  v-model="endDate"
-                  class="date-input"
-                />
-                <input
-                  type="time"
-                  v-model="endTime"
-                  class="time-input"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Krise-/beredskapsnivå</label>
-            <div class="severity-options">
-              <div
-                v-for="level in severityLevels"
-                :key="level.id"
-                class="severity-option"
-                :class="{ active: incidentFormData.severity === level.id }"
-                @click="incidentFormData.severity = level.id"
-              >
-                <div
-                  class="severity-indicator"
-                  :style="{backgroundColor: getSeverityColor(level.id)}"
-                ></div>
-                <span>{{ level.name }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Koordinater</label>
-            <div class="form-row">
-              <div class="form-group">
-                <Input
-                  v-model="incidentFormData.latitude"
-                  placeholder="Breddgrad °N"
-                  class="coordinate-input"
-                />
-              </div>
-
-              <div class="form-group">
-                <Input
-                  v-model="incidentFormData.longitude"
-                  placeholder="Lengdegrad °E"
-                  class="coordinate-input"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="radius">Radius i km: {{ incidentFormData.impactRadius }}</label>
-            <div class="radius-slider">
-              <input
-                type="range"
-                id="radius"
-                v-model.number="incidentFormData.impactRadius"
-                min="0"
-                max="50"
-                step="1"
-                class="slider"
-              />
-              <div class="radius-labels">
-                <span>0 km</span>
-                <span>25 km</span>
-                <span>50 km</span>
-              </div>
-            </div>
-            <Input
-              v-model.number="incidentFormData.impactRadius"
-              type="number"
-              min="0"
-              max="50"
-              class="radius-input"
-            />
-          </div>
-
-          <div class="button-row">
-            <Button
-              variant="outline"
-              type="button"
-              @click="onCancelEdit"
-            >
-              Avbryt
-            </Button>
-
-            <Button
-              v-if="isEditing"
-              variant="destructive"
-              type="button"
-              @click="onDeleteIncident"
-            >
-              Slett krise
-            </Button>
-
-            <Button
-              variant="default"
-              type="submit"
-              class="ml-auto"
-            >
-              {{ isCreating ? 'Lagre' : 'Lagre' }}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <div class="right-panel">
-      <MapView
-        ref="mapView"
-        :center="mapCenter"
-        :zoom="mapZoom"
-        :is-admin-mode="true"
-        @map-ready="onMapReady"
-        @map-click="onMapClick"
-      />
-    </div>
-  </div>
-
-  <ConfirmModal
-    v-if="confirmDeleteModalOpen"
-    title="Slett markør"
-    description="Er du sikker på at du vil slette denne markøren? Dette kan ikke angres."
-    confirm-text="Slett"
-    cancel-text="Avbryt"
-    @cancel="cancelIncidentDeletion"
-    @confirm="confirmIncidentDeletion"
-    class="incident-delete-modal"
-  />
-</template>
-
 <script>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useIncidentAdminStore } from '@/stores/admin/incidentAdminStore';
@@ -981,6 +611,376 @@ export default {
   }
 };
 </script>
+
+<template>
+  <div class="incident-admin-container">
+    <div v-if="success" class="alert alert-success">
+      {{ success }}
+      <Button variant="ghost" size="icon" class="close-btn" @click="clearSuccess">×</Button>
+    </div>
+
+    <div v-if="error" class="alert alert-error">
+      {{ error }}
+      <Button variant="ghost" size="icon" class="close-btn" @click="clearError">×</Button>
+    </div>
+
+    <div class="left-panel">
+      <div v-if="!isEditing && !isCreating" class="incident-list-panel">
+        <h1>Aktive kriseområder</h1>
+
+        <Button
+          variant="default"
+          class="add-new-btn"
+          @click="onAddNew"
+        >
+          + Legg til ny krisesituasjon
+        </Button>
+
+        <div class="search-filter-container">
+          <input
+            type="text"
+            v-model="searchTerm"
+            class="search-input"
+            placeholder="Søk hendelser..."
+            @input="onSearchChange"
+          />
+
+          <div class="filter-dropdown">
+            <Button
+              variant="outline"
+              class="filter-button"
+              @click="toggleFilterDropdown"
+            >
+              Filtrer krisetyper <span class="dropdown-arrow">▼</span>
+            </Button>
+
+            <div v-if="showFilterDropdown" class="filter-options">
+              <div class="filter-option">
+                <input
+                  type="radio"
+                  id="all-types"
+                  name="filter"
+                  value=""
+                  v-model="filterSeverity"
+                  @change="onFilterChange"
+                />
+                <label for="all-types" class="filter-label">Alle typer</label>
+              </div>
+
+              <div
+                v-for="level in severityLevels"
+                :key="level.id"
+                class="filter-option"
+              >
+                <input
+                  type="radio"
+                  :id="level.id"
+                  name="filter"
+                  :value="level.id"
+                  v-model="filterSeverity"
+                  @change="onFilterChange"
+                />
+                <div class="filter-label-with-icon">
+                  <div
+                    class="severity-indicator"
+                    :style="{backgroundColor: getSeverityColor(level.id)}"
+                  ></div>
+                  <label :for="level.id" class="filter-label">{{ level.name }}</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="incidents-container">
+          <div
+            v-for="incident in filteredIncidents"
+            :key="incident.id"
+            class="incident-item"
+          >
+            <div
+              class="severity-indicator"
+              :style="{backgroundColor: getSeverityColor(incident.severity)}"
+            ></div>
+            <div class="incident-info">
+              <div class="incident-title">{{ incident.name }}</div>
+              <p>{{ formatDateForDisplay(incident.startedAt) }}</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              class="edit-btn"
+              @click="onEditIncident(incident)"
+            >
+              Rediger
+            </Button>
+          </div>
+
+          <div v-if="filteredIncidents.length === 0" class="empty-incidents">
+            <p>Ingen krisesituasjoner funnet</p>
+          </div>
+        </div>
+      </div>
+
+      <div v-else class="incident-form-panel">
+        <h1>{{ isCreating ? 'Ny krisesituasjon' : 'Rediger krisesituasjon' }}</h1>
+
+        <p class="click-info">Klikk på kartet for å justere kriseområdets midtpunkt. Bruk glidebryteren eller skriv inn antall km for å endre radius.</p>
+
+        <form @submit.prevent="onSaveIncident">
+          <div class="form-group">
+            <label for="name">Tittel</label>
+            <Input
+              id="name"
+              v-model="incidentFormData.name"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="scenario">Scenario</label>
+            <select
+              id="scenario"
+              v-model="selectedScenarioId"
+              class="form-control"
+            >
+              <option :value="null">Velg scenario</option>
+              <option
+                v-for="scenario in scenarios"
+                :key="scenario.id"
+                :value="scenario.id"
+              >
+                {{ scenario.name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Added address fields -->
+          <div class="form-group">
+            <label for="address">Adresse</label>
+            <Input
+              id="address"
+              v-model="incidentFormData.address"
+              @input="onAddressChange"
+            />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="postalCode">Postkode</label>
+              <Input
+                id="postalCode"
+                v-model="incidentFormData.postalCode"
+                @input="onAddressChange"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="city">Sted</label>
+              <Input
+                id="city"
+                v-model="incidentFormData.city"
+                @input="onAddressChange"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="description" class="description-label">
+              Beskrivelse
+              <Button
+                variant="ghost"
+                size="sm"
+                type="button"
+                class="info-btn"
+                @click="toggleDescriptionTips"
+              >
+                ?
+              </Button>
+            </label>
+
+            <div v-if="showDescriptionTips" class="tips-box">
+              <h4 class="tips-title">Tips for en effektiv krisebeskrivelse:</h4>
+
+              <button
+                type="button"
+                class="close-tips-btn"
+                @click="toggleDescriptionTips"
+              >
+                x
+              </button>
+
+              <ul class="tips-list">
+                <li>Vær konkret om hva som har skjedd</li>
+                <li>Beskriv omfanget av krisen tydelig</li>
+                <li>Nevn hvilke områder som er berørt</li>
+                <li>Inkluder informasjon om igangsatte tiltak</li>
+                <li>Gi anslag på forventet varighet hvis mulig</li>
+              </ul>
+            </div>
+
+            <textarea
+              id="description"
+              v-model="incidentFormData.description"
+              class="form-control"
+              rows="4"
+            ></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="startedAt">Start tidspunkt</label>
+              <div class="datetime-inputs">
+                <input
+                  type="date"
+                  v-model="startDate"
+                  class="date-input"
+                />
+                <input
+                  type="time"
+                  v-model="startTime"
+                  class="time-input"
+                />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="endedAt">Slutt tidspunkt (valgfritt)</label>
+              <div class="datetime-inputs">
+                <input
+                  type="date"
+                  v-model="endDate"
+                  class="date-input"
+                />
+                <input
+                  type="time"
+                  v-model="endTime"
+                  class="time-input"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Krise-/beredskapsnivå</label>
+            <div class="severity-options">
+              <div
+                v-for="level in severityLevels"
+                :key="level.id"
+                class="severity-option"
+                :class="{ active: incidentFormData.severity === level.id }"
+                @click="incidentFormData.severity = level.id"
+              >
+                <div
+                  class="severity-indicator"
+                  :style="{backgroundColor: getSeverityColor(level.id)}"
+                ></div>
+                <span>{{ level.name }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Koordinater</label>
+            <div class="form-row">
+              <div class="form-group">
+                <Input
+                  v-model="incidentFormData.latitude"
+                  placeholder="Breddgrad °N"
+                  class="coordinate-input"
+                />
+              </div>
+
+              <div class="form-group">
+                <Input
+                  v-model="incidentFormData.longitude"
+                  placeholder="Lengdegrad °E"
+                  class="coordinate-input"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="radius">Radius i km: {{ incidentFormData.impactRadius }}</label>
+            <div class="radius-slider">
+              <input
+                type="range"
+                id="radius"
+                v-model.number="incidentFormData.impactRadius"
+                min="0"
+                max="50"
+                step="1"
+                class="slider"
+              />
+              <div class="radius-labels">
+                <span>0 km</span>
+                <span>25 km</span>
+                <span>50 km</span>
+              </div>
+            </div>
+            <Input
+              v-model.number="incidentFormData.impactRadius"
+              type="number"
+              min="0"
+              max="50"
+              class="radius-input"
+            />
+          </div>
+
+          <div class="button-row">
+            <Button
+              variant="outline"
+              type="button"
+              @click="onCancelEdit"
+            >
+              Avbryt
+            </Button>
+
+            <Button
+              v-if="isEditing"
+              variant="destructive"
+              type="button"
+              @click="onDeleteIncident"
+            >
+              Slett krise
+            </Button>
+
+            <Button
+              variant="default"
+              type="submit"
+              class="ml-auto"
+            >
+              {{ isCreating ? 'Lagre' : 'Lagre' }}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <MapView
+        ref="mapView"
+        :center="mapCenter"
+        :zoom="mapZoom"
+        :is-admin-mode="true"
+        @map-ready="onMapReady"
+        @map-click="onMapClick"
+      />
+    </div>
+  </div>
+
+  <ConfirmModal
+    v-if="confirmDeleteModalOpen"
+    title="Slett markør"
+    description="Er du sikker på at du vil slette denne markøren? Dette kan ikke angres."
+    confirm-text="Slett"
+    cancel-text="Avbryt"
+    @cancel="cancelIncidentDeletion"
+    @confirm="confirmIncidentDeletion"
+    class="incident-delete-modal"
+  />
+</template>
 
 <style scoped>
 .incident-admin-container {
