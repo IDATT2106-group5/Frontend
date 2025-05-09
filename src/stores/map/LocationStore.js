@@ -40,23 +40,23 @@ export const useLocationStore = defineStore('location', () => {
 
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            locationError.value = 'Posisjon tilgang nektet. Vennligst aktiver posisjonstjenester.'
+            locationError.value = 'Location access denied. Please enable location services.'
             break
           case error.POSITION_UNAVAILABLE:
-            locationError.value = 'Posisjoninformasjon er utilgjengelig.'
+            locationError.value = 'Location information unavailable.'
             break
           case error.TIMEOUT:
-            locationError.value = 'Posisjon forespørsel utløpt.'
+            locationError.value = 'Location request timed out.'
             break
           default:
-            locationError.value = 'Feil ved henting av posisjon.'
+            locationError.value = 'Unknown error occurred.'
         }
 
         stopPositionSharing()
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
+        timeout: 300000,
         maximumAge: 30000,
       },
     )
@@ -67,7 +67,7 @@ export const useLocationStore = defineStore('location', () => {
   function startPositionSharing() {
     console.log('Starting position sharing')
     if (!navigator.geolocation) {
-      locationError.value = 'Positionering er ikke tilgjengelig i nettleseren din'
+      locationError.value = 'Geolocation is not supported by your browser'
       return
     }
     if (positionUpdateInterval.value) {
@@ -101,6 +101,15 @@ export const useLocationStore = defineStore('location', () => {
     }
   }
 
+  function attemptReconnect() {
+    if (isSharing.value && !positionUpdateInterval.value && connected.value) {
+      console.debug('Attempting to reconnect position sharing')
+      startPositionSharing()
+      return true
+    }
+    return false
+  }
+
   watch(
     () => userStore.user?.id,
     (userId) => {
@@ -123,7 +132,7 @@ export const useLocationStore = defineStore('location', () => {
           startPositionSharing()
         }
 
-        if (locationError.value === 'Ingen tilkobling til server') {
+        if (locationError.value === 'No connection to server') {
           locationError.value = null
         }
       } else {

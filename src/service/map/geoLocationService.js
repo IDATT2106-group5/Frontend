@@ -59,7 +59,7 @@ class GeolocationService {
     try {
       return await this.getUserLocation({
         enableHighAccuracy: false,
-        timeout: 3000, // Short timeout
+        timeout: 300000,
         maximumAge: 60000 // Accept positions up to 1 minute old
       });
     } catch (error) {
