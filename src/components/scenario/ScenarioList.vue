@@ -138,7 +138,7 @@ export default {
         v-for="scenario in scenarios"
         :key="scenario.id"
         @click="goToScenarioPage(scenario.id)"
-        class="bg-white rounded-lg shadow-md border border-gray-200 h-[150px] relative cursor-pointer hover:shadow-lg transition"
+        class="bg-white rounded-lg shadow-md border border-gray-200 h-[150px] relative cursor-pointer transition-all duration-200 hover:shadow-xl hover:border-[#2c3e50] hover:border-3"
       >
         <div class="flex flex-col items-center justify-center h-full p-5 gap-2.5">
           <component :is="getIconComponent(scenario.iconName)" size="32" class="text-blue-500" />
