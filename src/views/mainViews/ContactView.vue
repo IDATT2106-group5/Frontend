@@ -35,7 +35,6 @@ const goToHome = () => router.push('/')
       <h2 class="text-lg font-semibold text-[#2c3e50]">Kontaktinformasjon</h2>
       <p class="mt-1">
         E-post: <a href="mailto:krisefikser.team@gmail.com" class="text-[#2c3e50] underline">krisefikser.team@gmail.com</a><br />
-        Telefon: 72 52 00 00
       </p>
     </div>
 

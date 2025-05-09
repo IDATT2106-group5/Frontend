@@ -133,31 +133,36 @@ const confirmRemove = async () => {
 
     <!-- View mode -->
     <div v-else class="flex items-center justify-between p-4">
-      <div class="flex items-start">
-        <UserIcon class="h-5 w-5 text-gray-700 mr-3 mt-1" />
-        <div>
-          <h3 class="font-medium flex items-center gap-1">
-            {{ member.fullName }}
-            <Crown 
+      <div class="flex items-start flex-1 min-w-0">
+        <UserIcon class="h-5 w-5 text-gray-700 mr-3 mt-1 flex-shrink-0" />
+        <div class="max-w-full overflow-hidden">
+          <div class="font-medium text-[#2C3E50] flex items-center gap-1">
+            <span class="truncate max-w-[150px] sm:max-w-[250px] md:max-w-xs">{{ member.fullName }}</span>
+            <Crown
               v-if="isOwner"
-              class="w-4 h-4 text-yellow-500"
+              class="w-4 h-4 text-yellow-500 flex-shrink-0"
               title="Husstandseier"
             />
-          </h3>
+          </div>
           <p v-if="member.email" class="text-sm text-gray-600 flex items-center">
-            <Mail class="w-4 h-4 mr-1" /> {{ member.email }}
+            <Mail class="w-4 h-4 mr-1 flex-shrink-0" /> 
+            <span class="truncate max-w-[150px] sm:max-w-[250px] md:max-w-xs">{{ member.email }}</span>
           </p>
           <p v-if="member.tlf" class="text-sm text-gray-600 flex items-center">
-            <Phone class="w-4 h-4 mr-1" /> {{ member.tlf }}
+            <Phone class="w-4 w-4 mr-1 flex-shrink-0" /> 
+            <span class="truncate max-w-[150px] sm:max-w-[250px] md:max-w-xs">{{ member.tlf }}</span>
           </p>
-          <p v-if="!member.email && !member.tlf" class="px-2 py-0.5 text-sm text-gray-500 bg-gray-100 border border-gray-300 rounded">
+          <p
+            v-if="!member.email && !member.tlf"
+            class="flex-shrink-0 w-32 text-center px-3 py-1 text-sm text-gray-500 bg-gray-100 border border-gray-300 rounded whitespace-nowrap"
+          >
             Ikke registrert
           </p>
         </div>
       </div>
 
       <!-- Owner-only actions -->
-      <div v-if="householdStore.isCurrentUserOwner" class="flex items-center gap-2">
+      <div v-if="householdStore.isCurrentUserOwner" class="flex items-center gap-2 flex-shrink-0 ml-4">
         <Button
           v-if="!member.isRegistered && !isOwner"
           variant="ghost"

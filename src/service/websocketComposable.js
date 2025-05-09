@@ -3,11 +3,26 @@ import { useUserStore } from '@/stores/UserStore.js'
 import { useHouseholdStore } from '@/stores/HouseholdStore.js'
 import WebSocketService from '@/service/websocketService.js'
 
+/**
+ * Composable for managing WebSocket connections and real time notification updates.
+ * Handles connection lifecycle, incident popups, household tracking, and notification management.
+ *
+ * @returns {object} WebSocket state, methods for managing notifications and positions.
+ */
 export default function useWebSocket() {
+  /** @type {import('vue').Ref<Array<Object>>} */
   const notifications = ref([])
+
+  /** @type {import('vue').Ref<number>} */
   const notificationCount = ref(0)
+
+  /** @type {import('vue').Ref<boolean>} */
   const connected = ref(false)
+
+  /** @type {import('vue').Ref<boolean>} */
   const showIncidentPopup = ref(false)
+
+  /** @type {import('vue').Ref<Object|null>} */
   const currentIncident = ref(null)
   const webSocketService = new WebSocketService()
   const userStore = useUserStore()
@@ -28,6 +43,9 @@ export default function useWebSocket() {
     },
   )
 
+  /**
+   * Initializes the WebSocket connection and sets up listeners.
+   */
   async function initWebSocket() {
     try {
       if (!householdStore.currentHousehold) {
@@ -41,16 +59,15 @@ export default function useWebSocket() {
         onConnected: () => {
           connected.value = true
           if (userStore.user?.id) {
-            fetchNotifications(userStore.user.id)
+            fetchNotifications()
           }
         },
         onDisconnected: () => {
           connected.value = false
         },
         onNotification: (message) => {
-          console.log('Notification received', message)
           if (userStore.user?.id) {
-            fetchNotifications(userStore.user.id)
+            fetchNotifications()
           }
           if (message.type === 'INCIDENT') {
             currentIncident.value = message
@@ -58,35 +75,54 @@ export default function useWebSocket() {
           }
         },
       })
-    } catch (error) {
-      console.error('Failed to initialize WebSocket:', error)
+    } catch (err) {
+      console.error('Failed to initialize WebSocket', err)
     }
   }
 
+   /**
+   * Closes the incident popup and clears current incident data.
+   */
   function closeIncidentPopup() {
-    showIncidentPopup.value = false;
-    if (currentIncident.value) {
-      currentIncident.value = null;
-    }
+    showIncidentPopup.value = false
+    currentIncident.value = null
   }
 
   onBeforeUnmount(() => {
     webSocketService.disconnect()
   })
 
+  /**
+   * Subscribes to position updates for the given household.
+   * @param {string} householdId - The household ID to subscribe to.
+   * @param {function} callback - Callback to handle received position data.
+   * @returns {boolean|Promise<boolean>} Subscription result.
+   */
   async function subscribeToPosition(householdId, callback) {
     if (userStore.token && householdId) {
-      webSocketService.subscribeToPosition(householdId, (position) => {
-        console.log('Position update received:', position)
+      return webSocketService.subscribeToPosition(householdId, (position) => {
         if (callback) callback(position)
       })
     }
+    return false
   }
 
-  function updatePosition(userId, longitude, latitude) {
-    webSocketService.updatePosition(userId, longitude, latitude)
+  /**
+   * Sends the user's latest position.
+   * @param {string} token - The token.
+   * @param {number} longitude - Longitude.
+   * @param {number} latitude - Latitude.
+   * @returns {Promise<void>} A promise that resolves when position is sent.
+   */
+  function updatePosition(token, longitude, latitude) {
+    return webSocketService.updatePosition(token, longitude, latitude)
   }
 
+  /**
+   * Marks a notification as read and updates count locally.
+   * @param {string} notificationId - The ID of the notification.
+   * @returns {Promise<void>}
+   */
   async function markAsRead(notificationId) {
     try {
       await fetch(`http://localhost:8080/api/notifications/${notificationId}/read`, {
@@ -97,58 +133,64 @@ export default function useWebSocket() {
         },
       })
 
-      const index = notifications.value.findIndex((n) => n.id === notificationId)
-      if (index !== -1 && !notifications.value[index].read) {
-        notifications.value[index].read = true
+      const idx = notifications.value.findIndex((n) => n.id === notificationId)
+      if (idx !== -1 && !notifications.value[idx].read) {
+        notifications.value[idx].read = true
         notificationCount.value = Math.max(0, notificationCount.value - 1)
       }
-    } catch (error) {
-      console.error('Error marking notification as read:', error)
+    } catch (err) {
+      console.error(`Error marking notification ${notificationId} as read`, err)
     }
   }
 
+  /**
+   * Resets the notification count to 0.
+   */
   function resetNotificationCount() {
     notificationCount.value = 0
   }
 
-  async function fetchNotifications(userId) {
-    if (!userId || !userStore.token) return
+  /**
+   * Fetches all notifications for the logged in user.
+   * @returns {Promise<void>}
+   */
+  async function fetchNotifications() {
+    if (!userStore.token) return
 
     try {
-      const requestData = { userId: userId }
-      const response = await fetch('http://localhost:8080/api/notifications/get', {
+      const res = await fetch('http://localhost:8080/api/notifications/get', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${userStore.token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(requestData),
       })
-
-      const data = await response.json()
+      const data = await res.json()
       notifications.value = data
       notificationCount.value = data.filter((n) => !n.read).length
-    } catch (error) {
-      console.error('Error fetching notifications:', error)
+    } catch (err) {
+      console.error('Error fetching notifications', err)
     }
   }
 
+  /**
+   * Fetches the latest household member positions.
+   * @returns {Promise<Array<Object>>} List of member positions.
+   */
   async function fetchHouseholdPositions() {
     if (!userStore.token) return []
 
     try {
-      const response = await fetch(`http://localhost:8080/api/household/positions`, {
+      const res = await fetch('http://localhost:8080/api/household/positions', {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${userStore.token}`,
           'Content-Type': 'application/json',
         },
       })
-      const data = await response.json()
-      console.log('Received position update data:', data)
-      return data
-    } catch (error) {
-      console.error('Error fetching position update:', error)
+      return await res.json()
+    } catch (err) {
+      console.error('Error fetching household positions', err)
       return []
     }
   }
@@ -161,6 +203,7 @@ export default function useWebSocket() {
     resetNotificationCount,
     subscribeToPosition,
     updatePosition,
+    fetchNotifications,
     fetchHouseholdPositions,
     showIncidentPopup,
     currentIncident,

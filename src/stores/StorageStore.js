@@ -19,7 +19,7 @@ function formatDate(dateString) {
     const parts = dateString.split('.');
     if (parts.length === 3) {
       const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1; 
+      const month = parseInt(parts[1], 10) - 1;
       const year = parseInt(parts[2], 10);
       date = new Date(year, month, day);
       date.setHours(12, 0, 0, 0);
@@ -72,11 +72,11 @@ export const useStorageStore = defineStore('storage', () => {
    */
   const groupedItems = computed(() => {
     const groups = {
-      'Væske': [],      
-      'Mat': [],        
-      'Medisiner': [], 
-      'Redskap': [],   
-      'Diverse': []     
+      'Væske': [],
+      'Mat': [],
+      'Medisiner': [],
+      'Redskap': [],
+      'Diverse': []
     };
 
     if (Array.isArray(items.value)) {
@@ -86,7 +86,7 @@ export const useStorageStore = defineStore('storage', () => {
           return;
         }
 
-   
+
         const transformedItem = {
           id: item.id,
           name: item.item.name,
@@ -152,8 +152,7 @@ export const useStorageStore = defineStore('storage', () => {
           if (!item.id && item.itemId) {
             return { ...item, id: item.itemId };
           } else if (!item.id) {
-     
-            console.warn('Item missing ID:', item);
+
           }
           return item;
         });
@@ -164,7 +163,7 @@ export const useStorageStore = defineStore('storage', () => {
       return items.value;
     } catch (err) {
       error.value = err.message || 'Failed to fetch items';
-      items.value = []; 
+      items.value = [];
       return [];
     } finally {
       isLoading.value = false;
@@ -205,7 +204,7 @@ export const useStorageStore = defineStore('storage', () => {
     error.value = null;
 
     try {
-      const response = await StorageService.getExpiringItems(currentHouseholdId.value, beforeDate);
+      const response = await StorageService.getExpiringItems(beforeDate);
       return response;
     } catch (err) {
       console.error('Error fetching expiring items:', err);
@@ -232,8 +231,8 @@ export const useStorageStore = defineStore('storage', () => {
     error.value = null;
 
     try {
-      const response = await StorageService.addItemToStorage(currentHouseholdId.value, itemId, data);
-    
+      const response = await StorageService.addItemToStorage(itemId, data);
+
       await fetchItems();
 
       return response;
@@ -270,7 +269,7 @@ export const useStorageStore = defineStore('storage', () => {
         actualItemId = itemId;
       }
 
-    
+
       const itemIndex = items.value.findIndex(i => i.id === actualItemId);
 
       if (itemIndex === -1) {
@@ -279,24 +278,24 @@ export const useStorageStore = defineStore('storage', () => {
         throw new Error('Item not found');
       }
 
-      
+
       const originalItem = items.value[itemIndex];
 
-    
+
       const originalExpiration = originalItem.item.expiration;
 
-     
+
       let formattedExpirationDate = null;
 
       if (data.expiryDate) {
-      
+
         if (data.expiryDate.includes('T')) {
           formattedExpirationDate = data.expiryDate;
         } else {
-          
+
           const [day, month, year] = data.expiryDate.split('.');
           if (day && month && year) {
-          
+
             formattedExpirationDate = `${year}-${month}-${day}T00:00:00`;
           }
         }

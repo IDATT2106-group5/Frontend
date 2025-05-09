@@ -11,6 +11,10 @@ const address = ref('')
 const error = ref('')
 const loading = ref(false)
 
+// Maximum length for household name and address
+const MAX_NAME_LENGTH = 20
+const MAX_ADDRESS_LENGTH = 50
+
 // Keep local values synced with the current household
 watchEffect(() => {
   if (store.currentHousehold) {
@@ -22,6 +26,11 @@ watchEffect(() => {
 async function save() {
   if (!name.value) {
     error.value = 'Vennligst fyll ut navn'
+    return
+  }
+
+  if (name.value.length > MAX_NAME_LENGTH || address.value.length > MAX_ADDRESS_LENGTH) {
+    error.value = `Navn kan maks være ${MAX_NAME_LENGTH} tegn, adresse maks ${MAX_ADDRESS_LENGTH} tegn`
     return
   }
 
@@ -69,19 +78,33 @@ async function save() {
     <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6 space-y-4">
       <h3 class="text-xl font-semibold">Rediger husstand</h3>
 
-      <input
-        v-model="name"
-        type="text"
-        placeholder="Navn på husstand"
-        class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
+      <div>
+        <input
+          v-model="name"
+          type="text"
+          placeholder="Navn på husstand"
+          :maxlength="MAX_NAME_LENGTH"
+          class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <div class="text-xs text-gray-500 mt-1 flex justify-between">
+          <span>Maks {{ MAX_NAME_LENGTH }} tegn</span>
+          <span>{{ name.length }}/{{ MAX_NAME_LENGTH }}</span>
+        </div>
+      </div>
 
-      <input
-        v-model="address"
-        type="text"
-        placeholder="Adresse (valgfri)"
-        class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-      />
+      <div>
+        <input
+          v-model="address"
+          type="text"
+          placeholder="Adresse (valgfri)"
+          :maxlength="MAX_ADDRESS_LENGTH"
+          class="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+        <div class="text-xs text-gray-500 mt-1 flex justify-between">
+          <span>Maks {{ MAX_ADDRESS_LENGTH }} tegn</span>
+          <span>{{ address.length }}/{{ MAX_ADDRESS_LENGTH }}</span>
+        </div>
+      </div>
 
       <p v-if="error" class="text-red-600 text-sm">{{ error }}</p>
 

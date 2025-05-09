@@ -15,7 +15,8 @@ import {
   CirclePlus,
   Pencil,
   Map,
-  Bomb
+  Bomb,
+  Waves
 } from 'lucide-vue-next'
 
 export default {
@@ -27,15 +28,41 @@ export default {
     Pencil,
   },
 
+  /**
+   * @function setup
+   * @description Vue Composition API setup function that handles component logic
+   * @returns {Object} Reactive properties and methods for the component template
+   */
   setup() {
     const router = useRouter()
     const scenarioStore = useScenarioStore()
 
+    /**
+     * @computed loading
+     * @description Tracks the loading state from the scenario store
+     * @returns {Boolean} True if scenarios are being loaded, false otherwise
+     */
     const loading = computed(() => scenarioStore.isLoading)
+
+    /**
+     * @computed error
+     * @description Retrieves any error state from the scenario store
+     * @returns {String|null} Error message or null if no error
+     */
     const error = computed(() => scenarioStore.getError)
+
+    /**
+     * @computed scenarios
+     * @description Gets the list of all scenarios from the store
+     * @returns {Array} List of scenario objects
+     */
     const scenarios = computed(() => scenarioStore.getAllScenarios)
 
-    // Map icon names to components
+    /**
+     * @constant {Object} iconMap
+     * @description Maps icon names to their corresponding component references
+     * Used for dynamically displaying the correct icon for each scenario
+     */
     const iconMap = {
       AlertTriangle,
       AlertOctagon,
@@ -45,27 +72,50 @@ export default {
       Thermometer,
       Zap,
       ShieldAlert,
-      Bomb
+      Bomb,
+      Waves,
     }
 
-    // Get the appropriate icon component
+    /**
+     * @function getIconComponent
+     * @description Retrieves the appropriate icon component based on icon name
+     * @param {String} iconName - The name of the icon to retrieve
+     * @returns {Component} The icon component or a default if not found
+     */
     const getIconComponent = (iconName) => {
-      return iconMap[iconName] || AlertTriangle // Default to AlertTriangle if icon not found
+      return iconMap[iconName] || AlertTriangle
     }
 
-    // Fetch scenarios when component mounts
+    /**
+     * @function onMounted
+     * @description Lifecycle hook that fetches scenarios when component mounts
+     */
     onMounted(() => {
       fetchScenarios()
     })
 
+    /**
+     * @function fetchScenarios
+     * @description Retrieves all scenarios from the store
+     * @async
+     */
     const fetchScenarios = async () => {
       await scenarioStore.fetchAllScenarios()
     }
 
+    /**
+     * @function addNewScenario
+     * @description Navigates to the new scenario creation page
+     */
     const addNewScenario = () => {
       router.push('/admin-scenarios/new')
     }
 
+    /**
+     * @function editScenario
+     * @description Navigates to the edit page for a specific scenario
+     * @param {Number} id - The ID of the scenario to edit
+     */
     const editScenario = (id) => {
       router.push(`/admin-scenarios/${id}`)
     }

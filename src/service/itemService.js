@@ -1,11 +1,25 @@
 import BaseService from './baseService'
 
+/**
+ * Service for retrieving item catalog data from the backend.
+ * Supports paginated, filtered, and individual item queries.
+ */
 class ItemService extends BaseService {
+  /**
+   * Initializes the ItemService with the '/items' endpoint.
+   */
   constructor() {
     super('/items')
   }
 
-// Fetch paginated items
+  /**
+   * Fetches a paginated list of items, optionally filtered by a search term.
+   *
+   * @param {number} [page=0] - The page number to fetch.
+   * @param {number} [size=5] - The number of items per page.
+   * @param {string} [searchTerm=''] - Optional search term to filter results.
+   * @returns {Promise<Object>} An object containing paginated items and `isEmpty` flag.
+   */
 async getPaginatedItems(page = 0, size = 5, searchTerm = '') {
   try {
     const queryParams = new URLSearchParams({
@@ -17,14 +31,11 @@ async getPaginatedItems(page = 0, size = 5, searchTerm = '') {
       queryParams.append('search', encodeURIComponent(searchTerm));
     }
 
-    console.log(`Fetching paginated items: page=${page}, size=${size}, search=${searchTerm}`);
     const response = await this.get(`paginated?${queryParams.toString()}`);
-    console.log(`Paginated items response:`, response);
 
     if (!response ||
         (Array.isArray(response) && response.length === 0) ||
         (response.content && Array.isArray(response.content) && response.content.length === 0)) {
-      console.log('Response is empty, no more items to fetch');
       return {
         content: [],
         isEmpty: true
@@ -41,12 +52,16 @@ async getPaginatedItems(page = 0, size = 5, searchTerm = '') {
   }
 }
 
-  // Fetch all catalog items
+  /**
+   * Fetches all available catalog items.
+   *
+   * @returns {Promise<Array<Object>>} List of all items.
+   * @throws {Error} If the request fails.
+   */
   async getAllItems() {
     try {
-      console.log('Calling getAllItems API endpoint')
       const response = await this.get('')
-      console.log('getAllItems response:', response)
+
       return response
     } catch (error) {
       console.error('Error in getAllItems:', error)
@@ -54,12 +69,16 @@ async getPaginatedItems(page = 0, size = 5, searchTerm = '') {
     }
   }
 
-  // Fetch items by type
+  /**
+   * Fetches items filtered by a specific item type.
+   *
+   * @param {string} type - The type/category of items.
+   * @returns {Promise<Array<Object>>} List of items of the given type.
+   * @throws {Error} If the request fails.
+   */
   async getItemsByType(type) {
     try {
-      console.log(`Calling getItemsByType API endpoint for type: ${type}`)
       const response = await this.get(`/type/${type}`)
-      console.log(`getItemsByType response for ${type}:`, response)
       return response
     } catch (error) {
       console.error(`Error in getItemsByType for ${type}:`, error)
@@ -67,12 +86,16 @@ async getPaginatedItems(page = 0, size = 5, searchTerm = '') {
     }
   }
 
-  // Fetch a single item by ID
+  /**
+   * Fetches a single item by its ID.
+   *
+   * @param {string|number} id - The ID of the item to retrieve.
+   * @returns {Promise<Object>} The item object.
+   * @throws {Error} If the request fails.
+   */
   async getItemById(id) {
     try {
-      console.log(`Calling getItemById API endpoint for ID: ${id}`)
       const response = await this.get(`/${id}`)
-      console.log(`getItemById response for ${id}:`, response)
       return response
     } catch (error) {
       console.error(`Error in getItemById for ${id}:`, error)

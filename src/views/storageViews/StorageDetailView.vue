@@ -207,7 +207,7 @@ onMounted(async () => {
     await householdStore.checkCurrentHousehold()
 
     if (householdStore.hasHousehold) {
-      const response = await UserService.getCurrentHouseholdByUserId(userStore.user.id)
+      const response = await UserService.getCurrentHouseholdByUserId()
       const householdId = response.id
       storageStore.setCurrentHouseholdId(householdId)
       await storageStore.fetchItems()

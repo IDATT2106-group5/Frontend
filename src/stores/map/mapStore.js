@@ -10,6 +10,8 @@ import RoutingService from '@/service/map/routingService';
 import GeolocationService from '@/service/map/geoLocationService.js';
 import GeocodingService from '@/service/map/geocodingService.js'
 import L from 'leaflet';
+import { useIncidentAdminStore } from '@/stores/admin/incidentAdminStore.js'
+import { toast } from '@/components/ui/toast/index.js'
 
 export const useMapStore = defineStore('map', {
   state: () => ({
@@ -594,14 +596,41 @@ export const useMapStore = defineStore('map', {
     /**
      * Initialize incidents and incident layer
      */
-    initIncidents() {
+    async initIncidents() {
       if (!this.map) return;
 
       // Create incident layer and add to map
       this.incidentLayer = L.layerGroup().addTo(this.map);
 
+      if (!this.incidentLayer) {
+        this.incidentLayer = L.layerGroup().addTo(this.map);
+      } else {
+        // Clear existing incidents
+        this.incidentLayer.clearLayers();
+      }
+
       // Load incidents
-      this.loadIncidents();
+      await this.loadIncidents();
+    },
+
+    async refreshIncidents() {
+      if (!this.map || !this.incidentLayer) return;
+
+      try {
+        // Clear existing incidents
+        this.incidentLayer.clearLayers();
+
+        // Fetch fresh incidents data
+        this.incidents = await IncidentMapService.fetchIncidents();
+
+        // Add incidents to map
+        this.updateIncidentsOnMap();
+
+        return true;
+      } catch (error) {
+        console.error('Error refreshing incidents:', error);
+        return false;
+      }
     },
 
     /**
@@ -645,8 +674,14 @@ export const useMapStore = defineStore('map', {
       // Clear existing incidents
       this.incidentLayer.clearLayers();
 
-      // Add each incident to the map
+      // Get the editingIncidentId from the incidentAdminStore
+      const editingIncidentId = useIncidentAdminStore().editingIncidentId;
+
+      // Add each incident to the map, except the one being edited
       this.incidents.forEach(incident => {
+        // Skip the incident being edited
+        if (incident.id === editingIncidentId) return;
+
         // Use the IncidentConfigService to create circles
         const circleGroup = IncidentConfigService.createIncidentCircles(incident, this.map);
         if (circleGroup) {
@@ -1110,11 +1145,6 @@ export const useMapStore = defineStore('map', {
 
         // Call API to create the marker
         await MarkerAdminService.createMarker(requestData);
-
-        // Assuming the API returns a success message rather than the created object
-        this.success = 'Markør opprettet.';
-
-        // Refresh the marker list
         await this.fetchMarkers();
 
         // Reset form state
@@ -1158,9 +1188,6 @@ export const useMapStore = defineStore('map', {
 
         await MarkerAdminService.updateMarker(id, requestData);
 
-        // Assuming the API returns a success message
-        this.success = 'Markør oppdatert.';
-
         // Refresh the marker list
         await this.fetchMarkers();
 
@@ -1189,12 +1216,40 @@ export const useMapStore = defineStore('map', {
       let success = false;
 
       if (this.isCreating) {
-        success = await this.createMarker();
+        try {
+          success = await this.createMarker();
+          toast({
+            title: 'Kart markør opprettet',
+            description: 'Du har opprettet en ny kart markør.',
+            variant: 'success',
+          })
+        } catch (error) {
+          console.error('Error in createMarker:', error);
+          toast({
+            title: 'Feil',
+            description: 'Klarte ikke opprettet en ny kart markør.',
+            variant: 'destructive',
+          })
+        }
+
       } else if (this.isEditing) {
-        success = await this.updateMarker();
+        try {
+          success = await this.updateMarker();
+          toast({
+            title: 'Kart markør oppdatert ',
+            description: 'Du har oppdatert en kart markør.',
+            variant: 'success',
+          })
+        } catch (error) {
+          console.error('Error in updateMarker:', error);
+          toast({
+            title: 'Feil',
+            description: 'Klarte ikke oppdatere kart markør.',
+            variant: 'destructive',
+          })
+        }
       }
 
-      // Only reset the editingMarkerId if the save was successful
       if (success) {
         this.clearEditingMarkerId();
         this.clearAllMarkerLayers();
@@ -1216,9 +1271,7 @@ export const useMapStore = defineStore('map', {
 
       try {
         await MarkerAdminService.deleteMarker(id);
-        this.success = 'Markør slettet.';
 
-        // Remove from local arrays
         this.markers = this.markers.filter(marker => marker.id !== id);
         this.applyFilters();
 
@@ -1229,6 +1282,12 @@ export const useMapStore = defineStore('map', {
         await this.fetchMarkers();
 
         await this.fetchAndDisplayMarkers();
+
+        toast({
+          title: 'Slettet kart markør',
+          description: 'Du har slettet en klart markør.',
+          variant: 'success',
+        })
 
         // Reset form state if we were editing this marker
         if (this.isEditing && this.markerFormData.id === id) {
@@ -1244,6 +1303,11 @@ export const useMapStore = defineStore('map', {
           this.error = 'Kunne ikke slette markør. Vennligst prøv igjen senere.';
         }
         console.error('Error in deleteMarker:', error);
+        toast({
+          title: 'Feil',
+          description: 'Klarte ikke slette kart markør.',
+          variant: 'destructive',
+        })
         return false;
       } finally {
         this.isLoading = false;

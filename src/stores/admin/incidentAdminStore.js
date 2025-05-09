@@ -2,6 +2,8 @@ import { defineStore } from 'pinia';
 import IncidentAdminService from '@/service/admin/incidentAdminService';
 import IncidentConfigService from '@/service/map/incidentConfigService';
 import ScenarioService from '@/service/scenarioService';
+import { useMapStore } from '@/stores/map/mapStore';
+import { toast } from '@/components/ui/toast/index.js'
 
 /**
  * @function useIncidentAdminStore
@@ -24,6 +26,7 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
     isLoading: false,
     error: null,
     success: null,
+    editingIncidentId: null,
 
     /**
      * @type {Incident} Form data for creating or editing an incident
@@ -88,7 +91,7 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
         const incidents = await IncidentAdminService.fetchAllIncidentsForAdmin();
         this.incidents = incidents.map(incident => ({
           id: incident.id,
-          scenarioId: incident.scenarioId || incident.scenario_id || incident.scenario || null,
+          scenarioId: incident.scenarioId || null,
           name: incident.name || '',
           description: incident.description || '',
           severity: incident.severity || 'RED',
@@ -125,6 +128,12 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
 
         return matchesSearch && matchesSeverity;
       });
+    },
+
+    setEditingIncidentId(incidentId) {
+      this.editingIncidentId = incidentId;
+      // Force a redraw of incidents on the map
+      useMapStore().updateIncidentsOnMap();
     },
 
     /**
@@ -180,6 +189,7 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
      * @returns {void}
      */
     editIncident(incident) {
+      this.setEditingIncidentId(incident.id);
       const scenarioId = incident.scenarioId || null;
 
       this.incidentFormData = {
@@ -213,8 +223,13 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
 
       try {
         await IncidentAdminService.createIncident(this.incidentFormData);
-        this.success = 'Krisesituasjon opprettet.';
+        toast({
+          title: 'Krise ble opprettet',
+          description: 'Du har opprettet en ny krise.',
+          variant: 'success',
+        })
         await this.fetchIncidents();
+        useMapStore().initIncidents();
         this.isCreating = false;
         return true;
       } catch (error) {
@@ -224,6 +239,11 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
           this.error = 'Kunne ikke opprette krisesituasjon. Vennligst prøv igjen senere.';
         }
         console.error('Error in createIncident:', error);
+        toast({
+          title: 'Feil',
+          description: 'Klarte ikke opprettet krise.',
+          variant: 'destructive',
+        })
         return false;
       } finally {
         this.isLoading = false;
@@ -242,15 +262,27 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
 
       try {
         await IncidentAdminService.updateIncident(this.incidentFormData.id, this.incidentFormData);
-        this.success = 'Krisesituasjon oppdatert.';
+        toast({
+          title: 'Krise ble oppdatert',
+          description: 'Du har oppdatert en krise.',
+          variant: 'success',
+        })
+        this.editingIncidentId = null;
         await this.fetchIncidents();
+        useMapStore().initIncidents();
         this.isEditing = false;
         return true;
       } catch (error) {
         if (error.response && error.response.data && error.response.data.error) {
+          this.editingIncidentId = null;
           this.error = error.response.data.error;
         } else {
           this.error = 'Kunne ikke oppdatere krisesituasjon. Vennligst prøv igjen senere.';
+          toast({
+            title: 'Feil',
+            description: 'Klarte ikke oppdatere krise.',
+            variant: 'destructive',
+          })
         }
         console.error('Error in updateIncident:', error);
         return false;
@@ -267,9 +299,17 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
      */
     async saveIncident() {
       if (this.isCreating) {
-        return await this.createIncident();
+        const success = await this.createIncident();
+        if (success) {
+          await useMapStore().refreshIncidents();
+        }
+        return success;
       } else if (this.isEditing) {
-        return await this.updateIncident();
+        const success = await this.updateIncident();
+        if (success) {
+          await useMapStore().refreshIncidents();
+        }
+        return success;
       }
       return false;
     },
@@ -287,7 +327,11 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
 
       try {
         await IncidentAdminService.deleteIncident(parseInt(id));
-        this.success = 'Krisesituasjon slettet.';
+        toast({
+          title: 'Slettet en krise',
+          description: 'Du har selttet en krise.',
+          variant: 'success',
+        })
         this.incidents = this.incidents.filter(incident => incident.id !== id);
         this.applyFilters();
 
@@ -303,6 +347,11 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
           this.error = 'Kunne ikke slette krisesituasjon. Vennligst prøv igjen senere.';
         }
         console.error('Error in deleteIncident:', error);
+        toast({
+          title: 'Feil',
+          description: 'Klarte ikke seltte krise.',
+          variant: 'destructive',
+        })
         return false;
       } finally {
         this.isLoading = false;
@@ -368,6 +417,7 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
       this.isCreating = false;
       this.error = null;
       this.success = null;
+      this.editingIncidentId = null;
     },
 
     /**
