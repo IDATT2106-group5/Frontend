@@ -160,7 +160,6 @@ export default {
         map.value = await mapStore.initMap(mapContainer.value)
 
         if (map.value) {
-          console.log('Map initialized successfully')
           mapInitialized.value = true
 
           // Common map initialization - emit map-ready event
@@ -179,7 +178,6 @@ export default {
           try {
             const positions = await fetchHouseholdPositions()
             if (Array.isArray(positions)) {
-              console.log(`Received ${positions.length} initial positions`)
               positions.forEach((pos) => handlePositionUpdate(pos))
             } else {
               console.warn('Expected positions array but received:', positions)
@@ -190,11 +188,9 @@ export default {
 
           // Admin-specific setup
           if (props.isAdminMode) {
-            console.log("Setting up admin mode in MapView");
 
             // Set up click handler for admin mode
             map.value.on('click', (e) => {
-              console.log("Admin map clicked:", e.latlng);
               emit('map-click', e);
             });
 
@@ -207,7 +203,6 @@ export default {
           // Add additional timeout to ensure markers are refreshed after map is ready
           setTimeout(() => {
             mapStore.refreshMarkerLayers();
-            console.log("Forced marker refresh after timeout");
           }, 500);
         }
       } catch (error) {
@@ -220,8 +215,6 @@ export default {
     // Function to sync admin markers to the map store for unified handling
     const syncAdminMarkersToStore = () => {
       if (!props.isAdminMode || !props.markers || !props.markers.length) return;
-
-      console.log("Syncing admin markers to map store:", props.markers.length);
 
       // Convert admin markers to the format expected by the map store
       // and add them to a special admin layer in the store
@@ -248,7 +241,6 @@ export default {
     // Watch for changes in the markers prop from the parent component
     watch(() => props.markers, () => {
       if (props.isAdminMode && map.value) {
-        console.log('Admin markers changed, syncing to map store');
         syncAdminMarkersToStore();
       }
     }, { deep: true });
@@ -256,7 +248,6 @@ export default {
     // Watch for changes in the editingMarkerId
     watch(() => props.editingMarkerId, (newId, oldId) => {
       if (props.isAdminMode && map.value) {
-        console.log(`Editing marker changed: ${oldId} -> ${newId}`);
         syncAdminMarkersToStore();
       }
     });
@@ -272,7 +263,6 @@ export default {
       if (newMap && props.isAdminMode) {
         // Set up map move event for admin mode
         newMap.on('moveend', () => {
-          console.log("Map moved, refreshing markers");
           mapStore.refreshMarkerLayers();
         });
       }
@@ -287,8 +277,6 @@ export default {
     });
 
     const handlePositionUpdate = (positionData) => {
-
-      console.log('Handling position update:', positionData)
 
       if (!positionData) {
         console.warn('Received empty position data')
@@ -322,8 +310,6 @@ export default {
         const isCurrentUser = userId === userStore.user.id
         const name = fullName.split(' ')[0]
         updateUserMarker(userId, name, parsedLong, parsedLat, isCurrentUser)
-      } else {
-        console.log(`Map not ready yet. Storing position for user ${userId} for later display`)
       }
     }
 
@@ -333,7 +319,6 @@ export default {
       if (userMarkers.value.has(userId)) {
         const marker = userMarkers.value.get(userId)
         marker.setLatLng([latitude, longitude])
-        console.log(`Updated existing marker for user ${userId}`)
         return
       }
 
@@ -375,7 +360,6 @@ export default {
         if (map.value && typeof map.value.addLayer === 'function') {
           newMarker.addTo(map.value)
           userMarkers.value.set(userId, newMarker)
-          console.log(`Created new marker for user ${userId}`)
         } else {
           console.error(`Cannot add marker: map instance is not properly initialized`, map.value)
           userMarkers.value.set(userId, newMarker)

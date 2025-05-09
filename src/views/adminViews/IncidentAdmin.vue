@@ -540,17 +540,12 @@ export default {
      * @param {Object} e - Click event object containing latlng data
      */
     const onMapClick = async (e) => {
-      console.log("Map click handler called:", e.latlng);
 
-      // Only proceed if in edit or create mode
       if (!isEditing.value && !isCreating.value) {
-        console.log("Click ignored: not in edit or create mode");
         return;
       }
 
       const { lat, lng } = e.latlng;
-
-      console.log("Updating coordinates to:", lat, lng);
 
       // Update form data with the new coordinates
       incidentFormData.value.latitude = lat;
@@ -565,7 +560,6 @@ export default {
       // Perform reverse geocoding to get address information
       try {
         const addressInfo = await updateAddressFromCoordinates(lat, lng);
-        console.log("Address updated based on new coordinates:", addressInfo);
       } catch (error) {
         console.error("Error updating address from coordinates:", error);
       }
