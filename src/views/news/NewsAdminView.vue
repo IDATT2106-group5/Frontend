@@ -325,6 +325,7 @@ export default {
         <button
           @click="openEditModal()"
           class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded transition duration-200"
+          cy-data="create-news-button"
         >
           + Opprett nyhet
         </button>
