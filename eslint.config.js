@@ -19,7 +19,8 @@ export default defineConfig([
     'tailwind.config.js',
     'postcss.config.cjs',
     'src/components/ui',
-    'src/components', // Remove this to start linting non-Shad files
+    'src/components',
+    'cypress/**',
     'src/stores',
     'src/views',
   ]),
