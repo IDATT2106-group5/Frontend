@@ -4,6 +4,7 @@ import { Crown, UserIcon, Mail, Edit, Save, X, Phone } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toast'
 import { useHouseholdStore } from '@/stores/HouseholdStore'
+import ConfirmModal from '@/components/householdMainView/modals/ConfirmModal.vue'
 
 const householdStore = useHouseholdStore()
 
@@ -25,25 +26,25 @@ const editName = ref('')
 const editEmail = ref('')
 const isSaving = ref(false)
 const error = ref('')
+const confirmRemoveOpen = ref(false)
 const nameRegex = /^[A-Za-zæøåÆØÅ\s\-']+$/
 
-const startEdit = () => {
+function startEdit() {
   editName.value = props.member.fullName
   editEmail.value = props.member.email || ''
   isEditing.value = true
 }
 
-const cancelEdit = () => {
+function cancelEdit() {
   isEditing.value = false
   error.value = ''
 }
 
-const saveEdit = async () => {
+async function saveEdit() {
   if (!editName.value.trim()) {
     error.value = 'Navn er påkrevd'
     return
   }
-
   if (!nameRegex.test(editName.value)) {
     error.value = 'Navnet kan ikke inneholde tall eller spesialtegn'
     return
@@ -81,9 +82,13 @@ const saveEdit = async () => {
   }
 }
 
-const confirmRemove = async () => {
-  if (!confirm(`Er du sikker på at du vil fjerne ${props.member.fullName}?`)) return
+function openConfirmRemove() {
+  confirmRemoveOpen.value = true
+}
 
+async function doRemove() {
+  confirmRemoveOpen.value = false
+  error.value = ''
   try {
     await householdStore.removeMember(props.member, props.member.isRegistered)
 
@@ -92,6 +97,8 @@ const confirmRemove = async () => {
       description: `${props.member.fullName} er fjernet fra husstanden.`,
       variant: 'success'
     })
+
+    emit('remove-member', props.member.id)
   } catch (err) {
     const message = err.message || 'Kunne ikke fjerne medlemmet'
     error.value = message
@@ -137,7 +144,9 @@ const confirmRemove = async () => {
         <UserIcon class="h-5 w-5 text-gray-700 mr-3 mt-1 flex-shrink-0" />
         <div class="max-w-full overflow-hidden">
           <div class="font-medium text-[#2C3E50] flex items-center gap-1">
-            <span class="truncate max-w-[150px] sm:max-w-[250px] md:max-w-xs">{{ member.fullName }}</span>
+            <span class="truncate max-w-[150px] sm:max-w-[250px] md:max-w-xs">
+              {{ member.fullName }}
+            </span>
             <Crown
               v-if="isOwner"
               class="w-4 h-4 text-yellow-500 flex-shrink-0"
@@ -145,12 +154,16 @@ const confirmRemove = async () => {
             />
           </div>
           <p v-if="member.email" class="text-sm text-gray-600 flex items-center">
-            <Mail class="w-4 h-4 mr-1 flex-shrink-0" /> 
-            <span class="truncate max-w-[150px] sm:max-w-[250px] md:max-w-xs">{{ member.email }}</span>
+            <Mail class="w-4 h-4 mr-1 flex-shrink-0" />
+            <span class="truncate max-w-[150px] sm:max-w-[250px] md:max-w-xs">
+              {{ member.email }}
+            </span>
           </p>
           <p v-if="member.tlf" class="text-sm text-gray-600 flex items-center">
-            <Phone class="w-4 w-4 mr-1 flex-shrink-0" /> 
-            <span class="truncate max-w-[150px] sm:max-w-[250px] md:max-w-xs">{{ member.tlf }}</span>
+            <Phone class="w-4 h-4 mr-1 flex-shrink-0" />
+            <span class="truncate max-w-[150px] sm:max-w-[250px] md:max-w-xs">
+              {{ member.tlf }}
+            </span>
           </p>
           <p
             v-if="!member.email && !member.tlf"
@@ -161,26 +174,40 @@ const confirmRemove = async () => {
         </div>
       </div>
 
-      <!-- Owner-only actions -->
-      <div v-if="householdStore.isCurrentUserOwner" class="flex items-center gap-2 flex-shrink-0 ml-4">
+      <div
+        v-if="householdStore.isCurrentUserOwner"
+        class="flex items-center gap-2 flex-shrink-0 ml-4"
+      >
         <Button
           v-if="!member.isRegistered && !isOwner"
+          data-cy="edit-member-button"
           variant="ghost"
           size="sm"
           @click="startEdit"
         >
-          <Edit class="h-4 w-4" />
+          <Edit 
+          class="h-4 w-4" />
         </Button>
         <Button
           v-if="!isOwner"
           variant="outline"
           class="text-red-600 border-red-500 hover:bg-red-50"
           size="sm"
-          @click="confirmRemove"
+          @click="openConfirmRemove"
         >
           Fjern
         </Button>
       </div>
     </div>
+
+    <ConfirmModal
+      v-if="confirmRemoveOpen"
+      title="Fjern medlem"
+      :description="`Er du sikker på at du vil fjerne ${props.member.fullName}?`"
+      confirmText="Fjern"
+      cancelText="Avbryt"
+      @cancel="confirmRemoveOpen = false"
+      @confirm="doRemove"
+    />
   </div>
 </template>

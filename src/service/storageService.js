@@ -11,7 +11,6 @@ class StorageService extends BaseService {
   /**
    * Fetches all storage items for a specific household.
    *
-   * @param {string} householdId  The ID of the household.
    * @returns {Promise<Array<Object>>} Promise resolving to list of storage items.
    * @throws {Error} If the request fails.
    */
@@ -28,7 +27,6 @@ class StorageService extends BaseService {
   /**
    * Fetches storage items for a household filtered by item type.
    *
-   * @param {string} householdId  The ID of the household.
    * @param {string} itemType  The type of items to fetch (e.g. FOOD, LIQUIDS).
    * @returns {Promise<Array<Object>>} Promise resolving to filtered storage items.
    * @throws {Error} If the request fails.
@@ -46,7 +44,6 @@ class StorageService extends BaseService {
   /**
    * Fetches items that expire before a specified date.
    *
-   * @param {string} householdId  The ID of the household.
    * @param {Date} beforeDate  Date before which items expire.
    * @returns {Promise<Array<Object>>} Promise resolving to expiring items.
    * @throws {Error} If the request fails.

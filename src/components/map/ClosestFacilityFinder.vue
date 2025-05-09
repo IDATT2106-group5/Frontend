@@ -220,7 +220,6 @@ const findClosestFacility = async () => {
     if (!facility) {
       locationError.value = "Ingen fasiliteter funnet i nærheten.";
     } else {
-      console.log("Found closest facility:", facility);
       // Clear any existing route if we find a new facility
       if (isRouteActive.value) {
         mapStore.clearRoute();

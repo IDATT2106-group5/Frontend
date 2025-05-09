@@ -98,7 +98,6 @@ export const useAdminStore = defineStore('admin', {
         const response = await RegisterAdminService.inviteAdmin(adminData)
 
         if (response) {
-          console.log("[Response from Invite] ", response)
           return response
         }
         return null
@@ -127,7 +126,6 @@ export const useAdminStore = defineStore('admin', {
         const response = await adminService.resetPassword(email)
 
         if (response) {
-          console.log("[Response from password reset] ", response)
           return response
         }
         return null
@@ -157,7 +155,6 @@ export const useAdminStore = defineStore('admin', {
         const response = await adminService.deleteAdmin(adminId)
 
         if (response) {
-          console.log("[Response from delete admin] ", response)
           return response
         }
         return null

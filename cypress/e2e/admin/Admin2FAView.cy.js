@@ -1,17 +1,21 @@
 describe('Admin 2FA View', () => {
+  const adminUser = {
+    email: "admin@test.test",
+    password: "Password123!"
+  }
+
   beforeEach(() => {
+    cy.adminLogin(adminUser.email, adminUser.password)
     // Intercept and mock API calls
     cy.intercept('POST', '**/2fa/verify', { statusCode: 200, body: { success: true } }).as('verify2fa')
     cy.intercept('POST', '**/2fa/generate', { statusCode: 200, body: { success: true } }).as('resend2fa')
 
-    // Visit the 2FA page with a test email
-    cy.visit('/2FA?email=admin@example.com')
   })
 
   it('should render the 2FA form with correct elements', () => {
     // Check page title and content
     cy.contains('h1', 'To-faktor autentisering').should('be.visible')
-    cy.contains('p', 'Skriv inn koden sendt til admin@example.com').should('be.visible')
+    cy.contains('p', 'Skriv inn koden sendt til ', adminUser.email).should('be.visible')
 
     // Verify all 6 input fields exist
     cy.get('input[type="text"]').should('have.length', 6)
@@ -48,7 +52,7 @@ describe('Admin 2FA View', () => {
     // Wait for the API call and verify it was made with correct data
     cy.wait('@verify2fa').its('request.body')
       .should('deep.include', {
-        email: 'admin@example.com',
+        email: 'admin@test.test',
         otp: '123456'
       })
 
@@ -56,27 +60,36 @@ describe('Admin 2FA View', () => {
     cy.url().should('include', '/')
   })
 
-  // it('should resend code when clicking the resend button', () => {
-  //   // Click the resend button
-  //   cy.contains('button', 'Send kode på nytt').click()
-
-  //   // Wait for the API call
-  //   cy.wait('@resend2fa').its('request.body')
-  //     .should('deep.include', {
-  //       email: 'admin@example.com'
-  //     })
-
-  //   // Check for alert message (requires cy.on('window:alert') to be set up)
-  //   cy.on('window:alert', (text) => {
-  //     expect(text).to.equal('En ny kode har blitt sendt til din e-post')
-  //   })
-  // })
-
   it('should redirect to login page when email is missing', () => {
     // Visit without email param
     cy.visit('/2FA')
 
     // Should be redirected to login
     cy.url().should('include', '/login')
+  })
+
+  it('should submit the code and verify 2FA', () => {
+    // Test entering the code
+    cy.get('input[type="text"]').each(($input, index) => {
+      cy.wrap($input).type(index + 1) // Type 1,2,3,4,5,6
+    })
+
+    // Mock 2FA verification endpoint
+    cy.intercept('POST', '/api/admin/login/2fa/verify', {
+      statusCode: 200,
+      body: {
+        token: 'fake-admin-jwt',
+        success: true
+      }
+    }).as('verify2FA')
+
+    // Submit the code
+    cy.contains('button', 'Bekreft').click()
+
+    // Wait for verification request
+    cy.wait('@verify2FA')
+    
+    // Verify redirect to admin dashboard after successful verification
+    cy.url().should('eq', Cypress.config().baseUrl + '/')
   })
 })

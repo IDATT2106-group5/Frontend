@@ -20,7 +20,7 @@ class GeolocationService {
         return await this.getIPBasedLocation();
       } catch (ipError) {
         console.error("IP geolocation also failed:", ipError);
-        throw new Error("Could not determine user location: " + error.message);
+        throw new Error("Kunne ikke hente posisjonen din. Du har ikke godtatt deling av posisjon.");
       }
     }
   }
@@ -80,7 +80,7 @@ class GeolocationService {
       return [data.latitude, data.longitude];
     }
 
-    throw new Error("Could not determine location from IP");
+    throw new Error("Kunne ikke hente posisjonen din fra IP-adresse.");
   }
 
   /**

@@ -35,6 +35,7 @@ const dateStore = useDateStore()
 const newsStore = useNewsStore()
 const householdStore = useHouseholdStore()
 const incidentStore = useIncidentAdminStore()
+const kartImage = new URL('@/assets/icons/Kart.png', import.meta.url).href
 
 /**
  * Lifecycle hook: called when the component is mounted.
@@ -159,11 +160,12 @@ onUnmounted(() => {
       </div>
 
       <!-- Map Placeholder -->
-      <router-link to="/map" class="w-full md:w-1/3">
+      <router-link to="/map" class="w-full md:w-1/3" data-cy="map-link">
         <div
-          class="h-48 md:h-64 bg-gray-300 rounded flex items-center justify-center text-gray-700 hover:bg-gray-400 transition cursor-pointer"
+          class="h-48 md:h-64 bg-gray-300 rounded bg-cover bg-center hover:opacity-90 transition cursor-pointer relative"
+          :style="{ backgroundImage: `url(${kartImage})` }"
         >
-          Kart
+          <span class="sr-only">Kart</span>
         </div>
       </router-link>
     </section>

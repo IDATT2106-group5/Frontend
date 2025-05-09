@@ -32,7 +32,6 @@ class RegisterAdminService extends BaseService {
 
     try {
       const response = await this.post('invite', adminData);
-      console.log('[RESPONSE] Admin invitation was successful');
       return response;
     } catch (error) {
         if (error.status) {
@@ -87,7 +86,6 @@ class RegisterAdminService extends BaseService {
 
     try {
       const response = await this.post('setup', adminData);
-      console.log('[RESPONSE] Admin registration successful');
       return response;
     } catch (error) {
       if (error.response) {
