@@ -175,7 +175,6 @@ const requestLocation = async () => {
   try {
     userLocation.value = await GeolocationService.getUserLocation();
 
-    // Set up continuous watching with less strict parameters
     if (navigator.geolocation) {
       watchId.value = navigator.geolocation.watchPosition(
         (position) => {
@@ -212,7 +211,6 @@ const findClosestFacility = async () => {
   try {
     const [lat, lng] = userLocation.value;
 
-    // Find closest facility using marker service
     const facility = await MarkerService.findClosestMarker(
       lat, lng, selectedType.value || null
     );
