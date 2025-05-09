@@ -1,9 +1,18 @@
 import { Client } from '@stomp/stompjs'
 
+/**
+ * WebSocketService manages a STOMP over SockJS connection to the backend.
+ * It handles subscription to notifications and household position updates.
+ */
 export default class WebSocketService {
   constructor() {
+    /** @type {Client|null} */
     this.stompClient = null
+
+    /** @type {boolean} */
     this.connected = false
+
+    /** @type {Object} */
     this.callbacks = {
       onConnected: () => {},
       onDisconnected: () => {},
@@ -11,10 +20,24 @@ export default class WebSocketService {
       onPositionUpdate: () => {},
       onIncident: () => {},
     }
+    /** @type {string|null} */
     this.userId = null
+    /** @type {string|null} */
     this.token = null
   }
 
+  /**
+   * Initializes the WebSocket connection and sets callback functions.
+   *
+   * @param {Object} config - WebSocket initialization parameters.
+   * @param {string} config.userId - The user ID.
+   * @param {string} config.householdId - The household ID.
+   * @param {string} config.token - The JWT auth token.
+   * @param {Function} config.onConnected - Called when connected.
+   * @param {Function} config.onDisconnected - Called when disconnected.
+   * @param {Function} config.onNotification - Called on notification.
+   * @param {Function} config.onPositionUpdate - Called on position update.
+   */
   init({ userId, householdId, token, onConnected, onDisconnected, onNotification, onPositionUpdate }) {
     this.userId = userId
     this.token = token
@@ -28,6 +51,9 @@ export default class WebSocketService {
     this.connect()
   }
 
+  /**
+   * Establishes the WebSocket connection using SockJS and STOMP.
+   */
   connect() {
     if (typeof window !== 'undefined') {
       window.global = window
@@ -53,6 +79,10 @@ export default class WebSocketService {
       })
   }
 
+  /**
+   * Handles successful STOMP connection and subscribes to notification topics.
+   * @private
+   */
   _onConnected() {
     this.connected = true
 
@@ -87,17 +117,31 @@ export default class WebSocketService {
     this.callbacks.onConnected()
   }
 
+  /**
+   * Handles WebSocket disconnection.
+   * @private
+   */
   _onDisconnected() {
     this.connected = false
     this.callbacks.onDisconnected()
   }
-
+  
+  /**
+   * Disconnects the WebSocket client.
+   */
   disconnect() {
     if (this.stompClient) {
       this.stompClient.deactivate()
     }
   }
 
+  /**
+   * Subscribes to position updates for a specific household.
+   *
+   * @param {string} householdId - Household ID to subscribe to.
+   * @param {Function} callback - Function to call with received position data.
+   * @returns {boolean} True if subscription was successful.
+   */
   subscribeToPosition(householdId, callback) {
     if (this.stompClient && this.connected && this.token && householdId) {
       this.stompClient.subscribe(`/topic/position/${householdId}`, (message) => {
@@ -112,7 +156,15 @@ export default class WebSocketService {
     }
     return false
   }
-
+  
+  /**
+   * Publishes the user's position to the backend.
+   *
+   * @param {string} userId - User ID.
+   * @param {number} longitude - User's longitude.
+   * @param {number} latitude - User's latitude.
+   * @returns {boolean} True if publish was successful.
+   */
   updatePosition(userId, longitude, latitude) {
     const positionData = { userId, longitude, latitude }
     if (this.stompClient && this.connected) {
