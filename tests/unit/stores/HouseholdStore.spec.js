@@ -4,44 +4,42 @@ import { useHouseholdStore } from '@/stores/HouseholdStore';
 import HouseholdService from '@/service/householdService';
 import RequestService from '@/service/requestService';
 
-
 vi.mock('@/service/householdService', () => ({
-    default: {
-      getHouseholdDetailsByUserId: vi.fn(),
-      updateHousehold: vi.fn(),
-      addMember: vi.fn(),
-      updateUnregisteredMember: vi.fn(),
-      removeRegisteredMember: vi.fn(),
-      removeUnregisteredMember: vi.fn(),
-      cancelInvitation: vi.fn(),
-      addUserToHousehold: vi.fn(),
-      transferOwnership: vi.fn(),
-      createHousehold: vi.fn(),
-      deleteHousehold: vi.fn(),
-      leaveHousehold: vi.fn(),
-      searchHouseholdById: vi.fn(),
-    }
-  }));
+  default: {
+    getHouseholdDetailsByUserId: vi.fn(),
+    updateHousehold: vi.fn(),
+    addMember: vi.fn(),
+    updateUnregisteredMember: vi.fn(),
+    removeRegisteredMember: vi.fn(),
+    removeUnregisteredMember: vi.fn(),
+    cancelInvitation: vi.fn(),
+    addUserToHousehold: vi.fn(),
+    transferOwnership: vi.fn(),
+    createHousehold: vi.fn(),
+    deleteHousehold: vi.fn(),
+    leaveHousehold: vi.fn(),
+    searchHouseholdById: vi.fn(),
+  }
+}));
 
-  vi.mock('@/service/requestService', () => ({
-    default: {
-      sendInvitation: vi.fn(),
-      getSentInvitationsByHousehold: vi.fn(),
-      getReceivedJoinRequests: vi.fn(),
-      getReceivedInvitationsByUser: vi.fn(),
-      acceptJoinRequest: vi.fn(),
-      acceptInvitationRequest: vi.fn(),
-      declineJoinRequest: vi.fn(),
-      sendJoinRequest: vi.fn()
-    }
-  }));
+vi.mock('@/service/requestService', () => ({
+  default: {
+    sendInvitation: vi.fn(),
+    getSentInvitationsByHousehold: vi.fn(),
+    getReceivedJoinRequests: vi.fn(),
+    getReceivedInvitationsByUser: vi.fn(),
+    acceptJoinRequest: vi.fn(),
+    acceptInvitationRequest: vi.fn(),
+    declineJoinRequest: vi.fn(),
+    sendJoinRequest: vi.fn()
+  }
+}));
 
-  vi.mock('@/stores/UserStore', () => ({
-    useUserStore: vi.fn(() => ({
-      user: { id: 'user1', email: 'test@example.com' }
-    }))
-  }));
-
+vi.mock('@/stores/UserStore', () => ({
+  useUserStore: vi.fn(() => ({
+    user: { id: 'user1', email: 'test@example.com' }
+  }))
+}));
 
 describe('HouseholdStore', () => {
   let store;
@@ -114,14 +112,14 @@ describe('HouseholdStore', () => {
 
   it('inviteMember sends invitation and fetches invitations', async () => {
     store.currentHousehold = { id: 'h1', ownerId: 'user1' };
-    +  RequestService.sendInvitation.mockResolvedValue(true);
+    RequestService.sendInvitation.mockResolvedValue(true);
     RequestService.getSentInvitationsByHousehold.mockResolvedValue([]);
     const result = await store.inviteMember('invite@example.com');
     expect(result).toBe(true);
     expect(RequestService.sendInvitation).toHaveBeenCalled();
   });
 
-  it('acceptInvitation updates status and refreshes household', async () => {
+  it('acceptInvitation removes the invitation and returns true', async () => {
     store.receivedInvitations = [{ id: 'inv1', status: 'PENDING' }];
     RequestService.acceptInvitationRequest.mockResolvedValue({});
     HouseholdService.getHouseholdDetailsByUserId.mockResolvedValue({
@@ -129,15 +127,19 @@ describe('HouseholdStore', () => {
       users: [],
       unregisteredMembers: []
     });
-    await store.acceptInvitation('inv1');
-    expect(store.receivedInvitations[0].status).toBe('ACCEPTED');
+    const result = await store.acceptInvitation('inv1');
+    expect(result).toBe(true);
+    // the store filters out the accepted invitation
+    expect(store.receivedInvitations).toHaveLength(0);
   });
 
-  it('declineInvitation updates status', async () => {
+  it('declineInvitation removes the invitation and returns true', async () => {
     store.receivedInvitations = [{ id: 'inv1', status: 'PENDING' }];
     RequestService.declineJoinRequest.mockResolvedValue({});
-    await store.declineInvitation('inv1');
-    expect(store.receivedInvitations[0].status).toBe('REJECTED');
+    const result = await store.declineInvitation('inv1');
+    expect(result).toBe(true);
+    // the store filters out the declined invitation
+    expect(store.receivedInvitations).toHaveLength(0);
   });
 
   it('sendJoinRequest pushes to sentJoinRequests', async () => {
@@ -187,6 +189,7 @@ describe('HouseholdStore', () => {
     const result = await store.searchHouseholdById('1');
     expect(result.name).toBe('Found House');
   });
+
   it('loadHouseholdData calls check and fetches data', async () => {
     HouseholdService.getHouseholdDetailsByUserId.mockResolvedValue({
       household: { id: 'h1', owner: { id: 'user1' } },
@@ -254,4 +257,3 @@ describe('HouseholdStore', () => {
     expect(store.ownershipRequests[0].status).toBe('REJECTED');
   });
 });
-
