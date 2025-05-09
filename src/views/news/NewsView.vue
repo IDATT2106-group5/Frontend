@@ -7,7 +7,7 @@ const currentPage = ref(0)
 const pageSize = ref(5)
 const totalPages = ref(0)
 
-const currentFilter = ref('all') // Current filter for news items ('all', 'unread', 'read')
+const currentFilter = ref('all')
 
 /**
  * Fetches paginated news items when the component is mounted.

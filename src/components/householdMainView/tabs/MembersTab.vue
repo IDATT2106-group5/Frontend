@@ -8,18 +8,71 @@ import OwnerShipManager from '../widgets/OwnerShipManager.vue'
 import RequestList from '../widgets/RequestList.vue'
 import InvitationsList from '../widgets/InvitationsList.vue'
 
+/**
+ * Emits events to parent component
+ * @type {function[]}
+ * @property {function} open-add - Emitted when "Add Member" action is requested
+ * @property {function} open-invite - Emitted when "Invite Member" action is requested
+ */
 const emit = defineEmits(['open-add', 'open-invite'])
 
+/**
+ * Household store instance
+ * @type {import('@/stores/HouseholdStore').HouseholdStore}
+ */
 const store = useHouseholdStore()
+
+/**
+ * User store instance
+ * @type {import('@/stores/UserStore').UserStore}
+ */
 const userStore = useUserStore()
+
+/**
+ * Computed property that determines if current user is the household owner
+ * @type {import('vue').ComputedRef<boolean>}
+ */
 const isOwner = computed(() => store.isCurrentUserOwner)
 
+/**
+ * Search query for filtering members
+ * @type {import('vue').Ref<string>}
+ */
 const searchQuery = ref('')
+
+/**
+ * Current page for pagination
+ * @type {import('vue').Ref<number>}
+ */
 const page = ref(1)
+
+/**
+ * Number of members to display per page
+ * @type {number}
+ * @constant
+ */
 const perPage = 5
 
+/**
+ * All members in the household
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ * @property {string} id - Member ID
+ * @property {string} fullName - Member's full name
+ * @property {boolean} isRegistered - Whether the member is registered in the system
+ */
 const allMembers = computed(() => store.allMembers)
 
+/**
+ * Filtered and sorted list of members based on search query
+ *
+ * Sorting priority:
+ * 1. Owner
+ * 2. Current user
+ * 3. Registered users
+ * 4. Unregistered users
+ *
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const filteredMembers = computed(() => {
   const query = searchQuery.value.toLowerCase()
 
@@ -30,6 +83,11 @@ const filteredMembers = computed(() => {
   const ownerId = store.currentHousehold?.ownerId
   const currentUserId = userStore.user?.id
 
+  /**
+   * Ranking function for member sorting
+   * @param {Object} member - The member to rank
+   * @returns {number} Lower numbers are displayed first
+   */
   const rank = (member) => {
     if (member.id === ownerId) return 0
     if (member.id === currentUserId) return 1
@@ -40,15 +98,26 @@ const filteredMembers = computed(() => {
   return members.sort((a, b) => rank(a) - rank(b))
 })
 
+/**
+ * Members to display on the current page
+ * @type {import('vue').ComputedRef<Array<Object>>}
+ */
 const displayedMembers = computed(() => {
   const start = (page.value - 1) * perPage
   return filteredMembers.value.slice(start, start + perPage)
 })
 
+/**
+ * Total number of pages for pagination
+ * @type {import('vue').ComputedRef<number>}
+ */
 const totalPages = computed(() =>
   Math.max(1, Math.ceil(filteredMembers.value.length / perPage))
 )
 
+/**
+ * Reset to first page when search query changes
+ */
 watch(searchQuery, () => {
   page.value = 1
 })

@@ -1,3 +1,9 @@
+<script setup>
+defineProps({
+  visible: Boolean
+})
+</script>
+
 <template>
   <div
     v-if="visible"
@@ -74,8 +80,4 @@
   </div>
 </template>
 
-<script setup>
-defineProps({
-  visible: Boolean
-})
-</script>
+

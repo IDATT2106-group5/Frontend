@@ -3,19 +3,61 @@ import { ref, watchEffect } from 'vue'
 import { useHouseholdStore } from '@/stores/HouseholdStore'
 import { toast } from '@/components/ui/toast'
 
+/**
+ * Emits events to parent component
+ * @type {function[]}
+ * @property {function} close - Emitted when the form is closed or after successful save
+ */
 const emit = defineEmits(['close'])
+
+/**
+ * Household store instance
+ * @type {import('@/stores/HouseholdStore').HouseholdStore}
+ */
 const store = useHouseholdStore()
 
+/**
+ * The name of the household
+ * @type {import('vue').Ref<string>}
+ */
 const name = ref('')
+
+/**
+ * The address of the household
+ * @type {import('vue').Ref<string>}
+ */
 const address = ref('')
+
+/**
+ * Error message to display if validation fails
+ * @type {import('vue').Ref<string>}
+ */
 const error = ref('')
+
+/**
+ * Flag indicating if save operation is in progress
+ * @type {import('vue').Ref<boolean>}
+ */
 const loading = ref(false)
 
-// Maximum length for household name and address
+/**
+ * Maximum allowed length for household name
+ * @type {number}
+ * @constant
+ */
 const MAX_NAME_LENGTH = 20
+
+/**
+ * Maximum allowed length for household address
+ * @type {number}
+ * @constant
+ */
 const MAX_ADDRESS_LENGTH = 50
 
-// Keep local values synced with the current household
+/**
+ * Syncs form data with current household data from the store
+ * Updates local state whenever the current household changes
+ */
 watchEffect(() => {
   if (store.currentHousehold) {
     name.value = store.currentHousehold.name || ''
@@ -23,6 +65,15 @@ watchEffect(() => {
   }
 })
 
+/**
+ * Saves the updated household information
+ *
+ * Validates inputs, then submits to the store.
+ * Shows success toast on success, error toast on failure.
+ *
+ * @async
+ * @returns {Promise<void>}
+ */
 async function save() {
   if (!name.value) {
     error.value = 'Vennligst fyll ut navn'
@@ -49,7 +100,7 @@ async function save() {
       address: address.value
     })
 
-    await store.checkCurrentHousehold() 
+    await store.checkCurrentHousehold()
 
     toast({
       title: 'Husstand oppdatert',
@@ -59,6 +110,7 @@ async function save() {
 
     emit('close')
   } catch (e) {
+
     const msg = e instanceof Error ? e.message : String(e)
     error.value = msg
 

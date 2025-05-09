@@ -1,7 +1,7 @@
-
-// types/ItemType.js
-
-// This enum matches your backend ItemType values
+/**
+ * @typedef {string} ItemType
+ * @type {{LIQUIDS: string, FOOD: string, FIRST_AID: string, TOOL: string, OTHER: string}}
+ */
 export const ItemType = {
   LIQUIDS: 'LIQUIDS',
   FOOD: 'FOOD',
@@ -10,7 +10,6 @@ export const ItemType = {
   OTHER: 'OTHER'
 };
 
-// Map to display names in Norwegian
 export const ItemTypeDisplayName = {
   [ItemType.LIQUIDS]: 'Væske',
   [ItemType.FOOD]: 'Mat',
