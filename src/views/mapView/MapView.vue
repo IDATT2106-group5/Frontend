@@ -342,16 +342,16 @@ export default {
 </script>
 
 <template>
-  <div class="map-container">
-    <div id="map" ref="mapContainer"></div>
+  <div class="w-full h-[calc(100vh-60px)] relative overflow-hidden">
+    <div id="map" ref="mapContainer" class="w-full h-full"></div>
 
     <!-- Location Services Control -->
-    <div class="location-services-container">
+    <div class="absolute bottom-10 right-16 z-50">
       <Button
         @click="togglePositionSharing"
         variant="default"
-        class="location-services-button"
-        :class="{ 'services-active': isSharing }"
+        class="flex items-center gap-2 bg-white text-gray-700 font-medium p-2 px-3 rounded-lg shadow-md cursor-pointer transition-all duration-200"
+        :class="{ 'bg-blue-500 text-white': isSharing }"
       >
         <div class="relative">
           <LocateFixed class="w-5 h-5" />
@@ -363,14 +363,14 @@ export default {
           {{ isSharing ? 'Stedstjenester på' : 'Stedstjenester av' }}
         </span>
       </Button>
-      <div v-if="locationError" class="location-error-message">
+      <div v-if="locationError" class="mt-2 p-2 px-3 bg-red-100 border border-red-500 rounded-lg text-xs text-red-500">
         {{ locationError }}
       </div>
     </div>
 
     <!-- Add notification display with proper v-if check -->
     <transition name="fade">
-      <div v-if="notification" class="map-notification">
+      <div v-if="notification" class="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-black/70 text-white p-2 px-4 rounded z-50 text-sm">
         {{ notification }}
       </div>
     </transition>
@@ -378,179 +378,46 @@ export default {
     <ClosestFacilityFinder v-if="!isLoadingMarkers && !markersLoadError && !isAdminMode" />
 
     <!-- Add the search bar -->
-    <div class="map-search-container">
+    <div class="absolute top-4 left-1/2 transform -translate-x-1/2 w-[90%] max-w-sm z-50">
       <MapSearchBar />
     </div>
 
-
     <!-- Loading indicator -->
-    <div v-if="isLoadingMarkers" class="map-loading-overlay">
-      <div class="map-loading-spinner"></div>
-      <div class="map-loading-text">Laster kart data...</div>
+    <div v-if="isLoadingMarkers" class="absolute inset-0 bg-white/70 flex flex-col justify-center items-center z-50">
+      <div class="w-10 h-10 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin mb-2"></div>
+      <div class="text-base text-gray-700">Laster kart data...</div>
     </div>
 
     <!-- Error message -->
-    <div v-if="markersLoadError" class="map-error-message">
+    <div v-if="markersLoadError" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-5 rounded-lg shadow-lg text-center z-50 w-4/5 max-w-md">
       {{ markersLoadError }}
-      <Button @click="retryLoadMarkers" variant="primary" class="retry-button">
+      <Button @click="retryLoadMarkers" variant="primary" class="mt-3 p-2 px-4 bg-blue-500 hover:bg-blue-600 text-white border-none rounded cursor-pointer">
         Prøv på nytt
       </Button>
     </div>
 
     <!-- Marker Filter -->
-    <div class="marker-filter-container" :class="{ collapsed: isFilterCollapsed }" v-if="!isAdminMode">
+    <div class="absolute top-16 left-4 z-50 transition-all duration-300 max-w-full w-auto"
+         :class="{ 'collapsed': isFilterCollapsed }"
+         v-if="!isAdminMode">
       <Button
         v-if="isMobileView"
         @click="toggleFilterCollapse"
         variant="default"
-        class="filter-toggle-button"
+        class="w-full bg-white border-none text-center font-medium text-black cursor-pointer shadow-md hover:bg-gray-200"
       >
         <span v-if="isFilterCollapsed">Vis filter</span>
         <span v-else>Skjul filter</span>
       </Button>
-      <div :class="['filter-content', { hidden: isFilterCollapsed && isMobileView }]">
+      <div :class="['transition-all duration-300', { 'max-h-0 opacity-0 overflow-hidden mt-0': isFilterCollapsed && isMobileView, 'max-h-[500px] opacity-100 mt-3': !isFilterCollapsed || !isMobileView }]">
         <MarkerFilter v-if="!isLoadingMarkers && !markersLoadError" :isMobileView="isMobileView" />
       </div>
     </div>
   </div>
 </template>
 
+<!-- CSS for zoom buttons and marker icons -->
 <style scoped>
-.map-container {
-  width: 100%;
-  height: calc(100vh - 60px);
-  position: relative;
-  overflow: hidden;
-}
-
-.map-search-container {
-  position: absolute;
-  top: 16px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 90%;
-  max-width: 400px;
-  z-index: 1000;
-}
-
-.location-services-container {
-  position: absolute;
-  bottom: 40px;
-  right: 60px;
-  z-index: 1000;
-}
-
-.location-services-button {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background-color: white;
-  color: #333;
-  font-weight: 500;
-  padding: 8px 12px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.location-services-button.services-active {
-  background-color: #0088ff;
-  color: white;
-}
-
-.location-error-message {
-  margin-top: 8px;
-  padding: 8px 12px;
-  background-color: #ffdddd;
-  border: 1px solid #ff4d4f;
-  border-radius: 8px;
-  font-size: 12px;
-  color: #ff4d4f;
-}
-
-@media (max-width: 767px) {
-  .map-search-container {
-    top: 10px;
-    max-width: 50%;
-  }
-
-  .location-services-button {
-    padding: 6px 10px;
-    font-size: 12px;
-  }
-}
-
-#map {
-  width: 100%;
-  height: 100%;
-}
-
-:deep(.leaflet-top.leaflet-right > div) {
-  display: none;
-}
-
-.map-notification {
-  position: absolute;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 8px 16px;
-  border-radius: 4px;
-  z-index: 1000;
-  font-size: 14px;
-}
-
-@keyframes fade-in-out {
-  0% { opacity: 0; }
-  15% { opacity: 1; }
-  85% { opacity: 1; }
-  100% { opacity: 0; }
-}
-
-.marker-filter-container {
-  position: absolute;
-  top: 48px;
-  left: 16px;
-  z-index: 1000;
-  transition: all 0.3s ease;
-  max-width: 100%;
-  width: auto;
-}
-
-.filter-toggle-button {
-  display: block;
-  width: 100%;
-  background-color: white;
-  border: none;
-  text-align: center;
-  font-weight: 500;
-  color: #000000;
-  cursor: pointer;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-}
-
-.filter-content {
-  transition:
-    max-height 0.3s ease,
-    opacity 0.3s ease;
-  max-height: 500px;
-  opacity: 1;
-}
-
-.filter-content.hidden {
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  margin-top: 0;
-}
-
-.filter-content:not(.hidden) {
-  margin-top: 12px;
-}
-
 :deep(.leaflet-control-zoom) {
   position: absolute !important;
   bottom: 20px !important;
@@ -601,72 +468,13 @@ export default {
   z-index: 1000 !important;
 }
 
-.map-loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.7);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.map-loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-  margin-bottom: 10px;
-}
-
-.map-loading-text {
-  font-size: 16px;
-  color: #333;
-}
-
-.map-error-message {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-  text-align: center;
-  z-index: 1000;
-  width: 80%;
-  max-width: 400px;
-}
-
-.retry-button {
-  margin-top: 12px;
-  padding: 8px 16px;
-  background-color: #3498db;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.retry-button:hover {
-  background-color: #2980b9;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+#map {
+  z-index: 10;
 }
 
 @media (max-width: 767px) {
   :deep(.leaflet-control-zoom) {
-    bottom: 40px !important;
+    bottom: 20px !important;
   }
 
   :deep(.leaflet-control-zoom-in),
@@ -676,18 +484,17 @@ export default {
     line-height: 30px;
     font-size: 16px;
   }
+}
 
-  .map-loading-spinner {
-    width: 30px;
-    height: 30px;
-  }
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 
-  .map-loading-text {
-    font-size: 14px;
-  }
-
-  .marker-filter-container {
-    top: 70px;
-  }
+@keyframes fade-in-out {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
 }
 </style>
