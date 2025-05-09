@@ -272,7 +272,7 @@ const notificationIcons = {
 
       <!-- Desktop Navigation -->
       <nav class="hidden md:flex gap-8 items-center text-sm font-medium">
-        <RouterLink to="/nyheter" class="flex items-center gap-2 hover:underline">
+        <RouterLink to="/news" class="flex items-center gap-2 hover:underline">
           <Newspaper class="w-5 h-5 text-white" />
           Nyheter
         </RouterLink>

@@ -1,7 +1,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useScenarioStore } from '@/stores/ScenarioStore'
+import { useScenarioStore } from '@/stores/ScenarioStore.js'
 import {
   AlertTriangle, AlertOctagon, Droplets, Flame, Wind,
   Thermometer, Zap, ShieldAlert, Trash2, Bomb, Waves
