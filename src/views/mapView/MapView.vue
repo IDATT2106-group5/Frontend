@@ -13,7 +13,6 @@ import { useHouseholdStore } from '@/stores/HouseholdStore.js'
 import { useLocationStore } from '@/stores/map/LocationStore.js'
 import { LocateFixed } from 'lucide-vue-next'
 import MapSearchBar from '@/components/map/MapSearchBar.vue';
-import markerConfigService from '@/service/map/markerConfigService.js'
 
 export default {
   name: 'MapView',
@@ -147,10 +146,6 @@ export default {
     const syncAdminMarkersToStore = () => {
       if (!props.isAdminMode || !props.markers || !props.markers.length) return;
 
-      console.log("Syncing admin markers to map store:", props.markers.length);
-
-      // Convert admin markers to the format expected by the map store
-      // and add them to a special admin layer in the store
       const adminMarkers = props.markers.map(marker => ({
         id: marker.id,
         lat: marker.latitude,
@@ -161,9 +156,7 @@ export default {
         description: marker.description || '',
         contactInfo: marker.contactInfo || '',
         openingHours: marker.openingHours || '',
-        // Add a flag to identify admin markers
         isAdminMarker: true,
-        // Add editingMarkerId to allow filtering
         editingMarkerId: props.editingMarkerId
       }));
 
@@ -174,7 +167,6 @@ export default {
     // Watch for changes in the markers prop from the parent component
     watch(() => props.markers, () => {
       if (props.isAdminMode && map.value) {
-        console.log('Admin markers changed, syncing to map store');
         syncAdminMarkersToStore();
       }
     }, { deep: true });
@@ -182,7 +174,6 @@ export default {
     // Watch for changes in the editingMarkerId
     watch(() => props.editingMarkerId, (newId, oldId) => {
       if (props.isAdminMode && map.value) {
-        console.log(`Editing marker changed: ${oldId} -> ${newId}`);
         syncAdminMarkersToStore();
       }
     });
@@ -198,7 +189,6 @@ export default {
       if (newMap && props.isAdminMode) {
         // Set up map move event for admin mode
         newMap.on('moveend', () => {
-          console.log("Map moved, refreshing markers");
           mapStore.refreshMarkerLayers();
         });
       }
@@ -213,11 +203,7 @@ export default {
     });
 
     const handlePositionUpdate = (positionData) => {
-
-      console.log('Handling position update:', positionData)
-
       if (!positionData) {
-        console.warn('Received empty position data')
         return
       }
 
@@ -231,7 +217,6 @@ export default {
         isNaN(parseFloat(longitude)) ||
         isNaN(parseFloat(latitude))
       ) {
-        console.warn(`Invalid position data for user ${userId}: (${longitude}, ${latitude})`)
         return
       }
 
@@ -255,11 +240,10 @@ export default {
 
     function updateUserMarker(userId, name, longitude, latitude, isCurrentUser = false) {
 
-      // First check if marker already exists
+      // Check if marker already exists
       if (userMarkers.value.has(userId)) {
         const marker = userMarkers.value.get(userId)
         marker.setLatLng([latitude, longitude])
-        console.log(`Updated existing marker for user ${userId}`)
         return
       }
 
@@ -315,7 +299,6 @@ export default {
       windowWidth.value = window.innerWidth
       mapStore.resizeMap()
 
-      // Auto-collapse filter on small screens when resizing
       if (isMobileView.value) {
         if (!isFilterCollapsed.value) {
           isFilterCollapsed.value = true
@@ -329,8 +312,6 @@ export default {
 
     const toggleFilterCollapse = () => {
       isFilterCollapsed.value = !isFilterCollapsed.value
-      // When expanding filter, we need to resize map after a small delay
-      // to account for the new layout
       if (!isFilterCollapsed.value) {
         setTimeout(() => {
           mapStore.resizeMap()
@@ -351,9 +332,9 @@ export default {
       userMarkers,
       userPositions,
       isAdminMode: props.isAdminMode,
-      isSharing, // Expose from location store
-      locationError, // Expose from location store
-      togglePositionSharing, // Expose from location store
+      isSharing,
+      locationError,
+      togglePositionSharing,
       activeRoute,
     }
   },
