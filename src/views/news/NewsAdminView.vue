@@ -1,10 +1,13 @@
 <script>
 import { useNewsStore } from '@/stores/news/NewsStore'
 import { Button } from '@/components/ui/button/index.js'
+import { toast } from '@/components/ui/toast/index.js'
+import ConfirmModal from '@/components/householdMainView/modals/ConfirmModal.vue'
+import { ref } from 'vue'
 
 export default {
   name: 'NewsManagement',
-  components: { Button },
+  components: { ConfirmModal, Button },
 
   /**
    * Setup composition API and initialize required stores
@@ -12,7 +15,14 @@ export default {
    */
   setup() {
     const newsStore = useNewsStore()
-    return { newsStore }
+    const confirmDeleteOpen = ref(false)
+    const newsIdToDelete = ref(null)
+
+    return {
+      newsStore,
+      confirmDeleteOpen,
+      newsIdToDelete
+    }
   },
 
   /**
@@ -89,7 +99,6 @@ export default {
    * Component methods
    */
   methods: {
-
     /**
      * Open the edit modal for creating or editing a news item
      * @param {Object|null} newsItem - The news item to edit, or null for new item
@@ -158,35 +167,68 @@ export default {
      */
     async saveNewsItem() {
       const newsItem = {
-        ...this.currentNews
+        ...this.currentNews,
       }
 
       try {
         if (this.isEditing && this.currentNews.id) {
           await this.newsStore.updateNews(this.currentNews.id, newsItem)
+          toast({
+            title: 'Nyhet ble oppdatert',
+            description: 'Du har oppdatert en nyhet.',
+            variant: 'success',
+          })
         } else {
           await this.newsStore.createNews(newsItem)
+          toast({
+            title: 'Ny nyhet ble lagt til',
+            description: 'Du laget en ny nyhet',
+            variant: 'success',
+          })
         }
 
         this.closeModal()
       } catch (error) {
         console.error('Failed to save news item:', error)
+        toast({
+          title: 'Feil',
+          description: 'Klarte ikke å oppdatere eller lage nyhet.',
+          variant: 'destructive',
+        })
       }
     },
+
     /**
-     * Delete a news item
+     * Open the delete confirmation modal
      * @param {String} newsId - The ID of the news item to delete
      */
-    async deleteNewsItem(newsId) {
-      if (confirm('Er du sikker på at du vil slette denne nyheten?')) {
-        try {
-          await this.newsStore.deleteNews(newsId)
-          this.closeModal()
-        } catch (error) {
-          console.error('Failed to delete news item:', error)
-        }
-      }
+    openDeleteConfirm(newsId) {
+      this.newsIdToDelete = newsId
+      this.confirmDeleteOpen = true
     },
+
+    /**
+     * Delete a news item
+     */
+    async deleteNewsItem() {
+      try {
+        await this.newsStore.deleteNews(this.newsIdToDelete)
+        toast({
+          title: 'Nyhet ble slettet',
+          description: 'Du har slettet en nyhet.',
+          variant: 'success',
+        })
+        this.confirmDeleteOpen = false
+        this.closeModal()
+      } catch (error) {
+        console.error('Failed to delete news item:', error)
+        toast({
+          title: 'Feil',
+          description: 'Klarte ikke slette nyhet.',
+          variant: 'destructive'
+        })
+      }
+    }
   },
 }
 </script>
@@ -229,7 +271,9 @@ export default {
         >
           <div>
             <h3 class="text-lg font-medium">{{ newsItem.title }}</h3>
-            <p class="text-sm text-gray-500">{{ newsItem.source }} | {{ formatDate(newsItem.createdAt) }}</p>
+            <p class="text-sm text-gray-500">
+              {{ newsItem.source }} | {{ formatDate(newsItem.createdAt) }}
+            </p>
             <p v-if="newsItem.isCrisis" class="text-sm text-red-600 font-medium mt-1">Krisenyhet</p>
           </div>
           <div class="flex gap-3">
@@ -297,7 +341,7 @@ export default {
         <div class="flex justify-end gap-4 mt-6">
           <button
             v-if="isEditing"
-            @click="deleteNewsItem(currentNews.id)"
+            @click="openDeleteConfirm(currentNews.id)"
             class="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded transition duration-200"
           >
             Slett
@@ -314,6 +358,14 @@ export default {
           >
             Lagre
           </button>
+
+          <ConfirmModal
+            v-if="confirmDeleteOpen"
+            title="Slett nyhet"
+            description="Er du sikker på at du vil slette nyheten? Dette kan ikke angres."
+            @cancel="confirmDeleteOpen = false"
+            @confirm="deleteNewsItem"
+          />
         </div>
       </div>
     </div>

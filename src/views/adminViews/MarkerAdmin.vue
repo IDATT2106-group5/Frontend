@@ -325,6 +325,16 @@
       />
     </div>
   </div>
+  <ConfirmModal
+    v-if="confirmDeleteModalOpen"
+    title="Slett markør"
+    description="Er du sikker på at du vil slette denne markøren? Dette kan ikke angres."
+    confirm-text="Slett"
+    cancel-text="Avbryt"
+    @cancel="cancelMarkerDeletion"
+    @confirm="confirmMarkerDeletion"
+    class="marker-delete-modal"
+  />
 </template>
 
 <script>
@@ -336,6 +346,7 @@ import MapView from '@/views/mapView/MapView.vue';
 import Button from '@/components/ui/button/Button.vue';
 import Input from '@/components/ui/input/Input.vue';
 import L from 'leaflet';
+import ConfirmModal from '@/components/householdMainView/modals/ConfirmModal.vue';
 
 export default {
   name: 'markerAdmin',
@@ -343,6 +354,7 @@ export default {
     MapView,
     Button,
     Input,
+    ConfirmModal,
   },
 
   setup() {
@@ -353,6 +365,8 @@ export default {
     const showDescriptionTips = ref(false);
     const dropdownOpen = ref(false);
     const activeEditMarker = ref(null);
+    const confirmDeleteModalOpen = ref(false);
+    const markerToDelete = ref(null);
 
     // Map configuration
     const mapCenter = ref([63.4305, 10.3951]); // Trondheim
@@ -636,13 +650,14 @@ export default {
       }
     };
 
-    // Enhanced onDeleteMarker with better feedback
-    const onDeleteMarker = async () => {
-      if (!confirm('Er du sikker på at du vil slette denne markøren?')) {
-        return;
-      }
+    const onDeleteMarker = () => {
+      // Store the ID of the marker to delete
+      markerToDelete.value = markerFormData.value.id;
+      // Open the confirmation modal
+      confirmDeleteModalOpen.value = true;
+    };
 
-
+    const confirmMarkerDeletion = async () => {
       // Clear temp marker
       if (tempMarker.value) {
         tempMarker.value.remove();
@@ -650,7 +665,7 @@ export default {
       }
 
       // Store the ID to verify deletion
-      const deletingId = markerFormData.value.id;
+      const deletingId = markerToDelete.value;
 
       // Clear active marker reference
       activeEditMarker.value = null;
@@ -663,6 +678,14 @@ export default {
       // Call store method to delete
       const success = await mapStore.deleteMarker(deletingId);
 
+      // Close the modal
+      confirmDeleteModalOpen.value = false;
+      markerToDelete.value = null;
+    };
+
+    const cancelMarkerDeletion = () => {
+      confirmDeleteModalOpen.value = false;
+      markerToDelete.value = null;
     };
 
     const clearSuccess = () => {
@@ -752,7 +775,11 @@ export default {
       clearError,
       onMapClick,
       onAddressChange,
-      activeEditMarker
+      activeEditMarker,
+      confirmDeleteModalOpen,
+      markerToDelete,
+      confirmMarkerDeletion,
+      cancelMarkerDeletion,
     };
   }
 };
@@ -1054,6 +1081,16 @@ textarea.form-control {
   margin-bottom: 16px;
   font-size: 14px;
   color: #666;
+}
+
+.marker-delete-modal {
+  z-index: 2000 !important; /* Higher than map and other UI elements */
+  position: fixed !important;
+}
+
+/* Make sure any overlay in the ConfirmModal has the same high z-index */
+.marker-delete-modal .fixed {
+  z-index: 2000 !important;
 }
 /* Responsive styles */
 @media (max-width: 768px) {

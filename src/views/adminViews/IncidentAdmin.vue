@@ -360,6 +360,17 @@
       />
     </div>
   </div>
+
+  <ConfirmModal
+    v-if="confirmDeleteModalOpen"
+    title="Slett markør"
+    description="Er du sikker på at du vil slette denne markøren? Dette kan ikke angres."
+    confirm-text="Slett"
+    cancel-text="Avbryt"
+    @cancel="cancelIncidentDeletion"
+    @confirm="confirmIncidentDeletion"
+    class="incident-delete-modal"
+  />
 </template>
 
 <script>
@@ -372,13 +383,15 @@ import Button from '@/components/ui/button/Button.vue';
 import Input from '@/components/ui/input/Input.vue';
 import L from 'leaflet';
 import { useScenarioStore } from '@/stores/ScenarioStore'
+import ConfirmModal from '@/components/householdMainView/modals/ConfirmModal.vue';
 
 export default {
   name: 'IncidentAdmin',
   components: {
     MapView,
     Button,
-    Input
+    Input,
+    ConfirmModal
   },
 
   /**
@@ -402,6 +415,8 @@ export default {
     const startTime = ref('');
     const endDate = ref('');
     const endTime = ref('');
+    const confirmDeleteModalOpen = ref(false);
+    const incidentToDelete = ref(null);
 
 
     const scenarioStore = useScenarioStore();
@@ -824,23 +839,43 @@ export default {
     };
 
     /**
-     * @async
      * @function onDeleteIncident
-     * @description Deletes the current incident after confirmation
+     * @description Opens the confirmation modal for deleting an incident
+     */
+    const onDeleteIncident = () => {
+      // Store the ID of the incident to delete
+      incidentToDelete.value = incidentFormData.value.id;
+      // Open the confirmation modal
+      confirmDeleteModalOpen.value = true;
+    };
+
+    /**
+     * @async
+     * @function confirmIncidentDeletion
+     * @description Deletes the incident after confirmation
      * @returns {Promise<void>}
      */
-    const onDeleteIncident = async () => {
-      if (!confirm('Er du sikker på at du vil slette denne krisesituasjonen?')) {
-        return;
-      }
-
-      const success = await incidentAdminStore.deleteIncident(incidentFormData.value.id);
+    const confirmIncidentDeletion = async () => {
+      const success = await incidentAdminStore.deleteIncident(incidentToDelete.value);
 
       if (success) {
         if (incidentLayers.value) {
           incidentLayers.value.clearLayers();
         }
       }
+
+      // Close the modal
+      confirmDeleteModalOpen.value = false;
+      incidentToDelete.value = null;
+    };
+
+    /**
+     * @function cancelIncidentDeletion
+     * @description Cancels the deletion operation
+     */
+    const cancelIncidentDeletion = () => {
+      confirmDeleteModalOpen.value = false;
+      incidentToDelete.value = null;
     };
 
     /**
@@ -942,6 +977,10 @@ export default {
       clearError,
       fetchScenarios,
       onAddressChange,
+      confirmDeleteModalOpen,
+      incidentToDelete,
+      confirmIncidentDeletion,
+      cancelIncidentDeletion,
       scenarios: computed(() => scenarioStore.getAllScenarios)
     };
   }
@@ -1240,6 +1279,16 @@ textarea.form-control {
 
 .severity-option:hover {
   background-color: #f9f9f9;
+}
+
+.incident-delete-modal {
+  z-index: 2000 !important; /* Higher than map and other UI elements */
+  position: fixed !important;
+}
+
+/* Make sure any overlay in the ConfirmModal has the same high z-index */
+.incident-delete-modal .fixed {
+  z-index: 2000 !important;
 }
 
 /* Datetime inputs */

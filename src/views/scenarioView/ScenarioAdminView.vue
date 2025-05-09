@@ -6,6 +6,7 @@ import {
   AlertTriangle, AlertOctagon, Droplets, Flame, Wind,
   Thermometer, Zap, ShieldAlert, Trash2, Bomb, Waves
 } from 'lucide-vue-next'
+import { toast } from '@/components/ui/toast/index.js'
 
 export default {
   name: 'ScenarioView',
@@ -30,7 +31,6 @@ export default {
 
     const loading = ref(false)
     const error = ref(null)
-    const showDeleteModal = ref(false)
 
     // Available icons from Lucide
     const availableIcons = [
@@ -104,7 +104,6 @@ export default {
       loading.value = true
       error.value = null
 
-      try {
         const scenarioData = {
           name: scenarioForm.value.name,
           description: scenarioForm.value.description,
@@ -113,41 +112,37 @@ export default {
           iconName: scenarioForm.value.iconName
         }
 
-        if (isEditing.value) {
+        try {
+          if (isEditing.value) {
           await scenarioStore.updateScenario(scenarioId.value, scenarioData)
-        } else {
-          await scenarioStore.createScenario(scenarioData)
+            toast({
+              title: 'Scenario ble oppdatert',
+              description: 'Du har oppdatert et scenario.',
+              variant: 'success',
+            })
+          } else { await scenarioStore.createScenario(scenarioData)
+            toast({
+              title: 'Scenario ble opprettet',
+              description: 'Du har opprettet en scenario.',
+              variant: 'success',
+            })
+          }
+        } catch (error) {
+          console.error('Failed to update or create scenario:', error)
+          router.push('/admin-scenarios')
+          toast({
+            title: 'Feil',
+            description: 'Klarte ikke å oppdatere eller lage scenario.',
+            variant: 'destructive',
+          })
         }
-
-        // Redirect back to scenarios list
         router.push('/admin-scenarios')
-      } catch (err) {
-        error.value = err.message || 'Feil ved lagring av scenario'
         loading.value = false
-      }
     }
 
     // Navigate back to scenarios list
     const goBack = () => {
       router.push('/admin-scenarios')
-    }
-
-    // Show delete confirmation modal
-    const confirmDelete = () => {
-      showDeleteModal.value = true
-    }
-
-    // Delete scenario
-    const deleteScenario = async () => {
-      loading.value = true
-      try {
-        await scenarioStore.deleteScenario(scenarioId.value)
-        router.push('/admin-scenarios')
-      } catch (err) {
-        error.value = err.message || 'Feil ved sletting av scenario'
-        loading.value = false
-        showDeleteModal.value = false
-      }
     }
 
     return {
@@ -156,12 +151,9 @@ export default {
       scenarioForm,
       isEditing,
       availableIcons,
-      showDeleteModal,
       saveScenario,
       goBack,
       selectIcon,
-      confirmDelete,
-      deleteScenario
     }
   }
 }
@@ -239,29 +231,9 @@ export default {
 
       <div class="flex justify-end gap-2 mt-5">
         <button type="button" @click="goBack" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2 px-3 rounded border border-gray-300 text-sm">Avbryt</button>
-        <button
-          v-if="isEditing"
-          type="button"
-          @click="confirmDelete"
-          class="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-3 rounded flex items-center gap-1 text-sm"
-        >
-          <Trash2 size="14" />
-          Slett
-        </button>
         <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-3 rounded text-sm">Lagre</button>
       </div>
     </form>
 
-    <!-- Delete confirmation modal -->
-    <div v-if="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div class="bg-white p-5 rounded-lg shadow-lg max-w-sm w-full">
-        <h3 class="text-lg font-bold mb-3">Bekreft sletting</h3>
-        <p>Er du sikker på at du vil slette "{{ scenarioForm.name }}"?</p>
-        <div class="flex justify-end gap-3 mt-5">
-          <button @click="showDeleteModal = false" class="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-1.5 px-3 rounded border border-gray-300 text-sm">Avbryt</button>
-          <button @click="deleteScenario" class="bg-red-500 hover:bg-red-600 text-white font-medium py-1.5 px-3 rounded text-sm">Slett</button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>

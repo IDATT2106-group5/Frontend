@@ -6,6 +6,7 @@ import { useUserStore } from '@/stores/UserStore'
 import { useRouter } from 'vue-router'
 import { useAdminStore } from "@/stores/AdminStore";
 import { CheckCircle, XCircle, Loader } from 'lucide-vue-next';
+import { toast } from '@/components/ui/toast/index.js'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -66,15 +67,23 @@ async function handlePasswordReset(email) {
     const response = adminStore.resetPasswordAdmin(email)
 
     if (response) {
-      showSuccessMessage(`Nytt passord sendt til: ${email}`)
+      toast({
+        title: 'Nytt passord sendt',
+        description: `Du sendte nytt passord til: ${email}`,
+        variant: 'success',
+      })
     }
   } catch (error) {
     console.error('Kunne ikke tilbakestille passord:', error);
-    adminStore.error = `Kunne ikke sende nytt passord: ${error.message || 'Ukjent feil'}`
+    toast({
+      title: 'Feil',
+      description: `Klarte ikke sende nytt passord til: ${email}`,
+      variant: 'destructive',
+    })
+  }
 
-    if (adminUsersOverviewRef.value) {
-      adminUsersOverviewRef.value.markResetFailed(email);
-    }
+  if (adminUsersOverviewRef.value) {
+    adminUsersOverviewRef.value.markResetFailed(email);
   }
 }
 
@@ -88,13 +97,21 @@ async function handleAdminDelete(admin) {
 
     if (response) {
       showSuccessMessage(`Admin ${admin.email} har blitt slettet`)
+      toast({
+        title: `Admin slettet`,
+        description: `Admin ${admin.email} har blitt slettet`,
+        variant: 'success',
+      })
     }
-
     await adminStore.fetchAdmins();
 
   } catch (error) {
     console.error('Failed to delete admin:', error);
-    adminStore.error = error.message || 'Ukjent feil';
+    toast({
+      title: 'Feil',
+      description: `Kunne ikke slette admin ${admin.email}`,
+      variant: 'destructive',
+    })
   } finally {
     adminStore.isLoading = false;
   }

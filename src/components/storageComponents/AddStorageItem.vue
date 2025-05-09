@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted } from 'vue';
 import { useItemStore } from '@/stores/ItemStore.js';
 import { PlusCircle, Undo, Search } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button/index.js';
+import { toast } from '@/components/ui/toast/index.js'
 
 /**
  * Component props
@@ -166,10 +167,24 @@ function addNewRow() {
  * @param {number} index - The index of the row to remove
  */
 function removeRow(index) {
-  addRows.value.splice(index, 1);
+  try {
+    addRows.value.splice(index, 1);
 
-  if (addRows.value.length === 0) {
-    addNewRow();
+    if (addRows.value.length === 0) {
+      addNewRow();
+    }
+    toast({
+      title: 'Tømte felter',
+      description: 'Tømte felter for å legge til vare.',
+      variant: 'success',
+    })
+  } catch (error) {
+    console.error('Error removing row:', error);
+    toast({
+      title: 'Feil',
+      description: 'Klarte ikke tømme felt for å legge til vare.',
+      variant: 'destructive',
+    })
   }
 }
 
@@ -188,31 +203,45 @@ function selectItem(row, item) {
  * @param {Object} row - The row containing the item to save
  */
 function saveItem(row) {
-  if (!row.selectedItem) {
-    return;
-  }
+  try {
+    if (!row.selectedItem) {
+      return;
+    }
 
-  const newItem = {
-    unit: row.selectedUnit || "Stk",
-    amount: parseInt(row.itemQuantity) || 1,
-    expirationDate: row.itemDate ? new Date(row.itemDate) : null
-  };
+    const newItem = {
+      unit: row.selectedUnit || "Stk",
+      amount: parseInt(row.itemQuantity) || 1,
+      expirationDate: row.itemDate ? new Date(row.itemDate) : null
+    };
 
-  emit('add-item', {
-    itemId: row.selectedItem.id,
-    data: newItem
-  });
+    emit('add-item', {
+      itemId: row.selectedItem.id,
+      data: newItem
+    });
 
-  row.isDropdownOpen = false;
-  const index = addRows.value.indexOf(row);
-  if (index !== -1) {
-    addRows.value.splice(index, 1);
-  }
+    row.isDropdownOpen = false;
+    const index = addRows.value.indexOf(row);
+    if (index !== -1) {
+      addRows.value.splice(index, 1);
+    }
 
-  searchTerm.value = '';
+    searchTerm.value = '';
 
-  if (addRows.value.length === 0) {
-    addNewRow();
+    if (addRows.value.length === 0) {
+      addNewRow();
+    }
+    toast({
+      title: 'Vare lagt til',
+      description: 'Du har lagt til en vare i husstandslageret.',
+      variant: 'success',
+    })
+  } catch (error) {
+    console.error('Error saving item:', error);
+    toast({
+      title: 'Feil ved lagring',
+      description: 'Klarte ikke legge til vare i husstandslageret.',
+      variant: 'destructive',
+    })
   }
 }
 </script>
