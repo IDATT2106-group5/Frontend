@@ -311,7 +311,7 @@ const notificationIcons = {
           class="flex items-center gap-2 hover:underline"
         >
           <Lock class="w-5 h-5 text-white" />
-          Admin
+          Admin Panel
         </RouterLink>
       </nav>
 
@@ -386,7 +386,7 @@ const notificationIcons = {
         class="flex items-center gap-2 hover:underline"
       >
         <Lock class="w-5 h-5 text-white" />
-        Admin
+        Admin Panel
       </RouterLink>
     </div>
   </header>
