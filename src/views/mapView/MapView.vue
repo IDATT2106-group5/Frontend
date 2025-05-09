@@ -289,7 +289,7 @@ export default {
     });
 
     const handlePositionUpdate = (positionData) => {
-      // Skip if in admin mode
+      console.log('Received position update:', positionData)
       if (props.isAdminMode) return;
 
       console.log('Handling position update:', positionData)
