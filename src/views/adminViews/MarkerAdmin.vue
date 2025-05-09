@@ -1,336 +1,3 @@
-<template>
-  <div class="marker-admin-container">
-    <!-- Alert messages -->
-    <div v-if="success" class="alert alert-success">
-      {{ success }}
-      <Button variant="ghost" size="icon" class="close-btn" @click="clearSuccess">×</Button>
-    </div>
-
-    <div v-if="error" class="alert alert-error">
-      {{ error }}
-      <Button variant="ghost" size="icon" class="close-btn" @click="clearError">×</Button>
-    </div>
-
-    <!-- Left panel: List or Form -->
-    <div class="left-panel">
-      <!-- Marker List -->
-      <div v-if="!isEditing && !isCreating" class="marker-list-panel">
-        <h1>Markører</h1>
-
-        <Button
-          variant="default"
-          class="add-new-btn"
-          @click="onAddNew"
-        >
-          + Legg til ny
-        </Button>
-
-        <!-- Search and Filter -->
-        <div class="search-filter-container">
-          <input
-            type="text"
-            v-model="searchTerm"
-            class="search-input"
-            placeholder="Søk markører..."
-            @input="onSearchChange"
-          />
-
-          <div class="filter-dropdown">
-            <Button
-              variant="outline"
-              class="filter-button"
-              @click="toggleFilterDropdown"
-            >
-              Filtrer etter ikoner <span class="dropdown-arrow">▼</span>
-            </Button>
-
-            <div v-if="showFilterDropdown" class="filter-options">
-              <div class="filter-option">
-                <input
-                  type="radio"
-                  id="all-types"
-                  name="filter"
-                  value=""
-                  v-model="filterType"
-                  @change="onFilterChange"
-                />
-                <label for="all-types" class="filter-label">Alle typer</label>
-              </div>
-
-              <div
-                v-for="type in markerTypes"
-                :key="type.id"
-                class="filter-option"
-              >
-                <input
-                  type="radio"
-                  :id="type.id"
-                  name="filter"
-                  :value="type.id"
-                  v-model="filterType"
-                  @change="onFilterChange"
-                />
-                <div class="filter-label-with-icon">
-                  <!-- Add the marker icon here -->
-                  <div class="filter-icon">
-                    <component
-                      :is="getMarkerIcon(type.id)"
-                      :color="getMarkerColor(type.id)"
-                      size="16"
-                    />
-                  </div>
-                  <label :for="type.id" class="filter-label">{{ type.name }}</label>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Markers List -->
-        <div class="markers-container">
-          <div
-            v-for="marker in filteredMarkers"
-            :key="marker.id"
-            class="marker-item"
-          >
-            <div class="marker-icon">
-              <component
-                :is="getMarkerIcon(marker.type)"
-                :color="getMarkerColor(marker.type)"
-                size="20"
-              />
-            </div>
-            <div class="marker-info">
-              <p>{{ marker.address }}, {{ marker.city }}</p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              class="edit-btn"
-              @click="onEditMarker(marker)"
-            >
-              Rediger
-            </Button>
-          </div>
-
-          <div v-if="filteredMarkers.length === 0" class="empty-markers">
-            <p>Ingen markører funnet</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Marker Form (Edit/Create) -->
-      <div v-else class="marker-form-panel">
-        <h1>{{ isCreating ? 'Legg til ny markør' : 'Rediger markør' }}</h1>
-
-        <p class="click-info">Klikk på kartet for å endre markørens posisjon.</p>
-
-        <form @submit.prevent="onSaveMarker">
-          <div class="form-group">
-            <label for="type">Type</label>
-            <div class="custom-select-wrapper">
-              <div
-                class="custom-select"
-                @click="toggleDropdown"
-                :class="{ 'dropdown-open': dropdownOpen }"
-              >
-                <div class="selected-option">
-                  <div class="option-icon">
-                    <component
-                      :is="getMarkerIcon(markerFormData.type)"
-                      :color="getMarkerColor(markerFormData.type)"
-                      size="20"
-                    />
-                  </div>
-                  <span class="option-text">{{ getMarkerTypeName(markerFormData.type) }}</span>
-                  <div class="dropdown-arrow">▼</div>
-                </div>
-              </div>
-              <div class="options-container" v-if="dropdownOpen">
-                <div
-                  v-for="type in markerTypes"
-                  :key="type.id"
-                  class="option-item"
-                  @click="selectMarkerType(type.id)"
-                  :class="{ 'selected': markerFormData.type === type.id }"
-                >
-                  <div class="option-icon">
-                    <component
-                      :is="getMarkerIcon(type.id)"
-                      :color="getMarkerColor(type.id)"
-                      size="20"
-                    />
-                  </div>
-                  <span class="option-text">{{ type.name }}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="address">Adresse</label>
-            <Input
-              id="address"
-              v-model="markerFormData.address"
-              @input="onAddressChange"
-            />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="postalCode">Postkode</label>
-              <Input
-                id="postalCode"
-                v-model="markerFormData.postalCode"
-                @input="onAddressChange"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="city">Sted</label>
-              <Input
-                id="city"
-                v-model="markerFormData.city"
-                @input="onAddressChange"
-              />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="description" class="description-label">
-              Beskrivelse
-              <Button
-                variant="ghost"
-                size="sm"
-                type="button"
-                class="info-btn"
-                @click="toggleDescriptionTips"
-              >
-                ?
-              </Button>
-            </label>
-
-            <div v-if="showDescriptionTips" class="tips-box">
-              <h4 class="tips-title">Tips for en god beskrivelse:</h4>
-
-              <button
-                type="button"
-                class="close-tips-btn"
-                @click="toggleDescriptionTips"
-              >
-                x
-              </button>
-
-              <!-- Tips list -->
-              <ul class="tips-list">
-                <li>Vær konkret om hva som finnes på stedet</li>
-                <li>Nevn relevante detaljer som kan være viktige i en krisesituasjon</li>
-                <li>Inkluder informasjon om tilgjengelighet</li>
-                <li>Beskriv synlige kjennetegn ved stedet</li>
-              </ul>
-            </div>
-
-            <textarea
-              id="description"
-              v-model="markerFormData.description"
-              class="form-control"
-              rows="4"
-            ></textarea>
-          </div>
-
-          <div class="form-group">
-            <label for="contactInfo">Kontaktinformasjon</label>
-            <Input
-              id="contactInfo"
-              v-model="markerFormData.contactInfo"
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="openingHours">Åpningstider</label>
-            <Input
-              id="openingHours"
-              v-model="markerFormData.openingHours"
-            />
-          </div>
-
-          <div class="form-group">
-            <label>Koordinater</label>
-            <div class="form-row">
-              <div class="form-group">
-                <Input
-                  v-model="markerFormData.latitude"
-                  placeholder="Breddgrad °N"
-                  class="coordinate-input"
-                />
-              </div>
-
-              <div class="form-group">
-                <Input
-                  v-model="markerFormData.longitude"
-                  placeholder="Lengdegrad °E"
-                  class="coordinate-input"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div class="button-row">
-            <Button
-              variant="outline"
-              type="button"
-              @click="onCancelEdit"
-            >
-              Avbryt
-            </Button>
-
-            <Button
-              v-if="isEditing"
-              variant="destructive"
-              type="button"
-              @click="onDeleteMarker"
-            >
-              Slett
-            </Button>
-
-            <Button
-              variant="default"
-              type="submit"
-              class="ml-auto"
-            >
-              Lagre
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- Right panel: Map -->
-    <div class="right-panel">
-      <MapView
-        ref="mapView"
-        :center="mapCenter"
-        :zoom="mapZoom"
-        :is-admin-mode="true"
-        :markers="markers"
-        :editingMarkerId="activeEditMarker"
-        @map-ready="onMapReady"
-        @map-click="onMapClick"
-      />
-    </div>
-  </div>
-  <ConfirmModal
-    v-if="confirmDeleteModalOpen"
-    title="Slett markør"
-    description="Er du sikker på at du vil slette denne markøren? Dette kan ikke angres."
-    confirm-text="Slett"
-    cancel-text="Avbryt"
-    @cancel="cancelMarkerDeletion"
-    @confirm="confirmMarkerDeletion"
-    class="marker-delete-modal"
-  />
-</template>
-
 <script>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useMapStore } from '@/stores/map/mapStore';
@@ -778,6 +445,339 @@ export default {
   }
 };
 </script>
+
+<template>
+  <div class="marker-admin-container">
+    <!-- Alert messages -->
+    <div v-if="success" class="alert alert-success">
+      {{ success }}
+      <Button variant="ghost" size="icon" class="close-btn" @click="clearSuccess">×</Button>
+    </div>
+
+    <div v-if="error" class="alert alert-error">
+      {{ error }}
+      <Button variant="ghost" size="icon" class="close-btn" @click="clearError">×</Button>
+    </div>
+
+    <!-- Left panel: List or Form -->
+    <div class="left-panel">
+      <!-- Marker List -->
+      <div v-if="!isEditing && !isCreating" class="marker-list-panel">
+        <h1>Markører</h1>
+
+        <Button
+          variant="default"
+          class="add-new-btn"
+          @click="onAddNew"
+        >
+          + Legg til ny
+        </Button>
+
+        <!-- Search and Filter -->
+        <div class="search-filter-container">
+          <input
+            type="text"
+            v-model="searchTerm"
+            class="search-input"
+            placeholder="Søk markører..."
+            @input="onSearchChange"
+          />
+
+          <div class="filter-dropdown">
+            <Button
+              variant="outline"
+              class="filter-button"
+              @click="toggleFilterDropdown"
+            >
+              Filtrer etter ikoner <span class="dropdown-arrow">▼</span>
+            </Button>
+
+            <div v-if="showFilterDropdown" class="filter-options">
+              <div class="filter-option">
+                <input
+                  type="radio"
+                  id="all-types"
+                  name="filter"
+                  value=""
+                  v-model="filterType"
+                  @change="onFilterChange"
+                />
+                <label for="all-types" class="filter-label">Alle typer</label>
+              </div>
+
+              <div
+                v-for="type in markerTypes"
+                :key="type.id"
+                class="filter-option"
+              >
+                <input
+                  type="radio"
+                  :id="type.id"
+                  name="filter"
+                  :value="type.id"
+                  v-model="filterType"
+                  @change="onFilterChange"
+                />
+                <div class="filter-label-with-icon">
+                  <!-- Add the marker icon here -->
+                  <div class="filter-icon">
+                    <component
+                      :is="getMarkerIcon(type.id)"
+                      :color="getMarkerColor(type.id)"
+                      size="16"
+                    />
+                  </div>
+                  <label :for="type.id" class="filter-label">{{ type.name }}</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Markers List -->
+        <div class="markers-container">
+          <div
+            v-for="marker in filteredMarkers"
+            :key="marker.id"
+            class="marker-item"
+          >
+            <div class="marker-icon">
+              <component
+                :is="getMarkerIcon(marker.type)"
+                :color="getMarkerColor(marker.type)"
+                size="20"
+              />
+            </div>
+            <div class="marker-info">
+              <p>{{ marker.address }}, {{ marker.city }}</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              class="edit-btn"
+              @click="onEditMarker(marker)"
+            >
+              Rediger
+            </Button>
+          </div>
+
+          <div v-if="filteredMarkers.length === 0" class="empty-markers">
+            <p>Ingen markører funnet</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Marker Form (Edit/Create) -->
+      <div v-else class="marker-form-panel">
+        <h1>{{ isCreating ? 'Legg til ny markør' : 'Rediger markør' }}</h1>
+
+        <p class="click-info">Klikk på kartet for å endre markørens posisjon.</p>
+
+        <form @submit.prevent="onSaveMarker">
+          <div class="form-group">
+            <label for="type">Type</label>
+            <div class="custom-select-wrapper">
+              <div
+                class="custom-select"
+                @click="toggleDropdown"
+                :class="{ 'dropdown-open': dropdownOpen }"
+              >
+                <div class="selected-option">
+                  <div class="option-icon">
+                    <component
+                      :is="getMarkerIcon(markerFormData.type)"
+                      :color="getMarkerColor(markerFormData.type)"
+                      size="20"
+                    />
+                  </div>
+                  <span class="option-text">{{ getMarkerTypeName(markerFormData.type) }}</span>
+                  <div class="dropdown-arrow">▼</div>
+                </div>
+              </div>
+              <div class="options-container" v-if="dropdownOpen">
+                <div
+                  v-for="type in markerTypes"
+                  :key="type.id"
+                  class="option-item"
+                  @click="selectMarkerType(type.id)"
+                  :class="{ 'selected': markerFormData.type === type.id }"
+                >
+                  <div class="option-icon">
+                    <component
+                      :is="getMarkerIcon(type.id)"
+                      :color="getMarkerColor(type.id)"
+                      size="20"
+                    />
+                  </div>
+                  <span class="option-text">{{ type.name }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="address">Adresse</label>
+            <Input
+              id="address"
+              v-model="markerFormData.address"
+              @input="onAddressChange"
+            />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label for="postalCode">Postkode</label>
+              <Input
+                id="postalCode"
+                v-model="markerFormData.postalCode"
+                @input="onAddressChange"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="city">Sted</label>
+              <Input
+                id="city"
+                v-model="markerFormData.city"
+                @input="onAddressChange"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="description" class="description-label">
+              Beskrivelse
+              <Button
+                variant="ghost"
+                size="sm"
+                type="button"
+                class="info-btn"
+                @click="toggleDescriptionTips"
+              >
+                ?
+              </Button>
+            </label>
+
+            <div v-if="showDescriptionTips" class="tips-box">
+              <h4 class="tips-title">Tips for en god beskrivelse:</h4>
+
+              <button
+                type="button"
+                class="close-tips-btn"
+                @click="toggleDescriptionTips"
+              >
+                x
+              </button>
+
+              <!-- Tips list -->
+              <ul class="tips-list">
+                <li>Vær konkret om hva som finnes på stedet</li>
+                <li>Nevn relevante detaljer som kan være viktige i en krisesituasjon</li>
+                <li>Inkluder informasjon om tilgjengelighet</li>
+                <li>Beskriv synlige kjennetegn ved stedet</li>
+              </ul>
+            </div>
+
+            <textarea
+              id="description"
+              v-model="markerFormData.description"
+              class="form-control"
+              rows="4"
+            ></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="contactInfo">Kontaktinformasjon</label>
+            <Input
+              id="contactInfo"
+              v-model="markerFormData.contactInfo"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="openingHours">Åpningstider</label>
+            <Input
+              id="openingHours"
+              v-model="markerFormData.openingHours"
+            />
+          </div>
+
+          <div class="form-group">
+            <label>Koordinater</label>
+            <div class="form-row">
+              <div class="form-group">
+                <Input
+                  v-model="markerFormData.latitude"
+                  placeholder="Breddgrad °N"
+                  class="coordinate-input"
+                />
+              </div>
+
+              <div class="form-group">
+                <Input
+                  v-model="markerFormData.longitude"
+                  placeholder="Lengdegrad °E"
+                  class="coordinate-input"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="button-row">
+            <Button
+              variant="outline"
+              type="button"
+              @click="onCancelEdit"
+            >
+              Avbryt
+            </Button>
+
+            <Button
+              v-if="isEditing"
+              variant="destructive"
+              type="button"
+              @click="onDeleteMarker"
+            >
+              Slett
+            </Button>
+
+            <Button
+              variant="default"
+              type="submit"
+              class="ml-auto"
+            >
+              Lagre
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Right panel: Map -->
+    <div class="right-panel">
+      <MapView
+        ref="mapView"
+        :center="mapCenter"
+        :zoom="mapZoom"
+        :is-admin-mode="true"
+        :markers="markers"
+        :editingMarkerId="activeEditMarker"
+        @map-ready="onMapReady"
+        @map-click="onMapClick"
+      />
+    </div>
+  </div>
+  <ConfirmModal
+    v-if="confirmDeleteModalOpen"
+    title="Slett markør"
+    description="Er du sikker på at du vil slette denne markøren? Dette kan ikke angres."
+    confirm-text="Slett"
+    cancel-text="Avbryt"
+    @cancel="cancelMarkerDeletion"
+    @confirm="confirmMarkerDeletion"
+    class="marker-delete-modal"
+  />
+</template>
 
 <style scoped>
 .custom-select-wrapper {
