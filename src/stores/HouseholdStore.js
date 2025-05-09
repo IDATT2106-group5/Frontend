@@ -468,11 +468,8 @@ export const useHouseholdStore = defineStore('household', {
         this.isLoading = true;
 
         await RequestService.acceptInvitationRequest(invitationId);
+        this.receivedInvitations = this.receivedInvitations.filter(inv => inv.id !== invitationId);
 
-        const invitation = this.receivedInvitations.find(inv => inv.id === invitationId);
-        if (invitation) {
-          invitation.status = 'ACCEPTED';
-        }
         await this.checkCurrentHousehold();
 
         return true;
@@ -495,10 +492,9 @@ export const useHouseholdStore = defineStore('household', {
 
         await RequestService.declineJoinRequest(invitationId);
 
-        const invitation = this.receivedInvitations.find(inv => inv.id === invitationId);
-        if (invitation) {
-          invitation.status = 'REJECTED';
-        }
+  
+        this.receivedInvitations = this.receivedInvitations.filter(inv => inv.id !== invitationId);
+
 
         return true;
       } catch (err) {

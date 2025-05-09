@@ -3,11 +3,26 @@ import { useUserStore } from '@/stores/UserStore.js'
 import { useHouseholdStore } from '@/stores/HouseholdStore.js'
 import WebSocketService from '@/service/websocketService.js'
 
+/**
+ * Composable for managing WebSocket connections and real time notification updates.
+ * Handles connection lifecycle, incident popups, household tracking, and notification management.
+ *
+ * @returns {object} WebSocket state, methods for managing notifications and positions.
+ */
 export default function useWebSocket() {
+  /** @type {import('vue').Ref<Array<Object>>} */
   const notifications = ref([])
+
+  /** @type {import('vue').Ref<number>} */
   const notificationCount = ref(0)
+
+  /** @type {import('vue').Ref<boolean>} */
   const connected = ref(false)
+
+  /** @type {import('vue').Ref<boolean>} */
   const showIncidentPopup = ref(false)
+
+  /** @type {import('vue').Ref<Object|null>} */
   const currentIncident = ref(null)
   const webSocketService = new WebSocketService()
   const userStore = useUserStore()
@@ -28,6 +43,9 @@ export default function useWebSocket() {
     },
   )
 
+  /**
+   * Initializes the WebSocket connection and sets up listeners.
+   */
   async function initWebSocket() {
     try {
       if (!householdStore.currentHousehold) {
@@ -62,6 +80,9 @@ export default function useWebSocket() {
     }
   }
 
+   /**
+   * Closes the incident popup and clears current incident data.
+   */
   function closeIncidentPopup() {
     showIncidentPopup.value = false
     currentIncident.value = null
@@ -71,6 +92,12 @@ export default function useWebSocket() {
     webSocketService.disconnect()
   })
 
+  /**
+   * Subscribes to position updates for the given household.
+   * @param {string} householdId - The household ID to subscribe to.
+   * @param {function} callback - Callback to handle received position data.
+   * @returns {boolean|Promise<boolean>} Subscription result.
+   */
   async function subscribeToPosition(householdId, callback) {
     if (userStore.token && householdId) {
       return webSocketService.subscribeToPosition(householdId, (position) => {
@@ -80,10 +107,22 @@ export default function useWebSocket() {
     return false
   }
 
+  /**
+   * Sends the user's latest position.
+   * @param {string} userId - User ID.
+   * @param {number} longitude - Longitude.
+   * @param {number} latitude - Latitude.
+   * @returns {Promise<void>} A promise that resolves when position is sent.
+   */
   function updatePosition(userId, longitude, latitude) {
     return webSocketService.updatePosition(userId, longitude, latitude)
   }
 
+  /**
+   * Marks a notification as read and updates count locally.
+   * @param {string} notificationId - The ID of the notification.
+   * @returns {Promise<void>}
+   */
   async function markAsRead(notificationId) {
     try {
       await fetch(`http://localhost:8080/api/notifications/${notificationId}/read`, {
@@ -104,10 +143,17 @@ export default function useWebSocket() {
     }
   }
 
+  /**
+   * Resets the notification count to 0.
+   */
   function resetNotificationCount() {
     notificationCount.value = 0
   }
 
+  /**
+   * Fetches all notifications for the logged in user.
+   * @returns {Promise<void>}
+   */
   async function fetchNotifications() {
     if (!userStore.token) return
 
@@ -127,6 +173,10 @@ export default function useWebSocket() {
     }
   }
 
+  /**
+   * Fetches the latest household member positions.
+   * @returns {Promise<Array<Object>>} List of member positions.
+   */
   async function fetchHouseholdPositions() {
     if (!userStore.token) return []
 
