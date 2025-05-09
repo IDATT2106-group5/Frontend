@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 import IncidentAdminService from '@/service/admin/incidentAdminService';
 import IncidentConfigService from '@/service/map/incidentConfigService';
 import ScenarioService from '@/service/scenarioService';
+import { useMapStore } from '@/stores/map/mapStore';
 
 /**
  * @function useIncidentAdminStore
@@ -24,6 +25,7 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
     isLoading: false,
     error: null,
     success: null,
+    editingIncidentId: null,
 
     /**
      * @type {Incident} Form data for creating or editing an incident
@@ -88,7 +90,7 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
         const incidents = await IncidentAdminService.fetchAllIncidentsForAdmin();
         this.incidents = incidents.map(incident => ({
           id: incident.id,
-          scenarioId: incident.scenarioId || incident.scenario_id || incident.scenario || null,
+          scenarioId: incident.scenarioId || null,
           name: incident.name || '',
           description: incident.description || '',
           severity: incident.severity || 'RED',
@@ -125,6 +127,12 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
 
         return matchesSearch && matchesSeverity;
       });
+    },
+
+    setEditingIncidentId(incidentId) {
+      this.editingIncidentId = incidentId;
+      // Force a redraw of incidents on the map
+      useMapStore().updateIncidentsOnMap();
     },
 
     /**
@@ -180,6 +188,7 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
      * @returns {void}
      */
     editIncident(incident) {
+      this.setEditingIncidentId(incident.id);
       const scenarioId = incident.scenarioId || null;
 
       this.incidentFormData = {
@@ -215,6 +224,7 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
         await IncidentAdminService.createIncident(this.incidentFormData);
         this.success = 'Krisesituasjon opprettet.';
         await this.fetchIncidents();
+        useMapStore().initIncidents();
         this.isCreating = false;
         return true;
       } catch (error) {
@@ -243,11 +253,14 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
       try {
         await IncidentAdminService.updateIncident(this.incidentFormData.id, this.incidentFormData);
         this.success = 'Krisesituasjon oppdatert.';
+        this.editingIncidentId = null;
         await this.fetchIncidents();
+        useMapStore().initIncidents();
         this.isEditing = false;
         return true;
       } catch (error) {
         if (error.response && error.response.data && error.response.data.error) {
+          this.editingIncidentId = null;
           this.error = error.response.data.error;
         } else {
           this.error = 'Kunne ikke oppdatere krisesituasjon. Vennligst prøv igjen senere.';
@@ -267,9 +280,17 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
      */
     async saveIncident() {
       if (this.isCreating) {
-        return await this.createIncident();
+        const success = await this.createIncident();
+        if (success) {
+          await useMapStore().refreshIncidents();
+        }
+        return success;
       } else if (this.isEditing) {
-        return await this.updateIncident();
+        const success = await this.updateIncident();
+        if (success) {
+          await useMapStore().refreshIncidents();
+        }
+        return success;
       }
       return false;
     },
@@ -368,6 +389,7 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
       this.isCreating = false;
       this.error = null;
       this.success = null;
+      this.editingIncidentId = null;
     },
 
     /**

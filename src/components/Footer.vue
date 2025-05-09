@@ -32,7 +32,7 @@ const router = useRouter()
         <!-- Meny -->
         <div>
           <p class="uppercase font-bold mb-3 text-xs tracking-wider">Meny</p>
-          <RouterLink to="/nyheter" class="mb-1 hover:underline block">Nyheter</RouterLink>
+          <RouterLink to="/news" class="mb-1 hover:underline block">Nyheter</RouterLink>
           <RouterLink to="/map" class="mb-1 hover:underline block">Kart</RouterLink>
           <RouterLink to="/storage" class="mb-1 hover:underline block">Beholdning</RouterLink>
           <RouterLink to="/household" class="mb-1 hover:underline block">Husstand</RouterLink>

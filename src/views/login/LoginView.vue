@@ -1,6 +1,6 @@
 <script setup>
 import { ref } from "vue"
-import { Mail, Lock, Eye, EyeOff } from "lucide-vue-next"
+import { Mail, Lock, Eye, EyeOff, Loader } from "lucide-vue-next"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useUserStore } from "@/stores/UserStore"
@@ -84,13 +84,29 @@ async function onSubmit(event) {
       </div>
 
       <div class="flex justify-between gap-2">
-        <Button type="submit" class="w-1/2 bg-black text-white">Login</Button>
+        <Button
+          type="submit"
+          class="w-1/2 bg-black text-white h-10 flex items-center justify-center"
+          :disabled="userStore.isLoading"
+          >
+          <Loader v-if="userStore.isLoading" class="h-4 w-4 mr-2 animate-spin" aria-hidden="true"/>
+          <span>{{ userStore.isLoading ? 'Logger inn...' : 'Login' }}</span>
+        </Button>
+
         <RouterLink
+          v-if="!userStore.isLoading"
           to="/register"
-          class="w-1/2 text-center border bg-white text-black hover:bg-gray-300 px-4 py-2 rounded"
+          class="w-1/2 text-center border-2 border-gray-300 bg-white text-black hover:bg-gray-300 rounded h-10 flex items-center justify-center"
         >
           Registrer
         </RouterLink>
+
+        <span
+          v-else
+          class="w-1/2 text-center border-2 border-gray-300 bg-gray-100 text-gray-400 rounded h-10 flex items-center justify-center cursor-not-allowed"
+        >
+          Registrer
+        </span>
       </div>
 
       <div class="flex items-center justify-between text-sm">
@@ -99,7 +115,7 @@ async function onSubmit(event) {
           Husk meg
         </label>
         <RouterLink to="/request-reset" class="text-gray-800 hover:underline">
-          Glemt passord?  
+          Glemt passord?
         </RouterLink>
       </div>
     </form>

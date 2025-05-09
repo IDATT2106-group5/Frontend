@@ -35,10 +35,12 @@ import AdminUserView from '@/views/adminViews/AdminUsersView.vue'
 import MarkerAdmin from '@/views/adminViews/MarkerAdmin.vue'
 import IncidentAdmin from '@/views/adminViews/IncidentAdmin.vue'
 import ScenarioList from '@/components/scenario/ScenarioList.vue'
-import ScenarioAdminView from '@/views/ScenarioAdminView.vue'
+import ScenarioAdminView from '@/views/scenarioView/ScenarioAdminView.vue'
 import EditScenarioList from '@/components/scenario/EditScenarioList.vue'
 import ScenarioInfo from '@/components/scenario/ScenarioInfo.vue'
-import NyhetsView from '@/views/nyheter/NyhetsView.vue'
+import NewsView from '@/views/news/NewsView.vue'
+import NewsAdminView from '@/views/news/NewsAdminView.vue'
+import AfterView from '@/views/informationViews/AfterView.vue'
 
 const routes = [
   // --- Public ---
@@ -46,7 +48,7 @@ const routes = [
   { path: '/about', name: 'about', component: AboutView },
   { path: '/contact', name: 'contact', component: ContactView },
   { path: '/questions', name: 'questions', component: QuestionsView },
-  { path: '/nyheter', name: 'NyhetsView', component: NyhetsView },
+  { path: '/news', name: 'NewsView', component: NewsView },
   { path: '/before', name: 'before', component: PrepareCrisisView },
   { path: '/quiz', name: 'quiz', component: QuizView },
   { path: '/seek-safety', name: 'seek-safety', component: SeekSafetyView },
@@ -175,6 +177,12 @@ const routes = [
     component: ScenarioAdminView,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
+  {
+    path: '/admin/admin-news',
+    name: 'AdminNews',
+    component: NewsAdminView,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
 
   // --- Special (2FA & admin-registration) ---
   {
@@ -197,7 +205,17 @@ const routes = [
     path: '/not-authorized',
     name: 'not-authorized',
     component: notAuthorizedView
-  }
+  },
+  {
+    path: '/after',
+    name: 'after',
+    component: AfterView
+  },
+  {
+    path: '/under',
+    name: 'under',
+    component: SeekSafetyView
+  },
 ]
 
 const router = createRouter({
