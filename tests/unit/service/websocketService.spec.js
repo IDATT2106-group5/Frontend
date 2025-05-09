@@ -203,7 +203,7 @@ describe('WebSocketService', () => {
             subscribeMocks.push({ destination: d, callback })
             callback({ body: JSON.stringify({ foo: 'bar' }) })
           })
-        }  
+        }
     service.connected = true
     service.token = 'tok'
     const ok = service.subscribeToPosition('houseX', cb)
@@ -319,46 +319,46 @@ describe('WebSocketService', () => {
       publish: vi.fn()
     }
     service.connected = true
-    
+
     const result = service.updatePosition('user123', 123.456, 78.910)
-    
+
     expect(result).toBe(true)
     expect(service.stompClient.publish).toHaveBeenCalledWith({
       destination: '/app/position',
       body: JSON.stringify({
-        userId: 'user123',
+        token: 'user123',
         longitude: 123.456,
         latitude: 78.910
       })
     })
   })
 
-  it('updatePosition should handle missing parameters', () => {
-    service.stompClient = { publish: vi.fn() }
-    service.connected = true
-    
-    expect(service.updatePosition(null, 123.456, 78.910)).toBe(true)
-    expect(service.stompClient.publish).toHaveBeenCalledWith({
-      destination: '/app/position',
-      body: JSON.stringify({
-        userId: null,
-        longitude: 123.456,
-        latitude: 78.910
-      })
-    })
-    
-    // Missing coordinates
-    service.stompClient.publish.mockClear()
-    expect(service.updatePosition('user123', null, undefined)).toBe(true)
-    expect(service.stompClient.publish).toHaveBeenCalledWith({
-      destination: '/app/position',
-      body: JSON.stringify({
-        userId: 'user123',
-        longitude: null,
-        latitude: undefined
-      })
+it('updatePosition should handle missing parameters', () => {
+  service.stompClient = { publish: vi.fn() }
+  service.connected = true
+
+  expect(service.updatePosition(null, 123.456, 78.910)).toBe(true)
+  expect(service.stompClient.publish).toHaveBeenCalledWith({
+    destination: '/app/position',
+    body: JSON.stringify({
+      token: null,
+      longitude: 123.456,
+      latitude: 78.910
     })
   })
+
+  // Missing coordinates
+  service.stompClient.publish.mockClear()
+  expect(service.updatePosition('user123', null, undefined)).toBe(true)
+  expect(service.stompClient.publish).toHaveBeenCalledWith({
+    destination: '/app/position',
+    body: JSON.stringify({
+      token: 'user123',
+      longitude: null,
+      latitude: undefined
+    })
+  })
+})
 
   it('should call onIncident callback for incidents from both topic and user queues', () => {
     const onIncident = vi.fn()
@@ -368,17 +368,17 @@ describe('WebSocketService', () => {
     }
     service.token = 'tok'
     service.userId = 'u1'
-    
+
     service._onConnected()
-    
+
     const topicSub = subscribeMocks.find(m => m.destination === '/topic/notifications')
     const userSub = subscribeMocks.find(m => m.destination === '/user/queue/notifications')
-    
+
     const incidentPayload = { type: 'INCIDENT', severity: 'HIGH', message: 'Test incident' }
-    
+
     topicSub.callback({ body: JSON.stringify(incidentPayload) })
     expect(onIncident).toHaveBeenCalledWith(incidentPayload)
-    
+
     onIncident.mockClear()
     userSub.callback({ body: JSON.stringify(incidentPayload) })
     expect(onIncident).toHaveBeenCalledWith(incidentPayload)
@@ -397,9 +397,9 @@ describe('WebSocketService', () => {
       onNotification: () => 'notification',
       onPositionUpdate: () => 'position'
     }
-    
+
     service.callbacks = { ...initialCallbacks }
-    
+
     service.init({
       userId: 'u1',
       householdId: 'h1',
@@ -409,7 +409,7 @@ describe('WebSocketService', () => {
       onNotification: null,
       onPositionUpdate: null
     })
-    
+
     expect(service.callbacks.onConnected).toBe(initialCallbacks.onConnected)
     expect(service.callbacks.onDisconnected).toBe(initialCallbacks.onDisconnected)
     expect(service.callbacks.onNotification).toBe(initialCallbacks.onNotification)
@@ -423,14 +423,14 @@ describe('WebSocketService', () => {
 
   it('connect should work asynchronously', async () => {
     const connectSpy = vi.spyOn(service, 'connect')
-    
+
     service.userId = 'async-test'
     service.connect()
-    
+
     expect(connectSpy).toHaveBeenCalled()
-    
+
     await flushPromises()
-    
+
     expect(Client).toHaveBeenCalled()
     expect(service.stompClient.activate).toHaveBeenCalled()
   })
@@ -441,14 +441,14 @@ describe('WebSocketService', () => {
     }
     service.connected = true
     service.token = 'auth-token'
-    
-    service.updatePosition('user456', 10.123, 20.456)
-    
+
+    service.updatePosition('auth-token', 10.123, 20.456)
+
     expect(service.stompClient.publish).toHaveBeenCalledWith(
       expect.objectContaining({
         destination: '/app/position',
         body: JSON.stringify({
-          userId: 'user456',
+          token: 'auth-token',
           longitude: 10.123,
           latitude: 20.456
         })

@@ -10,14 +10,17 @@
       <Button variant="ghost" size="icon" class="close-btn" @click="clearError">×</Button>
     </div>
 
-    <div v-if="isLoading" class="loading-overlay">
-      <div class="loading-spinner"></div>
-      <p>Laster...</p>
-    </div>
-
     <div class="left-panel">
       <div v-if="!isEditing && !isCreating" class="incident-list-panel">
         <h1>Aktive kriseområder</h1>
+
+        <Button
+          variant="default"
+          class="add-new-btn"
+          @click="onAddNew"
+        >
+          + Legg til ny krisesituasjon
+        </Button>
 
         <div class="search-filter-container">
           <input
@@ -103,14 +106,6 @@
             <p>Ingen krisesituasjoner funnet</p>
           </div>
         </div>
-
-        <Button
-          variant="default"
-          class="add-new-btn"
-          @click="onAddNew"
-        >
-          + Legg til ny krisesituasjon
-        </Button>
       </div>
 
       <div v-else class="incident-form-panel">
@@ -513,9 +508,9 @@ export default {
     /**
      * @function formatDateForDisplay
      * @description Formats a date string for in Norwegian locale
-    * @param {string} dateString - ISO date string
-    * @returns {string} Formatted date string or empty string if input is falsy
-    */
+     * @param {string} dateString - ISO date string
+     * @returns {string} Formatted date string or empty string if input is falsy
+     */
     const formatDateForDisplay = (dateString) => {
       if (!dateString) return '';
       const date = new Date(dateString);
@@ -997,29 +992,6 @@ export default {
   position: relative;
 }
 
-.loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.8);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 1010;
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
@@ -1084,7 +1056,6 @@ h1 {
   margin-bottom: 24px;
 }
 
-/* Form styles */
 .form-group {
   margin-bottom: 16px;
 }
@@ -1133,7 +1104,6 @@ textarea.form-control {
   margin-left: auto;
 }
 
-/* Search and Filter */
 .search-filter-container {
   display: flex;
   flex-direction: column;
@@ -1242,6 +1212,7 @@ textarea.form-control {
 
 .add-new-btn {
   width: 100%;
+  margin-bottom: 10px;
 }
 
 .empty-incidents {
@@ -1253,7 +1224,6 @@ textarea.form-control {
   border: 1px solid #eee;
 }
 
-/* Severity options */
 .severity-options {
   display: flex;
   gap: 8px;
@@ -1282,16 +1252,14 @@ textarea.form-control {
 }
 
 .incident-delete-modal {
-  z-index: 2000 !important; /* Higher than map and other UI elements */
+  z-index: 2000 !important;
   position: fixed !important;
 }
 
-/* Make sure any overlay in the ConfirmModal has the same high z-index */
 .incident-delete-modal .fixed {
   z-index: 2000 !important;
 }
 
-/* Datetime inputs */
 .datetime-inputs {
   display: flex;
   gap: 8px;
@@ -1312,7 +1280,6 @@ textarea.form-control {
   flex: 1;
 }
 
-/* Radius slider */
 .radius-slider {
   margin-bottom: 8px;
 }
@@ -1365,7 +1332,6 @@ textarea.form-control {
   background-color: rgb(219, 234, 254);
 }
 
-/* Tips box styling */
 .tips-box {
   background-color: rgb(239, 246, 255);
   color: rgb(59, 130, 246);
@@ -1375,7 +1341,6 @@ textarea.form-control {
   position: relative;
 }
 
-/* Close button - positioned in the corner */
 .close-tips-btn {
   position: absolute;
   top: 12px;
@@ -1394,7 +1359,6 @@ textarea.form-control {
   color: rgb(0, 0, 0);
 }
 
-/* Tips list */
 .tips-list {
   list-style-type: disc;
   padding-left: 20px;
@@ -1411,7 +1375,6 @@ textarea.form-control {
   margin-bottom: 0;
 }
 
-/* Responsive styles */
 @media (max-width: 768px) {
   .incident-admin-container {
     flex-direction: column;
@@ -1440,3 +1403,4 @@ textarea.form-control {
   }
 }
 </style>
+
