@@ -38,7 +38,7 @@ const questions = [
   {
     question: 'Hvor lenge bør beredskapslageret minimum holde deg med mat og vann?',
     options: ['1 dag', '3 dager', '7 dager'],
-    correct: '3 dager',
+    correct: '7 dager',
   },
   {
     question: 'Hva er nødnummeret til politiet i Norge?',

@@ -76,6 +76,7 @@ async function addMember() {
         <Button variant="outline" @click="emit('close')">Avbryt</Button>
         <Button
           class="px-4 py-2 rounded text-white bg-[#27AE60] hover:bg-[#219653] disabled:opacity-50"
+          data-cy="add-member"
           :disabled="addingMember"
           @click="addMember"
         >
