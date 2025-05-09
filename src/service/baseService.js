@@ -1,5 +1,11 @@
 import apiClient from '@/service/apiClient';
 
+/**
+ * Handles and formats errors from API responses.
+ *
+ * @param {any} error - The error object from the failed HTTP request.
+ * @returns {Promise<never>} A rejected promise with a structured error object.
+ */
 const handleErrors = (error) => {
   if (error.response) {
     console.error("Backend returned code", error.response.status, "body was:", error.response.data);
@@ -22,11 +28,27 @@ const handleErrors = (error) => {
   }
 };
 
+
+/**
+ * BaseService provides a wrapper around HTTP methods (GET, POST, PUT, DELETE, PATCH)
+ * using a configured Axios instance (apiClient). Subclasses should define the base endpoint.
+ */
 export default class BaseService {
+  /**
+   * Creates an instance of BaseService.
+   * @param {string} endpoint - Base URL path for the service (e.g., '/user', '/storage').
+   */
   constructor(endpoint) {
     this.endpoint = endpoint || '';
   }
 
+  /**
+   * Sends a GET request.
+   *
+   * @param {string} [path=''] - Optional path to append to the base endpoint.
+   * @param {object} [options={}] - Optional Axios config.
+   * @returns {Promise<any>} Response data.
+   */
   async get(path = '', options = {}) {
     try {
       const url = this.buildUrl(path);
@@ -37,6 +59,14 @@ export default class BaseService {
     }
   }
 
+  /**
+   * Sends a POST request.
+   *
+   * @param {string} [path=''] - Optional path to append to the base endpoint.
+   * @param {any} data - Data to send in the request body.
+   * @param {object} [options={}] - Optional Axios config.
+   * @returns {Promise<any>} Response data.
+   */
   async post(path = '', data, options = {}) {
     try {
       const url = this.buildUrl(path);
@@ -48,6 +78,14 @@ export default class BaseService {
     }
   }
 
+  /**
+   * Sends a PUT request.
+   *
+   * @param {string} [path=''] - Optional path to append to the base endpoint.
+   * @param {any} data - Data to update.
+   * @param {object} [options={}] - Optional Axios config.
+   * @returns {Promise<any>} Response data.
+   */
   async put(path = '', data, options = {}) {
     try {
       const url = this.buildUrl(path);
@@ -58,6 +96,13 @@ export default class BaseService {
     }
   }
 
+  /**
+   * Sends a DELETE request.
+   *
+   * @param {string} [path=''] - Optional path to append to the base endpoint.
+   * @param {object} [options={}] - Optional Axios config.
+   * @returns {Promise<any>} Response data.
+   */
   async deleteItem(path = '', options = {}) {
     try {
       const url = this.buildUrl(path);
@@ -68,6 +113,14 @@ export default class BaseService {
     }
   }
 
+  /**
+   * Sends a PATCH request.
+   *
+   * @param {string} [path=''] - Optional path to append to the base endpoint.
+   * @param {any} data - Partial data to update.
+   * @param {object} [options={}] - Optional Axios config.
+   * @returns {Promise<any>} Response data.
+   */
   async patch(path = '', data, options = {}) {
     try {
       const url = this.buildUrl(path);
@@ -78,6 +131,12 @@ export default class BaseService {
     }
   }
 
+  /**
+   * Constructs the full API endpoint URL.
+   *
+   * @param {string} path - The path to append to the base endpoint.
+   * @returns {string} The full URL.
+   */
   buildUrl(path) {
     if (!path) {
       return this.endpoint;
@@ -85,6 +144,12 @@ export default class BaseService {
     return this.endpoint ? `${this.endpoint}/${path}` : path;
   }
 
+  /**
+   * Merges default Axios headers with any custom headers passed.
+   *
+   * @param {object} options - Axios config options.
+   * @returns {object} Merged config with headers.
+   */ 
   mergeOptions(options) {
     return {
       ...options,
