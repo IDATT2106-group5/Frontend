@@ -235,14 +235,13 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
         if (error.response && error.response.data && error.response.data.error) {
           this.error = error.response.data.error;
         } else {
-          this.error = 'Kunne ikke opprette krisesituasjon. Vennligst prøv igjen senere.';
+          console.error('Error in createIncident:', error);
+          toast({
+            title: 'Feil',
+            description: 'Klarte ikke opprettet krise.',
+            variant: 'destructive',
+          })
         }
-        console.error('Error in createIncident:', error);
-        toast({
-          title: 'Feil',
-          description: 'Klarte ikke opprettet krise.',
-          variant: 'destructive',
-        })
         return false;
       } finally {
         this.isLoading = false;
