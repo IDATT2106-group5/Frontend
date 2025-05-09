@@ -145,7 +145,8 @@ export const useStorageStore = defineStore('storage', () => {
     error.value = null;
 
     try {
-      const response = await StorageService.getStorageItemsByHousehold(currentHouseholdId.value);
+      const response = await StorageService.getStorageItemsByHousehold();
+      console.log('Fetched items:', response);
 
       if (response && Array.isArray(response)) {
         items.value = response.map(item => {
