@@ -264,17 +264,20 @@ export default {
     watch(
       () => isSharing.value,
       (newValue) => {
-        // Update user marker if needed
-        if (userPositions.value.has(userStore.user.id)) {
-          const position = userPositions.value.get(userStore.user.id)
-          const name = position.fullName.split(' ')[0]
-          updateUserMarker(userStore.user.id, name, position.longitude, position.latitude, true)
+        try {
+          // Update user marker if needed
+          if (userPositions.value.has(userStore.user.id)) {
+            const position = userPositions.value.get(userStore.user.id)
+            const name = position.fullName.split(' ')[0]
+            updateUserMarker(userStore.user.id, name, position.longitude, position.latitude, true)
+          }
+        } catch (error) {
+          console.log('Error updating user marker: No user logged in')
         }
-
-        // Call the map store method to update all marker popups
-        if (map.value) {
-          mapStore.updateMarkerPopups(newValue)
-        }
+          // Call the map store method to update all marker popups
+          if (map.value) {
+            mapStore.updateMarkerPopups(newValue)
+          }
       },
     )
 
