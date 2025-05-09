@@ -5,9 +5,9 @@ class UserService extends BaseService {
     super('/user');
   }
 
-  async getCurrentHouseholdByUserId(userId) {
+  async getCurrentHouseholdByUserId() {
     try {
-      const response = await this.get(`me/household/${userId}`);
+      const response = await this.get(`me/household`);
       return response;
     } catch (error) {
       console.error("Household not found:", error);
@@ -18,13 +18,13 @@ class UserService extends BaseService {
   async checkEmail(email) {
     try {
       const response = await this.post('check-mail', { email });
-      return response.userId; 
+      return response.userId;
     } catch (error) {
       console.error('[ERROR] Checking email existence:', error);
       throw error;
     }
   }
-  
+
 }
 
 export default new UserService();
