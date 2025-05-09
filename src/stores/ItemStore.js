@@ -2,15 +2,36 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import ItemService from '@/service/itemService'
 
+/**
+ * Pinia store for managing catalog items, including pagination, search, and category filtering.
+ */
 export const useItemStore = defineStore('item', () => {
+  /** @type {import('vue').Ref<Array<Object>>} */ 
   const items = ref([])
+ 
+  /** @type {import('vue').Ref<boolean>} */  
   const isLoading = ref(false)
+
+  /** @type {import('vue').Ref<string|null>} */
   const error = ref(null)
+
+  /** @type {import('vue').Ref<number>} */ 
   const currentPage = ref(0)
+
+  /** @type {import('vue').Ref<boolean>} */
   const hasMoreItems = ref(true)
+
+  /** @type {import('vue').Ref<number>} */
   const pageSize = ref(5)
+
+  /** @type {import('vue').Ref<string>} */
   const searchQuery = ref('')
 
+   /**
+   * Fetches paginated items from the backend. Resets pagination if specified.
+   * @param {boolean} [reset=true] - Whether to reset the pagination state.
+   * @returns {Promise<Array<Object>>} The list of fetched items.
+   */
   async function fetchItems(reset = true) {
     if (reset) {
       currentPage.value = 0
@@ -59,6 +80,10 @@ export const useItemStore = defineStore('item', () => {
     }
   }
 
+  /**
+   * Loads the next page of items if available.
+   * @returns {Promise<Array<Object>>} The updated list of items.
+   */
   async function loadMoreItems() {
     if (hasMoreItems.value && !isLoading.value) {
       currentPage.value++
@@ -67,18 +92,27 @@ export const useItemStore = defineStore('item', () => {
     return items.value
   }
 
+   /**
+   * Searches items using a term and resets pagination.
+   * @param {string} term - Search query.
+   * @returns {Promise<Array<Object>>} The filtered list of items.
+   */
   async function searchItems(term) {
     searchQuery.value = term
     return fetchItems(true)
   }
 
+  /**
+   * Fetches items by their type.
+   * @param {string} type - The item type to fetch.
+   * @returns {Promise<Array<Object>>} List of items of the specified type.
+   */
   async function fetchItemsByType(type) {
     isLoading.value = true
     error.value = null
 
     try {
       const response = await ItemService.getItemsByType(type)
-      console.log(`Fetched items by type ${type}:`, response)
       return response || []
     } catch (err) {
       console.error(`Error fetching items by type ${type}:`, err)
@@ -89,9 +123,12 @@ export const useItemStore = defineStore('item', () => {
     }
   }
 
+  /**
+   * Filters currently loaded items by category name.
+   * @param {string} category - UI label for the category.
+   * @returns {Array<Object>} Filtered list of items.
+   */
   function getItemsByCategory(category) {
-    console.log('Getting items by category:', category)
-    console.log('Current items in store:', items.value)
 
     const categoryMapping = {
       Væske: 'LIQUIDS',
@@ -103,18 +140,13 @@ export const useItemStore = defineStore('item', () => {
 
     const itemType = categoryMapping[category]
     if (!itemType) {
-      console.log('No matching item type for category:', category)
       return []
     }
 
-    console.log('Looking for item type:', itemType)
-
     const filteredItems = items.value.filter((item) => {
-      console.log('Checking item:', item.name, 'Type:', item.itemType)
       return item.itemType === itemType
     })
 
-    console.log('Filtered items:', filteredItems)
     return filteredItems
   }
 
