@@ -17,7 +17,6 @@ export const useLocationStore = defineStore('location', () => {
   // Methods
   function updateUserPosition() {
     if (!connected.value) {
-      console.debug('WebSocket not connected, will retry when connection is established')
       if (locationError.value !== 'Ingen tilkobling til server') {
         locationError.value = 'Ingen tilkobling til server'
       }
@@ -65,7 +64,6 @@ export const useLocationStore = defineStore('location', () => {
   }
 
   function startPositionSharing() {
-    console.log('Starting position sharing')
     if (!navigator.geolocation) {
       locationError.value = 'Geolocation is not supported by your browser'
       return
@@ -77,7 +75,6 @@ export const useLocationStore = defineStore('location', () => {
     positionUpdateInterval.value = setInterval(updateUserPosition, 30000)
     isSharing.value = true
     localStorage.setItem('isSharing', 'true')
-    console.debug('Position sharing started')
   }
 
   function stopPositionSharing() {
@@ -88,15 +85,12 @@ export const useLocationStore = defineStore('location', () => {
     }
     isSharing.value = false
     localStorage.setItem('isSharing', 'false')
-    console.debug('Position sharing stopped')
   }
 
   function togglePositionSharing() {
     if (isSharing.value === true) {
-      console.debug('Stopping position sharing')
       stopPositionSharing()
     } else {
-      console.debug('Starting position sharing')
       startPositionSharing()
     }
   }
