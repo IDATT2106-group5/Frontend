@@ -2,14 +2,9 @@
 import { ref, computed, onMounted } from 'vue'
 import { useScenarioStore } from '@/stores/ScenarioStore'
 import {
-  AlertTriangle,
-  AlertOctagon,
-  Droplets,
-  Flame,
-  Wind,
-  Thermometer,
-  Zap,
-  ShieldAlert,
+  AlertTriangle, AlertOctagon, Droplets, Flame, Wind, Thermometer, Zap, ShieldAlert, Trash2, Bomb,
+  Waves, Car, ThermometerSun, Nfc, CloudDrizzle, FlashlightOff, Footprints, Snowflake, Swords,
+  MountainSnow, CloudLightning, FlaskRound, LightbulbOff, FlaskConical, Syringe, Atom, DropletOff,
 } from 'lucide-vue-next'
 import { useRouter } from 'vue-router'
 import BeforeStepIndicator from '@/components/BeforeStepIndicator.vue'
@@ -69,14 +64,9 @@ export default {
      * @type {Record<string, object>}
      */
     const iconMap = {
-      AlertTriangle,
-      AlertOctagon,
-      Droplets,
-      Flame,
-      Wind,
-      Thermometer,
-      Zap,
-      ShieldAlert,
+      AlertTriangle, AlertOctagon, Droplets, Flame, Wind, Thermometer, Zap, ShieldAlert, Trash2, Bomb,
+      Waves, Car, ThermometerSun, Nfc, CloudDrizzle, FlashlightOff, Footprints, Snowflake, Swords,
+      MountainSnow, CloudLightning, FlaskRound, LightbulbOff, FlaskConical, Syringe, Atom, DropletOff,
     }
 
     /**
