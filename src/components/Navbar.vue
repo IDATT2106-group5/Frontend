@@ -1,11 +1,4 @@
 <script setup>
-/**
- * Importing the necessary components and utilities:
- * - Icons from 'lucide-vue-next' for UI elements.
- * - Vue's reactive utilities (ref, onMounted, onBeforeUnmount, watch).
- * - Custom components and stores for user and location management.
- * - WebSocket composable for handling notifications and real-time updates.
- */
 import {
   AlarmCheck,
   Bell,
@@ -29,16 +22,13 @@ import useWebSocket from '@/service/websocketComposable.js'
 import { useLocationStore } from '@/stores/map/LocationStore.js'
 import notificationSoundFile from '@/assets/bell-notification-337658.mp3'
 
-// Stores and router
 const userStore = useUserStore()
 const router = useRouter()
 const locationStore = useLocationStore()
 
-// Reactive state
 const mobileMenuOpen = ref(false)
 const showNotifications = ref(false)
 
-// State for notification sound
 const notificationSound = ref(null)
 
 /**
@@ -54,7 +44,6 @@ const notificationSound = ref(null)
  * @property {Ref<boolean>} connected - WebSocket connection state.
  */
 
-// Destructure WebSocket composable for notification handling
 const {
   notifications,
   notificationCount,
@@ -66,7 +55,6 @@ const {
   connected,
 } = useWebSocket()
 
-// Destructure location store for position sharing
 const { isSharing, startPositionSharing } = useLocationStore()
 
 /**
@@ -75,9 +63,8 @@ const { isSharing, startPositionSharing } = useLocationStore()
 function playNotificationSound() {
   console.log('Playing notification sound')
   if (notificationSound.value) {
-    notificationSound.value.currentTime = 0 // Reset sound to beginning
+    notificationSound.value.currentTime = 0
     notificationSound.value.play().catch((error) => {
-      // Handle autoplay restrictions (common in browsers)
       console.log('Could not play notification sound:', error)
     })
   }
@@ -130,7 +117,7 @@ function formatTimestamp(timestamp) {
   const date = new Date(timestamp)
 
   const day = String(date.getDate()).padStart(2, '0')
-  const month = String(date.getMonth() + 1).padStart(2, '0') // Month is 0-indexed
+  const month = String(date.getMonth() + 1).padStart(2, '0')
   const year = date.getFullYear()
   const hours = String(date.getHours()).padStart(2, '0')
   const minutes = String(date.getMinutes()).padStart(2, '0')

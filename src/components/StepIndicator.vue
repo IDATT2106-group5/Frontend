@@ -1,4 +1,3 @@
-<!-- src/components/StepIndicator.vue -->
 <script setup>
 import { useRoute } from 'vue-router'
 

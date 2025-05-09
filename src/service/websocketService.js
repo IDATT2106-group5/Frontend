@@ -1,9 +1,5 @@
 import { Client } from '@stomp/stompjs'
 
-/**
- * WebSocketService manages a STOMP over SockJS connection to the backend.
- * It handles subscription to notifications and household position updates.
- */
 export default class WebSocketService {
   constructor() {
     /** @type {Client|null} */

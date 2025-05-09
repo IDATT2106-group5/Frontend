@@ -3,12 +3,6 @@ import { useUserStore } from '@/stores/UserStore.js'
 import { useHouseholdStore } from '@/stores/HouseholdStore.js'
 import WebSocketService from '@/service/websocketService.js'
 
-/**
- * Composable for managing WebSocket connections and real time notification updates.
- * Handles connection lifecycle, incident popups, household tracking, and notification management.
- *
- * @returns {object} WebSocket state, methods for managing notifications and positions.
- */
 export default function useWebSocket() {
   /** @type {import('vue').Ref<Array<Object>>} */
   const notifications = ref([])

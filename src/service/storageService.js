@@ -1,10 +1,5 @@
 import BaseService from '@/service/baseService';
 
-/**
- * Service for handling storage related API operations such as
- * fetching, adding, updating, and deleting household storage items.
- * Extends the BaseService class to use pre defined HTTP methods.
- */
 class StorageService extends BaseService {
   /**
    * Initializes the storage service with the '/storage' base path.
