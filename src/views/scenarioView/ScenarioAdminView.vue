@@ -3,25 +3,18 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useScenarioStore } from '@/stores/ScenarioStore.js'
 import {
-  AlertTriangle, AlertOctagon, Droplets, Flame, Wind,
-  Thermometer, Zap, ShieldAlert, Trash2, Bomb, Waves
+  AlertTriangle, AlertOctagon, Droplets, Flame, Wind, Thermometer, Zap, ShieldAlert, Trash2, Bomb,
+  Waves, Car, ThermometerSun, Nfc, CloudDrizzle, FlashlightOff, Footprints, Snowflake, Swords,
+  MountainSnow, CloudLightning, FlaskRound, LightbulbOff, FlaskConical, Syringe, Atom, DropletOff,
 } from 'lucide-vue-next'
 import { toast } from '@/components/ui/toast/index.js'
 
 export default {
   name: 'ScenarioView',
   components: {
-    AlertTriangle,
-    AlertOctagon,
-    Droplets,
-    Flame,
-    Wind,
-    Thermometer,
-    Zap,
-    ShieldAlert,
-    Trash2,
-    Bomb,
-    Waves,
+    AlertTriangle, AlertOctagon, Droplets, Flame, Wind, Thermometer, Zap, ShieldAlert, Trash2, Bomb,
+    Waves, Car, ThermometerSun, Nfc, CloudDrizzle, FlashlightOff, Footprints, Snowflake, Swords,
+    MountainSnow, CloudLightning, FlaskRound, LightbulbOff, FlaskConical, Syringe, Atom, DropletOff,
   },
 
   /**
@@ -53,6 +46,22 @@ export default {
       { name: 'ShieldAlert', component: ShieldAlert },
       { name: 'Bomb', component: Bomb },
       { name: 'Waves', component: Waves },
+      { name: 'Car', component: Car },
+      { name: 'ThermometerSun', component: ThermometerSun },
+      { name: 'Nfc', component: Nfc },
+      { name: 'CloudDrizzle', component: CloudDrizzle },
+      { name: 'FlashlightOff', component: FlashlightOff },
+      { name: 'Footprints', component: Footprints },
+      { name: 'Snowflake', component: Snowflake },
+      { name: 'Swords', component: Swords },
+      { name: 'MountainSnow', component: MountainSnow },
+      { name: 'CloudLightning', component: CloudLightning },
+      { name: 'FlaskRound', component: FlaskRound },
+      { name: 'LightbulbOff', component: LightbulbOff },
+      { name: 'FlaskConical', component: FlaskConical },
+      { name: 'Syringe', component: Syringe },
+      { name: 'Atom', component: Atom },
+      { name: 'DropletOff', component: DropletOff },
     ]
 
     /**

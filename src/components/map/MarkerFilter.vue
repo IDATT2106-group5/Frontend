@@ -51,7 +51,7 @@ export default {
         <Button
           variant="outline"
           size="sm"
-          class="flex-1"
+          class="flex-1 hover:bg-gray-200"
           @click="showAllMarkers"
         >
           Vis alle
@@ -59,7 +59,7 @@ export default {
         <Button
           variant="outline"
           size="sm"
-          class="flex-1"
+          class="flex-1 hover:bg-gray-200"
           @click="hideAllMarkers"
         >
           Skjul alle

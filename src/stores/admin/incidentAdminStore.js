@@ -103,8 +103,11 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
         }));
         this.applyFilters();
       } catch (error) {
-        this.error = 'Kunne ikke laste krisesituasjoner. Vennligst prøv igjen senere.';
-        console.error('Error in fetchIncidents:', error);
+        toast({
+          title: 'Feil',
+          description: 'Klarte ikke laste krisesituasjoner.',
+          variant: 'destructive',
+        })
       } finally {
         this.isLoading = false;
       }
@@ -229,21 +232,19 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
           variant: 'success',
         })
         await this.fetchIncidents();
-        useMapStore().initIncidents();
         this.isCreating = false;
         return true;
       } catch (error) {
         if (error.response && error.response.data && error.response.data.error) {
           this.error = error.response.data.error;
         } else {
-          this.error = 'Kunne ikke opprette krisesituasjon. Vennligst prøv igjen senere.';
+          console.error('Error in createIncident:', error);
+          toast({
+            title: 'Feil',
+            description: 'Klarte ikke opprettet krise.',
+            variant: 'destructive',
+          })
         }
-        console.error('Error in createIncident:', error);
-        toast({
-          title: 'Feil',
-          description: 'Klarte ikke opprettet krise.',
-          variant: 'destructive',
-        })
         return false;
       } finally {
         this.isLoading = false;
@@ -269,7 +270,6 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
         })
         this.editingIncidentId = null;
         await this.fetchIncidents();
-        useMapStore().initIncidents();
         this.isEditing = false;
         return true;
       } catch (error) {
@@ -277,7 +277,6 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
           this.editingIncidentId = null;
           this.error = error.response.data.error;
         } else {
-          this.error = 'Kunne ikke oppdatere krisesituasjon. Vennligst prøv igjen senere.';
           toast({
             title: 'Feil',
             description: 'Klarte ikke oppdatere krise.',
@@ -329,7 +328,7 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
         await IncidentAdminService.deleteIncident(parseInt(id));
         toast({
           title: 'Slettet en krise',
-          description: 'Du har selttet en krise.',
+          description: 'Du har slettet en krise.',
           variant: 'success',
         })
         this.incidents = this.incidents.filter(incident => incident.id !== id);
@@ -344,14 +343,13 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
         if (error.response && error.response.data && error.response.data.error) {
           this.error = error.response.data.error;
         } else {
-          this.error = 'Kunne ikke slette krisesituasjon. Vennligst prøv igjen senere.';
+          console.error('Error in deleteIncident:', error);
+          toast({
+            title: 'Feil',
+            description: 'Klarte ikke slette krise.',
+            variant: 'destructive',
+          })
         }
-        console.error('Error in deleteIncident:', error);
-        toast({
-          title: 'Feil',
-          description: 'Klarte ikke seltte krise.',
-          variant: 'destructive',
-        })
         return false;
       } finally {
         this.isLoading = false;
@@ -412,12 +410,17 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
      * @description Cancel editing/creating
      * @returns {void}
      */
-    cancelEdit() {
+    async cancelEdit() {
       this.isEditing = false;
       this.isCreating = false;
       this.error = null;
       this.success = null;
+
+      // Important: Set editingIncidentId to null to display the original incident again
       this.editingIncidentId = null;
+
+      // Update the map display to show the original incident
+      useMapStore().updateIncidentsOnMap();
     },
 
     /**
