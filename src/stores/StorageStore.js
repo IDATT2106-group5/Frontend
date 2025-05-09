@@ -153,7 +153,6 @@ export const useStorageStore = defineStore('storage', () => {
             return { ...item, id: item.itemId };
           } else if (!item.id) {
 
-            console.warn('Item missing ID:', item);
           }
           return item;
         });

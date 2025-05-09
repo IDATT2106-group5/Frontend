@@ -129,7 +129,7 @@ onUnmounted(() => {
     >
       <h1 class="text-3xl md:text-5xl font-bold">KRISESITUASJON</h1>
       <div class="text-sm">
-        <p class="font-semibold">Norske myndigheter</p>
+        <p class="font-semibold">Siste krise oppdatering:</p>
         <p>{{ incident.startedAt ? formatDate(incident.startedAt) : formatDate(new Date()) }}</p>
       </div>
     </header>

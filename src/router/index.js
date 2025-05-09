@@ -38,9 +38,12 @@ import ScenarioList from '@/components/scenario/ScenarioList.vue'
 import ScenarioAdminView from '@/views/scenarioView/ScenarioAdminView.vue'
 import EditScenarioList from '@/components/scenario/EditScenarioList.vue'
 import ScenarioInfo from '@/components/scenario/ScenarioInfo.vue'
+import BeforeView from '@/views/informationViews/BeforeView.vue'
+import UnderView from '@/views/informationViews/UnderView.vue'
+import AfterView from '@/views/informationViews/AfterView.vue'
 import NewsView from '@/views/news/NewsView.vue'
 import NewsAdminView from '@/views/news/NewsAdminView.vue'
-import AfterView from '@/views/informationViews/AfterView.vue'
+ 
 
 const routes = [
   // --- Public ---
@@ -49,11 +52,14 @@ const routes = [
   { path: '/contact', name: 'contact', component: ContactView },
   { path: '/questions', name: 'questions', component: QuestionsView },
   { path: '/news', name: 'NewsView', component: NewsView },
-  { path: '/before', name: 'before', component: PrepareCrisisView },
   { path: '/quiz', name: 'quiz', component: QuizView },
   { path: '/seek-safety', name: 'seek-safety', component: SeekSafetyView },
   { path: '/emergency-tips', name: 'emergency-tips', component: EmergencyTipsView },
   { path: '/alert', name: 'alert', component: AlertView },
+  { path: '/before', name: 'before', component: BeforeView },
+  {path: '/under', name: 'under', component: UnderView },
+  {path: '/after', name: 'after', component: AfterView },
+  {path: '/prepare-crisis', name: 'prepare-crisis', component: PrepareCrisisView },
   { path: '/talk', name: 'talk', component: TalkAboutItView },
   { path: '/mental', name: 'mental', component: MentalHealthView },
   { path: '/improve', name: 'improve', component: ImproveView },

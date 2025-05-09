@@ -48,7 +48,6 @@ export default function useWebSocket() {
           connected.value = false
         },
         onNotification: (message) => {
-          console.log('Notification received', message)
           if (userStore.user?.id) {
             fetchNotifications()
           }
@@ -58,16 +57,14 @@ export default function useWebSocket() {
           }
         },
       })
-    } catch (error) {
-      console.error('Failed to initialize WebSocket:', error)
+    } catch (err) {
+      console.error('Failed to initialize WebSocket', err)
     }
   }
 
   function closeIncidentPopup() {
-    showIncidentPopup.value = false;
-    if (currentIncident.value) {
-      currentIncident.value = null;
-    }
+    showIncidentPopup.value = false
+    currentIncident.value = null
   }
 
   onBeforeUnmount(() => {
@@ -76,15 +73,15 @@ export default function useWebSocket() {
 
   async function subscribeToPosition(householdId, callback) {
     if (userStore.token && householdId) {
-      webSocketService.subscribeToPosition(householdId, (position) => {
-        console.log('Position update received:', position)
+      return webSocketService.subscribeToPosition(householdId, (position) => {
         if (callback) callback(position)
       })
     }
+    return false
   }
 
   function updatePosition(userId, longitude, latitude) {
-    webSocketService.updatePosition(userId, longitude, latitude)
+    return webSocketService.updatePosition(userId, longitude, latitude)
   }
 
   async function markAsRead(notificationId) {
@@ -97,13 +94,13 @@ export default function useWebSocket() {
         },
       })
 
-      const index = notifications.value.findIndex((n) => n.id === notificationId)
-      if (index !== -1 && !notifications.value[index].read) {
-        notifications.value[index].read = true
+      const idx = notifications.value.findIndex((n) => n.id === notificationId)
+      if (idx !== -1 && !notifications.value[idx].read) {
+        notifications.value[idx].read = true
         notificationCount.value = Math.max(0, notificationCount.value - 1)
       }
-    } catch (error) {
-      console.error('Error marking notification as read:', error)
+    } catch (err) {
+      console.error(`Error marking notification ${notificationId} as read`, err)
     }
   }
 
@@ -115,19 +112,18 @@ export default function useWebSocket() {
     if (!userStore.token) return
 
     try {
-      const response = await fetch('http://localhost:8080/api/notifications/get', {
+      const res = await fetch('http://localhost:8080/api/notifications/get', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${userStore.token}`,
           'Content-Type': 'application/json',
         },
       })
-
-      const data = await response.json()
+      const data = await res.json()
       notifications.value = data
       notificationCount.value = data.filter((n) => !n.read).length
-    } catch (error) {
-      console.error('Error fetching notifications:', error)
+    } catch (err) {
+      console.error('Error fetching notifications', err)
     }
   }
 
@@ -135,18 +131,16 @@ export default function useWebSocket() {
     if (!userStore.token) return []
 
     try {
-      const response = await fetch(`http://localhost:8080/api/household/positions`, {
+      const res = await fetch('http://localhost:8080/api/household/positions', {
         method: 'GET',
         headers: {
           Authorization: `Bearer ${userStore.token}`,
           'Content-Type': 'application/json',
         },
       })
-      const data = await response.json()
-      console.log('Received position update data:', data)
-      return data
-    } catch (error) {
-      console.error('Error fetching position update:', error)
+      return await res.json()
+    } catch (err) {
+      console.error('Error fetching household positions', err)
       return []
     }
   }
@@ -159,6 +153,7 @@ export default function useWebSocket() {
     resetNotificationCount,
     subscribeToPosition,
     updatePosition,
+    fetchNotifications,
     fetchHouseholdPositions,
     showIncidentPopup,
     currentIncident,
