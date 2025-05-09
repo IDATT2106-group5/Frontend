@@ -61,7 +61,6 @@ async function handleInvite(adminData) {
  * @param {string} email - Email address of the admin
  */
 async function handlePasswordReset(email) {
-  console.log('Password reset requested for:', email)
 
   try {
     const response = adminStore.resetPasswordAdmin(email)

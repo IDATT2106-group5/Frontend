@@ -31,3 +31,16 @@ Cypress.Commands.add('login', (email, password) => {
   cy.get('button[type="submit"]').click();
   cy.url().should('not.include', '/login');
 });
+
+Cypress.Commands.add('adminLogin', (email, password) => {
+  cy.visit('/login')
+  cy.intercept('POST', '/api/auth/login').as('loginRequest')
+  cy.intercept('POST', '/api/admin/login/2fa/generate').as('generate2FA')
+
+  cy.get('input[name=email]').type(email)
+  cy.get('input[name=password]').type(password)
+  cy.get('button[type=submit]').click()
+
+  cy.wait('@loginRequest')
+  cy.wait('@generate2FA')
+});

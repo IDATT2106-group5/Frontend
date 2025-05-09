@@ -58,7 +58,7 @@ describe('Login Page', () => {
     // Wait for the autoLogin fetch
     cy.wait('@getUserAgain')
 
-    // Assert that navbar shows logout or user menu instead of login/register   
+    // Assert that navbar shows logout or user menu instead of login/register
   cy.get('nav').should('not.contain', 'Login')
     cy.get('nav').should('not.contain', 'Registrer')
   })
@@ -70,5 +70,37 @@ describe('Login Page', () => {
     cy.get('button[type=submit]').click()
     cy.wait('@loginFail')
     cy.get('.bg-red-100').should('contain.text', 'Innlogging feilet')
+  })
+
+  it('should go to two factor page when admin tries to log in', () => {
+    cy.intercept('POST', '/api/auth/login').as('loginRequest')
+
+    // Mock the 2FA code generation endpoint
+    cy.intercept('POST', '/api/admin/login/2fa/generate', {
+      statusCode: 200,
+      body: { success: true }
+    }).as('generate2FA')
+  
+    // Fill form with admin credentials and submit
+    cy.get('input[name=email]').type('admin@test.test')
+    cy.get('input[name=password]').type('Password123!')
+    cy.get('button[type=submit]').click()
+  
+    // Wait for API calls
+    cy.wait('@loginRequest')
+    cy.wait('@generate2FA').then((interception) => {
+      // Verify the generate2FA request was made with correct email
+      expect(interception.request.body).to.have.property('email', 'admin@test.test')
+    })
+  
+    // Verify redirect to 2FA page with correct email
+    cy.url().should('include', '/2FA')
+    cy.url().should('include', 'email=admin@test.test')
+  
+    // Verify 2FA page elements
+    cy.contains('To-faktor autentisering').should('be.visible')
+    cy.contains('Skriv inn koden sendt til admin@test.test').should('be.visible')
+    cy.get('input[type="text"]').should('have.length', 6)
+    cy.contains('button', 'Bekreft').should('be.visible')
   })
 })

@@ -18,8 +18,8 @@ export const useLocationStore = defineStore('location', () => {
   function updateUserPosition() {
     if (!connected.value) {
       console.debug('WebSocket not connected, will retry when connection is established')
-      if (locationError.value !== 'No connection to server') {
-        locationError.value = 'No connection to server'
+      if (locationError.value !== 'Ingen tilkobling til server') {
+        locationError.value = 'Ingen tilkobling til server'
       }
       return
     }
@@ -41,16 +41,16 @@ export const useLocationStore = defineStore('location', () => {
 
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            locationError.value = 'Location access denied. Please enable location services.'
+            locationError.value = 'Posisjon tilgang nektet. Vennligst aktiver posisjonstjenester.'
             break
           case error.POSITION_UNAVAILABLE:
-            locationError.value = 'Location information unavailable.'
+            locationError.value = 'Posisjoninformasjon er utilgjengelig.'
             break
           case error.TIMEOUT:
-            locationError.value = 'Location request timed out.'
+            locationError.value = 'Posisjon forespørsel utløpt.'
             break
           default:
-            locationError.value = 'Unknown error occurred.'
+            locationError.value = 'Feil ved henting av posisjon.'
         }
 
         stopPositionSharing()
@@ -67,7 +67,7 @@ export const useLocationStore = defineStore('location', () => {
 
   function startPositionSharing() {
     if (!navigator.geolocation) {
-      locationError.value = 'Geolocation is not supported by your browser'
+      locationError.value = 'Positionering er ikke tilgjengelig i nettleseren din'
       return
     }
     if (positionUpdateInterval.value) {
@@ -99,23 +99,12 @@ export const useLocationStore = defineStore('location', () => {
     }
   }
 
-  function attemptReconnect() {
-    if (isSharing.value && !positionUpdateInterval.value && connected.value) {
-      console.debug('Attempting to reconnect position sharing')
-      startPositionSharing()
-      return true
-    }
-    return false
-  }
-
   watch(
     () => userStore.user?.id,
     (userId) => {
       if (userId && isSharing.value && !positionUpdateInterval.value) {
-        console.log('User authenticated, starting position sharing')
         startPositionSharing()
       } else if (!userId && positionUpdateInterval.value) {
-        console.log('User logged out, stopping position sharing')
         stopPositionSharing()
       }
     },
@@ -132,7 +121,7 @@ export const useLocationStore = defineStore('location', () => {
           startPositionSharing()
         }
 
-        if (locationError.value === 'No connection to server') {
+        if (locationError.value === 'Ingen tilkobling til server') {
           locationError.value = null
         }
       } else {
@@ -145,7 +134,6 @@ export const useLocationStore = defineStore('location', () => {
 
   if (isSharing.value && userStore.user?.id) {
     setTimeout(() => {
-      console.log('Initializing position sharing')
       startPositionSharing()
     }, 30000)
   }

@@ -100,6 +100,8 @@ function validateEmail(email) {
           Avbryt
         </button>
         <button
+          type="button"
+          data-cy="invite-button"
           @click="invite"
           :disabled="loading"
           class="px-4 py-1 bg-primary text-white rounded hover:bg-[hsl(var(--primary-hover))] disabled:opacity-50 relative"
