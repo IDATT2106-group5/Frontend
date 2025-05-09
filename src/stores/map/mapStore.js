@@ -1267,7 +1267,7 @@ export const useMapStore = defineStore('map', {
 
         toast({
           title: 'Slettet kart markør',
-          description: 'Du har slettet en klart markør.',
+          description: 'Du har slettet en kart markør.',
           variant: 'success',
         })
 

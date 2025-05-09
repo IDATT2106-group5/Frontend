@@ -1,373 +1,3 @@
-<template>
-  <div class="incident-admin-container">
-    <div v-if="success" class="alert alert-success">
-      {{ success }}
-      <Button variant="ghost" size="icon" class="close-btn" @click="clearSuccess">×</Button>
-    </div>
-
-    <div v-if="error" class="alert alert-error">
-      {{ error }}
-      <Button variant="ghost" size="icon" class="close-btn" @click="clearError">×</Button>
-    </div>
-
-    <div class="left-panel">
-      <div v-if="!isEditing && !isCreating" class="incident-list-panel">
-        <h1>Aktive kriseområder</h1>
-
-        <Button
-          variant="default"
-          class="add-new-btn"
-          @click="onAddNew"
-        >
-          + Legg til ny krisesituasjon
-        </Button>
-
-        <div class="search-filter-container">
-          <input
-            type="text"
-            v-model="searchTerm"
-            class="search-input"
-            placeholder="Søk hendelser..."
-            @input="onSearchChange"
-          />
-
-          <div class="filter-dropdown">
-            <Button
-              variant="outline"
-              class="filter-button"
-              @click="toggleFilterDropdown"
-            >
-              Filtrer krisetyper <span class="dropdown-arrow">▼</span>
-            </Button>
-
-            <div v-if="showFilterDropdown" class="filter-options">
-              <div class="filter-option">
-                <input
-                  type="radio"
-                  id="all-types"
-                  name="filter"
-                  value=""
-                  v-model="filterSeverity"
-                  @change="onFilterChange"
-                />
-                <label for="all-types" class="filter-label">Alle typer</label>
-              </div>
-
-              <div
-                v-for="level in severityLevels"
-                :key="level.id"
-                class="filter-option"
-              >
-                <input
-                  type="radio"
-                  :id="level.id"
-                  name="filter"
-                  :value="level.id"
-                  v-model="filterSeverity"
-                  @change="onFilterChange"
-                />
-                <div class="filter-label-with-icon">
-                  <div
-                    class="severity-indicator"
-                    :style="{backgroundColor: getSeverityColor(level.id)}"
-                  ></div>
-                  <label :for="level.id" class="filter-label">{{ level.name }}</label>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="incidents-container">
-          <div
-            v-for="incident in filteredIncidents"
-            :key="incident.id"
-            class="incident-item"
-          >
-            <div
-              class="severity-indicator"
-              :style="{backgroundColor: getSeverityColor(incident.severity)}"
-            ></div>
-            <div class="incident-info">
-              <div class="incident-title">{{ incident.name }}</div>
-              <p>{{ formatDateForDisplay(incident.startedAt) }}</p>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              class="edit-btn"
-              @click="onEditIncident(incident)"
-            >
-              Rediger
-            </Button>
-          </div>
-
-          <div v-if="filteredIncidents.length === 0" class="empty-incidents">
-            <p>Ingen krisesituasjoner funnet</p>
-          </div>
-        </div>
-      </div>
-
-      <div v-else class="incident-form-panel">
-        <h1>{{ isCreating ? 'Ny krisesituasjon' : 'Rediger krisesituasjon' }}</h1>
-
-        <p class="click-info">Klikk på kartet for å justere kriseområdets midtpunkt. Bruk glidebryteren eller skriv inn antall km for å endre radius.</p>
-
-        <form @submit.prevent="onSaveIncident">
-          <div class="form-group">
-            <label for="name">Tittel</label>
-            <Input
-              id="name"
-              v-model="incidentFormData.name"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label for="scenario">Scenario</label>
-            <select
-              id="scenario"
-              v-model="selectedScenarioId"
-              class="form-control"
-            >
-              <option :value="null">Velg scenario</option>
-              <option
-                v-for="scenario in scenarios"
-                :key="scenario.id"
-                :value="scenario.id"
-              >
-                {{ scenario.name }}
-              </option>
-            </select>
-          </div>
-
-          <!-- Added address fields -->
-          <div class="form-group">
-            <label for="address">Adresse</label>
-            <Input
-              id="address"
-              v-model="incidentFormData.address"
-              @input="onAddressChange"
-            />
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="postalCode">Postkode</label>
-              <Input
-                id="postalCode"
-                v-model="incidentFormData.postalCode"
-                @input="onAddressChange"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="city">Sted</label>
-              <Input
-                id="city"
-                v-model="incidentFormData.city"
-                @input="onAddressChange"
-              />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="description" class="description-label">
-              Beskrivelse
-              <Button
-                variant="ghost"
-                size="sm"
-                type="button"
-                class="info-btn"
-                @click="toggleDescriptionTips"
-              >
-                ?
-              </Button>
-            </label>
-
-            <div v-if="showDescriptionTips" class="tips-box">
-              <h4 class="tips-title">Tips for en effektiv krisebeskrivelse:</h4>
-
-              <button
-                type="button"
-                class="close-tips-btn"
-                @click="toggleDescriptionTips"
-              >
-                x
-              </button>
-
-              <ul class="tips-list">
-                <li>Vær konkret om hva som har skjedd</li>
-                <li>Beskriv omfanget av krisen tydelig</li>
-                <li>Nevn hvilke områder som er berørt</li>
-                <li>Inkluder informasjon om igangsatte tiltak</li>
-                <li>Gi anslag på forventet varighet hvis mulig</li>
-              </ul>
-            </div>
-
-            <textarea
-              id="description"
-              v-model="incidentFormData.description"
-              class="form-control"
-              rows="4"
-            ></textarea>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label for="startedAt">Start tidspunkt</label>
-              <div class="datetime-inputs">
-                <input
-                  type="date"
-                  v-model="startDate"
-                  class="date-input"
-                />
-                <input
-                  type="time"
-                  v-model="startTime"
-                  class="time-input"
-                />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="endedAt">Slutt tidspunkt (valgfritt)</label>
-              <div class="datetime-inputs">
-                <input
-                  type="date"
-                  v-model="endDate"
-                  class="date-input"
-                />
-                <input
-                  type="time"
-                  v-model="endTime"
-                  class="time-input"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Krise-/beredskapsnivå</label>
-            <div class="severity-options">
-              <div
-                v-for="level in severityLevels"
-                :key="level.id"
-                class="severity-option"
-                :class="{ active: incidentFormData.severity === level.id }"
-                @click="incidentFormData.severity = level.id"
-              >
-                <div
-                  class="severity-indicator"
-                  :style="{backgroundColor: getSeverityColor(level.id)}"
-                ></div>
-                <span>{{ level.name }}</span>
-              </div>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label>Koordinater</label>
-            <div class="form-row">
-              <div class="form-group">
-                <Input
-                  v-model="incidentFormData.latitude"
-                  placeholder="Breddgrad °N"
-                  class="coordinate-input"
-                />
-              </div>
-
-              <div class="form-group">
-                <Input
-                  v-model="incidentFormData.longitude"
-                  placeholder="Lengdegrad °E"
-                  class="coordinate-input"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="radius">Radius i km: {{ incidentFormData.impactRadius }}</label>
-            <div class="radius-slider">
-              <input
-                type="range"
-                id="radius"
-                v-model.number="incidentFormData.impactRadius"
-                min="0"
-                max="50"
-                step="1"
-                class="slider"
-              />
-              <div class="radius-labels">
-                <span>0 km</span>
-                <span>25 km</span>
-                <span>50 km</span>
-              </div>
-            </div>
-            <Input
-              v-model.number="incidentFormData.impactRadius"
-              type="number"
-              min="0"
-              max="50"
-              class="radius-input"
-            />
-          </div>
-
-          <div class="button-row">
-            <Button
-              variant="outline"
-              type="button"
-              @click="onCancelEdit"
-            >
-              Avbryt
-            </Button>
-
-            <Button
-              v-if="isEditing"
-              variant="destructive"
-              type="button"
-              @click="onDeleteIncident"
-            >
-              Slett krise
-            </Button>
-
-            <Button
-              variant="default"
-              type="submit"
-              class="ml-auto"
-            >
-              {{ isCreating ? 'Lagre' : 'Lagre' }}
-            </Button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <div class="right-panel">
-      <MapView
-        ref="mapView"
-        :center="mapCenter"
-        :zoom="mapZoom"
-        :is-admin-mode="true"
-        @map-ready="onMapReady"
-        @map-click="onMapClick"
-      />
-    </div>
-  </div>
-
-  <ConfirmModal
-    v-if="confirmDeleteModalOpen"
-    title="Slett markør"
-    description="Er du sikker på at du vil slette denne markøren? Dette kan ikke angres."
-    confirm-text="Slett"
-    cancel-text="Avbryt"
-    @cancel="cancelIncidentDeletion"
-    @confirm="confirmIncidentDeletion"
-    class="incident-delete-modal"
-  />
-</template>
-
 <script>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useIncidentAdminStore } from '@/stores/admin/incidentAdminStore';
@@ -580,38 +210,27 @@ export default {
      */
     const updateAddressFromCoordinates = async (lat, lng) => {
       try {
-        // Make sure the incidentAdminStore has this method
-        // If not, you'll need to implement it similar to markerAdminStore
-        if (typeof incidentAdminStore.updateAddressFromCoordinates === 'function') {
-          return await incidentAdminStore.updateAddressFromCoordinates(lat, lng);
-        } else {
-          // Fallback implementation if the store doesn't have this method
-          // This is just a placeholder - you should implement the actual API call in your store
-          console.warn("updateAddressFromCoordinates not implemented in store, using fallback");
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+          { headers: { 'Accept-Language': 'no' } }
+        );
 
-          // Using Nominatim API for reverse geocoding (as an example)
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-            { headers: { 'Accept-Language': 'no' } }
-          );
-
-          if (!response.ok) {
-            throw new Error('Geocoding API request failed');
-          }
-
-          const data = await response.json();
-
-          // Update form data with address information
-          incidentFormData.value.address = data.address.road || '';
-          incidentFormData.value.postalCode = data.address.postcode || '';
-          incidentFormData.value.city = data.address.city || data.address.town || data.address.village || '';
-
-          return {
-            address: incidentFormData.value.address,
-            postalCode: incidentFormData.value.postalCode,
-            city: incidentFormData.value.city
-          };
+        if (!response.ok) {
+          throw new Error('Geocoding API request failed');
         }
+
+        const data = await response.json();
+
+        incidentFormData.value.address = data.address.road || '';
+        incidentFormData.value.postalCode = data.address.postcode || '';
+        incidentFormData.value.city = data.address.city || data.address.town || data.address.village || '';
+
+        return {
+          address: incidentFormData.value.address,
+          postalCode: incidentFormData.value.postalCode,
+          city: incidentFormData.value.city
+        };
+
       } catch (error) {
         console.error('Error in reverse geocoding:', error);
         throw error;
@@ -666,33 +285,24 @@ export default {
      */
     const updateCoordinatesFromAddress = async (addressQuery) => {
       try {
-        // Check if the store has this method
-        if (typeof incidentAdminStore.updateCoordinatesFromAddress === 'function') {
-          return await incidentAdminStore.updateCoordinatesFromAddress(addressQuery);
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}&limit=1`,
+          { headers: { 'Accept-Language': 'no' } }
+        );
+
+        if (!response.ok) {
+          throw new Error('Geocoding API request failed');
+        }
+
+        const data = await response.json();
+
+        if (data.length > 0) {
+          return {
+            lat: parseFloat(data[0].lat),
+            lng: parseFloat(data[0].lon)
+          };
         } else {
-          // Fallback implementation if the store doesn't have this method
-          console.warn("updateCoordinatesFromAddress not implemented in store, using fallback");
-
-          // Using Nominatim API for geocoding (as an example)
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}&limit=1`,
-            { headers: { 'Accept-Language': 'no' } }
-          );
-
-          if (!response.ok) {
-            throw new Error('Geocoding API request failed');
-          }
-
-          const data = await response.json();
-
-          if (data.length > 0) {
-            return {
-              lat: parseFloat(data[0].lat),
-              lng: parseFloat(data[0].lon)
-            };
-          } else {
-            throw new Error('No results found for this address');
-          }
+          throw new Error('No results found for this address');
         }
       } catch (error) {
         console.error('Error in geocoding:', error);
@@ -982,425 +592,382 @@ export default {
 };
 </script>
 
-<style scoped>
-.incident-admin-container {
-  display: flex;
-  width: 100%;
-  height: calc(100vh - 60px);
-  gap: 16px;
-  padding: 16px;
-  position: relative;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.alert {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  padding: 12px 20px;
-  border-radius: 4px;
-  z-index: 1020;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-width: 300px;
-  max-width: 400px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.alert-success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
-}
-
-.alert-error {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  color: inherit;
-  margin-left: 10px;
-}
-
-.left-panel {
-  flex: 1;
-  background-color: #ffffff;
-  border-radius: 8px;
-  padding: 16px;
-  overflow-y: auto;
-  max-width: 400px;
-  min-width: 320px;
-}
-
-.right-panel {
-  flex: 2;
-  position: relative;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-h1 {
-  color: #2c3e50;
-  font-size: 28px;
-  margin-bottom: 24px;
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
-.form-row {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.form-row .form-group {
-  flex: 1;
-  margin-bottom: 0;
-}
-
-label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 500;
-  color: #2c3e50;
-}
-
-.form-control {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-textarea.form-control {
-  resize: vertical;
-}
-
-.coordinate-input {
-  width: 100%;
-}
-
-.button-row {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
-}
-
-.ml-auto {
-  margin-left: auto;
-}
-
-.search-filter-container {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.search-input {
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.filter-dropdown {
-  position: relative;
-}
-
-.filter-button {
-  width: 100%;
-  text-align: left;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.filter-options {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  z-index: 10;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.filter-option {
-  padding: 10px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-
-.filter-option:hover {
-  background-color: #f1f1f1;
-}
-
-.filter-label-with-icon {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  cursor: pointer;
-}
-
-.filter-label {
-  cursor: pointer;
-}
-
-/* Incidents List */
-.incidents-container {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 20px;
-  max-height: 475px;
-  overflow-y: auto;
-}
-
-.incident-item {
-  display: flex;
-  align-items: center;
-  padding: 12px;
-  background-color: white;
-  border-radius: 4px;
-  border: 1px solid #eee;
-}
-
-.severity-indicator {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  margin-right: 12px;
-}
-
-.incident-info {
-  flex: 1;
-}
-
-.incident-title {
-  font-weight: 500;
-  margin-bottom: 4px;
-}
-
-.incident-info p {
-  margin: 0;
-  color: #666;
-  font-size: 14px;
-}
-
-.add-new-btn {
-  width: 100%;
-  margin-bottom: 10px;
-}
-
-.empty-incidents {
-  padding: 20px;
-  text-align: center;
-  color: #666;
-  background-color: white;
-  border-radius: 4px;
-  border: 1px solid #eee;
-}
-
-.severity-options {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.severity-option {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.severity-option.active {
-  background-color: #f1f1f1;
-  border-color: #aaa;
-}
-
-.severity-option:hover {
-  background-color: #f9f9f9;
-}
-
-.incident-delete-modal {
-  z-index: 2000 !important;
-  position: fixed !important;
-}
-
-.incident-delete-modal .fixed {
-  z-index: 2000 !important;
-}
-
-.datetime-inputs {
-  display: flex;
-  gap: 8px;
-}
-
-.date-input, .time-input {
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.date-input {
-  flex: 2;
-}
-
-.time-input {
-  flex: 1;
-}
-
-.radius-slider {
-  margin-bottom: 8px;
-}
-
-.slider {
-  width: 100%;
-  margin-bottom: 4px;
-}
-
-.radius-labels {
-  display: flex;
-  justify-content: space-between;
-  font-size: 12px;
-  color: #666;
-}
-
-.radius-input {
-  width: 60px;
-  text-align: center;
-}
-
-.click-info {
-  margin-bottom: 16px;
-  font-size: 14px;
-  color: #666;
-}
-
-.description-label {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.info-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  background-color: rgb(239, 246, 255);
-  color: rgb(59, 130, 246);
-  border-radius: 50%;
-  border: none;
-  font-size: 14px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.info-btn:hover {
-  background-color: rgb(219, 234, 254);
-}
-
-.tips-box {
-  background-color: rgb(239, 246, 255);
-  color: rgb(59, 130, 246);
-  border-radius: 6px;
-  padding: 16px;
-  margin-bottom: 12px;
-  position: relative;
-}
-
-.close-tips-btn {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  color: rgb(59, 130, 246);
-  font-weight: bold;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
-  font-size: 16px;
-  line-height: 1;
-}
-
-.close-tips-btn:hover {
-  color: rgb(0, 0, 0);
-}
-
-.tips-list {
-  list-style-type: disc;
-  padding-left: 20px;
-  margin: 0;
-}
-
-.tips-list li {
-  margin-bottom: 8px;
-  font-size: 14px;
-  color: rgb(59, 130, 246);
-}
-
-.tips-list li:last-child {
-  margin-bottom: 0;
-}
-
-@media (max-width: 768px) {
-  .incident-admin-container {
-    flex-direction: column;
-    height: auto;
-    min-height: calc(100vh - 60px);
-  }
-
-  .left-panel {
-    max-width: 100%;
-    min-width: 100%;
-    order: 2;
-  }
-
-  .right-panel {
-    height: 400px;
-    order: 1;
-    margin-bottom: 16px;
-  }
-
-  .incidents-container {
-    max-height: 300px;
-  }
-
-  .severity-options {
-    flex-direction: column;
-  }
-}
-</style>
-
+<template>
+  <div class="flex w-full h-[calc(100vh-60px)] gap-4 p-4 relative overflow-hidden">
+    <!-- Success Alert -->
+    <div v-if="success" class="fixed top-5 right-5 p-3 flex items-center justify-between min-w-[300px] max-w-[400px] bg-green-100 text-green-800 border border-green-200 rounded shadow-md z-50">
+      {{ success }}
+      <Button variant="ghost" size="icon" class="ml-2" @click="clearSuccess">×</Button>
+    </div>
+
+    <!-- Error Alert -->
+    <div v-if="error" class="fixed top-5 right-5 p-3 flex items-center justify-between min-w-[300px] max-w-[400px] bg-red-100 text-red-800 border border-red-200 rounded shadow-md z-50">
+      {{ error }}
+      <Button variant="ghost" size="icon" class="ml-2" @click="clearError">×</Button>
+    </div>
+
+    <!-- Left Panel -->
+    <div class="flex-1 bg-white rounded-lg p-4 overflow-y-auto max-w-[400px] min-w-[320px]">
+      <!-- Incident List Panel -->
+      <div v-if="!isEditing && !isCreating" class="space-y-4">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">Aktive kriseområder</h1>
+
+        <Button
+          variant="default"
+          class="w-full mb-2"
+          @click="onAddNew"
+        >
+          + Legg til ny krisesituasjon
+        </Button>
+
+        <div class="space-y-2 mb-4">
+          <input
+            type="text"
+            v-model="searchTerm"
+            class="w-full p-2.5 border border-gray-300 rounded-md text-sm"
+            placeholder="Søk hendelser..."
+            @input="onSearchChange"
+          />
+
+          <div class="relative">
+            <Button
+              variant="outline"
+              class="w-full flex justify-between items-center"
+              @click="toggleFilterDropdown"
+            >
+              Filtrer krisetyper <span>▼</span>
+            </Button>
+
+            <div v-if="showFilterDropdown" class="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-md shadow-lg z-10 w-full max-h-[300px] overflow-y-auto">
+              <div class="p-2.5 flex items-center gap-2 cursor-pointer hover:bg-gray-100">
+                <input
+                  type="radio"
+                  id="all-types"
+                  name="filter"
+                  value=""
+                  v-model="filterSeverity"
+                  @change="onFilterChange"
+                />
+                <label for="all-types" class="cursor-pointer">Alle typer</label>
+              </div>
+
+              <div
+                v-for="level in severityLevels"
+                :key="level.id"
+                class="p-2.5 flex items-center gap-2 cursor-pointer hover:bg-gray-100"
+              >
+                <input
+                  type="radio"
+                  :id="level.id"
+                  name="filter"
+                  :value="level.id"
+                  v-model="filterSeverity"
+                  @change="onFilterChange"
+                />
+                <div class="flex items-center gap-2 flex-1 cursor-pointer">
+                  <div
+                    class="w-4 h-4 rounded-full"
+                    :style="{backgroundColor: getSeverityColor(level.id)}"
+                  ></div>
+                  <label :for="level.id" class="cursor-pointer">{{ level.name }}</label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-3 max-h-[475px] overflow-y-auto">
+          <div
+            v-for="incident in filteredIncidents"
+            :key="incident.id"
+            class="flex items-center p-3 bg-white border border-gray-200 rounded-md"
+          >
+            <div
+              class="w-4 h-4 rounded-full mr-3"
+              :style="{backgroundColor: getSeverityColor(incident.severity)}"
+            ></div>
+            <div class="flex-1">
+              <div class="font-medium mb-1">{{ incident.name }}</div>
+              <p class="text-gray-600 text-sm">{{ formatDateForDisplay(incident.startedAt) }}</p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              @click="onEditIncident(incident)"
+            >
+              Rediger
+            </Button>
+          </div>
+
+          <div v-if="filteredIncidents.length === 0" class="p-5 text-center text-gray-600 bg-white border border-gray-200 rounded-md">
+            <p>Ingen krisesituasjoner funnet</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Incident Form Panel -->
+      <div v-else class="space-y-4">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">{{ isCreating ? 'Ny krisesituasjon' : 'Rediger krisesituasjon' }}</h1>
+
+        <p class="text-sm text-gray-600 mb-4">Klikk på kartet for å justere kriseområdets midtpunkt. Bruk glidebryteren eller skriv inn antall km for å endre radius.</p>
+
+        <form @submit.prevent="onSaveIncident" class="space-y-4">
+          <div class="space-y-2">
+            <label for="name" class="block font-medium text-gray-700">Tittel</label>
+            <Input
+              id="name"
+              v-model="incidentFormData.name"
+              required
+              class="w-full"
+            />
+          </div>
+
+          <div class="space-y-2">
+            <label for="scenario" class="block font-medium text-gray-700">Scenario</label>
+            <select
+              id="scenario"
+              v-model="selectedScenarioId"
+              class="w-full p-2.5 border border-gray-300 rounded-md text-sm"
+            >
+              <option :value="null">Velg scenario</option>
+              <option
+                v-for="scenario in scenarios"
+                :key="scenario.id"
+                :value="scenario.id"
+              >
+                {{ scenario.name }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Address fields -->
+          <div class="space-y-2">
+            <label for="address" class="block font-medium text-gray-700">Adresse</label>
+            <Input
+              id="address"
+              v-model="incidentFormData.address"
+              @input="onAddressChange"
+              class="w-full"
+            />
+          </div>
+
+          <div class="flex gap-4 mb-4">
+            <div class="space-y-2 flex-1">
+              <label for="postalCode" class="block font-medium text-gray-700">Postkode</label>
+              <Input
+                id="postalCode"
+                v-model="incidentFormData.postalCode"
+                @input="onAddressChange"
+                class="w-full"
+              />
+            </div>
+
+            <div class="space-y-2 flex-1">
+              <label for="city" class="block font-medium text-gray-700">Sted</label>
+              <Input
+                id="city"
+                v-model="incidentFormData.city"
+                @input="onAddressChange"
+                class="w-full"
+              />
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <div class="flex items-center gap-1.5">
+              <label for="description" class="block font-medium text-gray-700">Beskrivelse</label>
+              <Button
+                variant="ghost"
+                size="sm"
+                type="button"
+                class="inline-flex items-center justify-center w-6 h-6 bg-blue-50 text-blue-500 rounded-full text-sm font-bold"
+                @click="toggleDescriptionTips"
+              >
+                ?
+              </Button>
+            </div>
+
+            <div v-if="showDescriptionTips" class="relative bg-blue-50 text-blue-500 rounded-md p-4 mb-3">
+              <h4 class="font-medium mb-2">Tips for en effektiv krisebeskrivelse:</h4>
+
+              <button
+                type="button"
+                class="absolute top-3 right-3 text-blue-500 font-bold hover:text-black"
+                @click="toggleDescriptionTips"
+              >
+                x
+              </button>
+
+              <ul class="list-disc pl-5 space-y-2">
+                <li class="text-sm">Vær konkret om hva som har skjedd</li>
+                <li class="text-sm">Beskriv omfanget av krisen tydelig</li>
+                <li class="text-sm">Nevn hvilke områder som er berørt</li>
+                <li class="text-sm">Inkluder informasjon om igangsatte tiltak</li>
+                <li class="text-sm">Gi anslag på forventet varighet hvis mulig</li>
+              </ul>
+            </div>
+
+            <textarea
+              id="description"
+              v-model="incidentFormData.description"
+              class="w-full p-2.5 border border-gray-300 rounded-md text-sm"
+              rows="4"
+            ></textarea>
+          </div>
+
+          <div class="flex gap-4 mb-4">
+            <div class="space-y-2 flex-1">
+              <label class="block font-medium text-gray-700">Start tidspunkt</label>
+              <div class="flex gap-2">
+                <input
+                  type="date"
+                  v-model="startDate"
+                  class="flex-grow p-2.5 border border-gray-300 rounded-md text-sm"
+                />
+                <input
+                  type="time"
+                  v-model="startTime"
+                  class="p-2.5 border border-gray-300 rounded-md text-sm"
+                />
+              </div>
+            </div>
+
+            <div class="space-y-2 flex-1">
+              <label class="block font-medium text-gray-700">Slutt tidspunkt (valgfritt)</label>
+              <div class="flex gap-2">
+                <input
+                  type="date"
+                  v-model="endDate"
+                  class="flex-grow p-2.5 border border-gray-300 rounded-md text-sm"
+                />
+                <input
+                  type="time"
+                  v-model="endTime"
+                  class="p-2.5 border border-gray-300 rounded-md text-sm"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="block font-medium text-gray-700">Krise-/beredskapsnivå</label>
+            <div class="flex flex-col sm:flex-row gap-2 mt-2">
+              <div
+                v-for="level in severityLevels"
+                :key="level.id"
+                class="flex-1 p-2.5 border border-gray-300 rounded-md flex items-center gap-2 cursor-pointer transition-all duration-200 hover:bg-gray-50"
+                :class="{ 'bg-gray-100 border-gray-400': incidentFormData.severity === level.id }"
+                @click="incidentFormData.severity = level.id"
+              >
+                <div
+                  class="w-4 h-4 rounded-full"
+                  :style="{backgroundColor: getSeverityColor(level.id)}"
+                ></div>
+                <span>{{ level.name }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="block font-medium text-gray-700">Koordinater</label>
+            <div class="flex gap-4 mb-4">
+              <div class="space-y-2 flex-1">
+                <Input
+                  v-model="incidentFormData.latitude"
+                  placeholder="Breddgrad °N"
+                  class="w-full"
+                />
+              </div>
+              <div class="space-y-2 flex-1">
+                <Input
+                  v-model="incidentFormData.longitude"
+                  placeholder="Lengdegrad °E"
+                  class="w-full"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label for="radius" class="block font-medium text-gray-700">Radius i km: {{ incidentFormData.impactRadius }}</label>
+            <div class="mb-2">
+              <input
+                type="range"
+                id="radius"
+                v-model.number="incidentFormData.impactRadius"
+                min="0"
+                max="50"
+                step="1"
+                class="w-full"
+              />
+              <div class="flex justify-between text-xs text-gray-500">
+                <span>0 km</span>
+                <span>25 km</span>
+                <span>50 km</span>
+              </div>
+            </div>
+            <Input
+              v-model.number="incidentFormData.impactRadius"
+              type="number"
+              min="0"
+              max="50"
+              class="w-[60px] text-center"
+            />
+          </div>
+
+          <div class="flex gap-3 mt-6">
+            <Button
+              variant="outline"
+              type="button"
+              @click="onCancelEdit"
+            >
+              Avbryt
+            </Button>
+
+            <Button
+              v-if="isEditing"
+              variant="destructive"
+              type="button"
+              @click="onDeleteIncident"
+            >
+              Slett krise
+            </Button>
+
+            <Button
+              variant="default"
+              type="submit"
+              class="ml-auto"
+            >
+              {{ isCreating ? 'Lagre' : 'Lagre' }}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Right Panel (Map) -->
+    <div class="flex-grow h-full relative rounded-lg overflow-hidden">
+      <MapView
+        ref="mapView"
+        :center="mapCenter"
+        :zoom="mapZoom"
+        :is-admin-mode="true"
+        @map-ready="onMapReady"
+        @map-click="onMapClick"
+        class="h-full w-full"
+      />
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <ConfirmModal
+    v-if="confirmDeleteModalOpen"
+    title="Slett markør"
+    description="Er du sikker på at du vil slette denne markøren? Dette kan ikke angres."
+    confirm-text="Slett"
+    cancel-text="Avbryt"
+    @cancel="cancelIncidentDeletion"
+    @confirm="confirmIncidentDeletion"
+    class="z-[2000]"
+  />
+</template>
