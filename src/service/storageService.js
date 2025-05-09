@@ -20,9 +20,9 @@ class StorageService extends BaseService {
    * @returns {Promise<Array<Object>>} Promise resolving to list of storage items.
    * @throws {Error} If the request fails.
    */
-  async getStorageItemsByHousehold(householdId) {
+  async getStorageItemsByHousehold() {
     try {
-      const response = await this.get(`household/${householdId}`);
+      const response = await this.get(`household`);
       return response;
     } catch (error) {
       console.error("Error fetching storage items:", error);
@@ -38,9 +38,9 @@ class StorageService extends BaseService {
    * @returns {Promise<Array<Object>>} Promise resolving to filtered storage items.
    * @throws {Error} If the request fails.
    */
-  async getStorageItemsByType(householdId, itemType) {
+  async getStorageItemsByType(itemType) {
     try {
-      const response = await this.get(`household/${householdId}/type/${itemType}`);
+      const response = await this.get(`household/type/${itemType}`);
       return response;
     } catch (error) {
       console.error(`Error fetching ${itemType} items:`, error);
@@ -56,11 +56,11 @@ class StorageService extends BaseService {
    * @returns {Promise<Array<Object>>} Promise resolving to expiring items.
    * @throws {Error} If the request fails.
    */
-  async getExpiringItems(householdId, beforeDate) {
+  async getExpiringItems(beforeDate) {
     try {
 
       const formattedDate = beforeDate.toISOString();
-      const response = await this.get(`household/${householdId}/expiring?before=${formattedDate}`);
+      const response = await this.get(`household/expiring?before=${formattedDate}`);
       return response;
     } catch (error) {
       console.error("Error fetching expiring items:", error);
@@ -77,7 +77,7 @@ class StorageService extends BaseService {
    * @returns {Promise<Object>} Promise resolving to the added item response.
    * @throws {Error} If the request fails.
    */
-  async addItemToStorage(householdId, itemId, data) {
+  async addItemToStorage(itemId, data) {
     try {
 
       let formattedDate = null;
@@ -95,7 +95,7 @@ class StorageService extends BaseService {
         expirationDate: formattedDate
       };
 
-      const response = await this.post(`household/${householdId}/item/${itemId}`, payload);
+      const response = await this.post(`household/item/${itemId}`, payload);
       return response;
     } catch (error) {
       console.error("Error adding item to storage:", error);

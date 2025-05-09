@@ -11,15 +11,15 @@ vi.mock('@/service/baseService', () => {
     default: class BaseService {
       constructor() {
       }
-      
+
       get(...args) {
         return mockMethods.get(...args);
       }
-      
+
       post(...args) {
         return mockMethods.post(...args);
       }
-      
+
       put(...args) {
         return mockMethods.put(...args);
       }
@@ -38,21 +38,19 @@ describe('StorageService', () => {
     it('should call get with the correct path and return the response', async () => {
       const mockResponse = [{ id: 1, name: 'Apple' }, { id: 2, name: 'Banana' }];
       mockMethods.get.mockResolvedValue(mockResponse);
-      const householdId = '123';
 
-      const result = await StorageService.getStorageItemsByHousehold(householdId);
+      const result = await StorageService.getStorageItemsByHousehold();
 
-      expect(mockMethods.get).toHaveBeenCalledWith(`household/${householdId}`);
+      expect(mockMethods.get).toHaveBeenCalledWith(`household`);
       expect(result).toEqual(mockResponse);
     });
 
     it('should throw an error if the API call fails', async () => {
       const mockError = new Error('API Error');
       mockMethods.get.mockRejectedValue(mockError);
-      const householdId = '123';
-      
-      await expect(StorageService.getStorageItemsByHousehold(householdId)).rejects.toThrow(mockError);
-      expect(mockMethods.get).toHaveBeenCalledWith(`household/${householdId}`);
+
+      await expect(StorageService.getStorageItemsByHousehold()).rejects.toThrow(mockError);
+      expect(mockMethods.get).toHaveBeenCalledWith(`household`);
     });
   });
 
@@ -60,24 +58,22 @@ describe('StorageService', () => {
     it('should call get with the correct path and return the response', async () => {
       const mockResponse = [{ id: 1, name: 'Apple', type: 'fruit' }];
       mockMethods.get.mockResolvedValue(mockResponse);
-      const householdId = '123';
       const itemType = 'fruit';
 
-      const result = await StorageService.getStorageItemsByType(householdId, itemType);
+      const result = await StorageService.getStorageItemsByType(itemType);
 
-    
-      expect(mockMethods.get).toHaveBeenCalledWith(`household/${householdId}/type/${itemType}`);
+
+      expect(mockMethods.get).toHaveBeenCalledWith(`household/type/${itemType}`);
       expect(result).toEqual(mockResponse);
     });
 
     it('should throw an error if the API call fails', async () => {
       const mockError = new Error('API Error');
       mockMethods.get.mockRejectedValue(mockError);
-      const householdId = '123';
       const itemType = 'fruit';
-    
-      await expect(StorageService.getStorageItemsByType(householdId, itemType)).rejects.toThrow(mockError);
-      expect(mockMethods.get).toHaveBeenCalledWith(`household/${householdId}/type/${itemType}`);
+
+      await expect(StorageService.getStorageItemsByType(itemType)).rejects.toThrow(mockError);
+      expect(mockMethods.get).toHaveBeenCalledWith(`household/type/${itemType}`);
     });
   });
 
@@ -85,14 +81,13 @@ describe('StorageService', () => {
     it('should call get with the correct path including formatted date', async () => {
       const mockResponse = [{ id: 1, name: 'Milk', expirationDate: '2023-06-01' }];
       mockMethods.get.mockResolvedValue(mockResponse);
-      const householdId = '123';
       const beforeDate = new Date('2023-06-01');
       const expectedFormattedDate = beforeDate.toISOString();
 
-      const result = await StorageService.getExpiringItems(householdId, beforeDate);
+      const result = await StorageService.getExpiringItems(beforeDate);
 
       expect(mockMethods.get).toHaveBeenCalledWith(
-        `household/${householdId}/expiring?before=${expectedFormattedDate}`
+        `household/expiring?before=${expectedFormattedDate}`
       );
       expect(result).toEqual(mockResponse);
     });
@@ -100,10 +95,9 @@ describe('StorageService', () => {
     it('should throw an error if the API call fails', async () => {
       const mockError = new Error('API Error');
       mockMethods.get.mockRejectedValue(mockError);
-      const householdId = '123';
       const beforeDate = new Date('2023-06-01');
-      
-      await expect(StorageService.getExpiringItems(householdId, beforeDate)).rejects.toThrow(mockError);
+
+      await expect(StorageService.getExpiringItems(beforeDate)).rejects.toThrow(mockError);
     });
   });
 
@@ -111,7 +105,6 @@ describe('StorageService', () => {
     it('should format expiration date correctly and call post with proper payload', async () => {
       const mockResponse = { id: 1, status: 'success' };
       mockMethods.post.mockResolvedValue(mockResponse);
-      const householdId = '123';
       const itemId = '456';
       const data = {
         unit: 'kg',
@@ -125,10 +118,10 @@ describe('StorageService', () => {
         expirationDate: '2023-06-01T00:00:00'
       };
 
-      const result = await StorageService.addItemToStorage(householdId, itemId, data);
+      const result = await StorageService.addItemToStorage(itemId, data);
 
       expect(mockMethods.post).toHaveBeenCalledWith(
-        `household/${householdId}/item/${itemId}`, 
+        `household/item/${itemId}`,
         expectedPayload
       );
       expect(result).toEqual(mockResponse);
@@ -137,7 +130,6 @@ describe('StorageService', () => {
     it('should handle null expiration date', async () => {
       const mockResponse = { id: 1, status: 'success' };
       mockMethods.post.mockResolvedValue(mockResponse);
-      const householdId = '123';
       const itemId = '456';
       const data = {
         unit: 'kg',
@@ -151,10 +143,10 @@ describe('StorageService', () => {
         expirationDate: null
       };
 
-      const result = await StorageService.addItemToStorage(householdId, itemId, data);
+      const result = await StorageService.addItemToStorage(itemId, data);
 
       expect(mockMethods.post).toHaveBeenCalledWith(
-        `household/${householdId}/item/${itemId}`, 
+        `household/item/${itemId}`,
         expectedPayload
       );
       expect(result).toEqual(mockResponse);
@@ -163,7 +155,6 @@ describe('StorageService', () => {
     it('should throw an error if the API call fails', async () => {
       const mockError = new Error('API Error');
       mockMethods.post.mockRejectedValue(mockError);
-      const householdId = '123';
       const itemId = '456';
       const data = {
         unit: 'kg',
@@ -171,7 +162,7 @@ describe('StorageService', () => {
         expirationDate: '2023-06-01'
       };
 
-      await expect(StorageService.addItemToStorage(householdId, itemId, data)).rejects.toThrow(mockError);
+      await expect(StorageService.addItemToStorage(itemId, data)).rejects.toThrow(mockError);
     });
   });
 
@@ -191,7 +182,7 @@ describe('StorageService', () => {
       const mockError = new Error('API Error');
       mockMethods.post.mockRejectedValue(mockError);
       const storageItemId = '789';
-      
+
       await expect(StorageService.removeItemFromStorage(storageItemId)).rejects.toThrow(mockError);
     });
   });
