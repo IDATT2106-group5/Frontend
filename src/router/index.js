@@ -51,7 +51,7 @@ const routes = [
   { path: '/about', name: 'about', component: AboutView },
   { path: '/contact', name: 'contact', component: ContactView },
   { path: '/questions', name: 'questions', component: QuestionsView },
-  { path: '/nyheter', name: 'NewsView', component: NewsView },
+  { path: '/news', name: 'NewsView', component: NewsView },
   { path: '/quiz', name: 'quiz', component: QuizView },
   { path: '/seek-safety', name: 'seek-safety', component: SeekSafetyView },
   { path: '/emergency-tips', name: 'emergency-tips', component: EmergencyTipsView },
