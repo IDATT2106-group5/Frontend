@@ -285,7 +285,7 @@ const sendJoinRequest = async () => {
               <p v-if="joinError" class="text-red-600 text-xs">
                 {{ joinError }}
               </p>
-              <button
+              <button dnajsndksandsjnk
                 @click="searchForHousehold"
                 class="w-full text-sm bg-gray-700 text-white py-2 rounded hover:bg-gray-800"
                 :disabled="joinIsLoading"
