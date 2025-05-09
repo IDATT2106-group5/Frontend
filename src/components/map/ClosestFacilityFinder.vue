@@ -1,20 +1,40 @@
 <template>
-  <div :class="{ collapsed: isCollapsed }" class="closest-facility-panel">
+  <div
+    :class="[
+      'absolute bg-white rounded-lg shadow-md transition-all duration-300 overflow-hidden z-[1000]',
+      'top-[70px] right-4 max-w-[300px] box-border',
+      isCollapsed ? 'cursor-pointer py-2 px-3 right-2 w-auto hover:bg-gray-100' : 'p-3 w-[300px]'
+    ]"
+  >
     <!-- Collapsed state -->
-    <div v-if="isCollapsed" class="collapsed-content" @click="toggleCollapse">
-      <div class="collapsed-text">Vis rute til</div>
-      <div class="arrow-down">↓</div>
+    <div
+      v-if="isCollapsed"
+      class="flex flex-row items-center justify-between gap-2 transition-colors duration-200"
+      @click="toggleCollapse"
+    >
+      <div>Vis rute til</div>
+      <div class="text-base text-gray-700">↓</div>
     </div>
 
     <!-- Expanded state -->
-    <div v-else class="expanded-content">
-      <div class="panel-header">
-        <h3>Vis rute til</h3>
-        <button class="collapse-button" @click="toggleCollapse">↑</button>
+    <div v-else class="p-2 bg-white">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="m-0 text-base">Vis rute til</h3>
+        <Button
+          variant="ghost"
+          size="icon"
+          @click="toggleCollapse"
+          class="p-0 h-auto text-[#777]"
+        >
+          <span class="text-lg">↑</span>
+        </Button>
       </div>
 
-      <div class="type-selection">
-        <select v-model="selectedType" class="type-dropdown">
+      <div class="mb-3">
+        <select
+          v-model="selectedType"
+          class="w-full p-2 rounded border border-gray-200 bg-white"
+        >
           <option value="">Alle typer</option>
           <option value="SHELTER">Tilfluktsrom</option>
           <option value="HOSPITAL">Sykehus</option>
@@ -23,37 +43,54 @@
         </select>
       </div>
 
-      <button
+      <Button
         :disabled="isLoading || !userLocation"
-        class="find-button"
+        variant="default"
         @click="findClosestFacility"
+        class="w-full bg-[#1976d2] hover:bg-[#1565c0] text-white"
       >
         <span v-if="!isLoading">Finn nærmeste</span>
         <span v-else>Søker...</span>
-      </button>
+      </Button>
 
-      <div v-if="locationError" class="error-message">
+      <div
+        v-if="locationError"
+        class="mt-4 p-2 bg-red-50 text-red-700 rounded text-sm"
+      >
         <p>{{ locationError }}</p>
-        <button class="retry-button" @click="requestLocation">
+        <Button
+          variant="default"
+          @click="requestLocation"
+          class="w-full mt-2 bg-[#ff9800] hover:bg-[#f57c00] text-white"
+        >
           Prøv igjen
-        </button>
+        </Button>
       </div>
 
-      <div v-if="closestFacility" class="facility-info">
-        <h4>{{ closestFacility.name }}</h4>
+      <div
+        v-if="closestFacility"
+        class="mt-4 pt-4 border-t border-gray-100"
+      >
+        <h4 class="mt-0 mb-2">{{ closestFacility.name }}</h4>
         <p v-if="closestFacility.address">{{ closestFacility.address }}</p>
-        <p class="distance">{{ formatDistance(closestFacility.distance) }} unna</p>
+        <p class="font-semibold text-[#1976d2]">{{ formatDistance(closestFacility.distance) }} unna</p>
 
-        <div class="route-actions">
-          <button class="route-button" @click="showRoute">
+        <div class="flex flex-col gap-2 mt-3">
+          <Button
+            variant="default"
+            @click="showRoute"
+            class="w-full bg-[#1976d2] hover:bg-[#1565c0] text-white"
+          >
             <span v-if="!isRouteActive">Vis rute</span>
             <span v-else>Skjul rute</span>
-          </button>
+          </Button>
         </div>
       </div>
 
-
-      <div v-if="routeError" class="error-message">
+      <div
+        v-if="routeError"
+        class="mt-4 p-2 bg-red-50 text-red-700 rounded text-sm"
+      >
         {{ routeError }}
       </div>
     </div>
@@ -61,21 +98,27 @@
 </template>
 
 <script setup>
-import {onMounted, onUnmounted, ref} from 'vue';
+import {onMounted, onUnmounted, ref, watch} from 'vue';
 import {useMapStore} from '@/stores/map/mapStore';
 import {storeToRefs} from 'pinia';
 import MarkerService from '@/service/map/markerService';
 import GeolocationService from '@/service/map/geoLocationService';
+import Button from '@/components/ui/button/Button.vue';
 
 // Component state
-const selectedType = ref('SHELTER'); // Default to shelters
+const selectedType = ref('SHELTER');
 const userLocation = ref(null);
 const closestFacility = ref(null);
 const isLoading = ref(false);
 const locationError = ref(null);
 const watchId = ref(null);
 const isRouteActive = ref(false);
-const isCollapsed = ref(false); // New state for collapse functionality
+const isCollapsed = ref(false);
+const windowWidth = ref(window.innerWidth);
+
+const isMobileView = () => {
+  return windowWidth.value < 768;
+};
 
 // Map store
 const mapStore = useMapStore();
@@ -86,13 +129,36 @@ const toggleCollapse = () => {
   isCollapsed.value = !isCollapsed.value;
 };
 
+// Handle window resize
+const handleResize = () => {
+  const previousIsMobile = isMobileView();
+  windowWidth.value = window.innerWidth;
+  const currentIsMobile = isMobileView();
+
+  if (previousIsMobile && !currentIsMobile) {
+    isCollapsed.value = false;
+  }
+  else if (!previousIsMobile && currentIsMobile) {
+    isCollapsed.value = true;
+  }
+};
+
 // Request user's location when component mounts
 onMounted(() => {
+  // Set initial collapse state based on screen size
+  isCollapsed.value = isMobileView();
+
+  // Add resize event listener
+  window.addEventListener('resize', handleResize);
+
   requestLocation();
 });
 
-// Clean up location watcher when unmounting
+// Clean up when unmounting
 onUnmounted(() => {
+  // Remove resize event listener
+  window.removeEventListener('resize', handleResize);
+
   if (watchId.value) {
     navigator.geolocation.clearWatch(watchId.value);
   }
@@ -204,167 +270,3 @@ const formatDistance = (distance) => {
 };
 </script>
 
-<style scoped>
-.closest-facility-panel {
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
-  position: absolute;
-  transition: all 0.3s ease;
-  top: 16px;
-  right: 16px;
-  max-width: 300px;
-  width: calc(100% - 20px);
-  box-sizing: border-box;
-  z-index: 1000;
-  overflow: hidden;
-}
-
-/* Expanded state */
-.closest-facility-panel:not(.collapsed) {
-  padding: 12px;
-  width: 300px;
-}
-
-/* Collapsed state */
-.closest-facility-panel.collapsed {
-  width: auto;
-  height: auto;
-  cursor: pointer;
-  padding: 8px 14px;
-  right: 8px;
-}
-
-.closest-facility-panel .expanded-content {
-  padding: 8px;
-}
-
-.collapsed-content {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.arrow-down {
-  font-size: 18px;
-}
-
-.collapsed-text {
-  font-size: 14px;
-  font-weight: 500;
-}
-
-.panel-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.collapse-button {
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  padding: 0;
-  color: #777;
-}
-
-h3 {
-  margin-top: 0;
-  margin-bottom: 0;
-  font-size: 16px;
-}
-
-.type-selection {
-  margin-bottom: 12px;
-}
-
-.type-dropdown {
-  width: 100%;
-  padding: 8px;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-}
-
-.find-button {
-  width: 100%;
-  padding: 10px;
-  background-color: #1976d2;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.find-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-.facility-info {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #eee;
-}
-
-.facility-info h4 {
-  margin-top: 0;
-  margin-bottom: 8px;
-}
-
-.distance {
-  font-weight: 600;
-  color: #1976d2;
-}
-
-.route-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-/* Updated route button styling */
-.route-button {
-  flex: 1;
-  padding: 8px;
-  background-color: #1976d2; /* Blue background */
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
-  font-weight: 500;
-}
-
-.retry-button {
-  width: 100%;
-  padding: 8px;
-  margin-top: 8px;
-  background-color: #ff9800;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.error-message {
-  margin-top: 16px;
-  padding: 8px;
-  background-color: #ffebee;
-  color: #d32f2f;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-@media (max-width: 767px) {
-  .closest-facility-panel:not(.collapsed) {
-    width: 280px;
-    max-width: 100%;
-    margin: 0 8px;
-    right: 10px;
-  }
-}
-</style>

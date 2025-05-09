@@ -463,7 +463,7 @@ export default {
 .location-services-container {
   position: absolute;
   bottom: 16px;
-  right: 16px;
+  right: 20px;
   z-index: 1000;
 }
 
@@ -496,38 +496,12 @@ export default {
   color: #ff4d4f;
 }
 
-/* Moving the marker filter below location services */
-.marker-filter-container {
-  position: absolute;
-  top: 70px; /* Moved down to account for location services */
-  left: 16px;
-  z-index: 1000;
-  transition: all 0.3s ease;
-  max-width: 100%;
-  width: auto;
-}
-
-/* Rest of the original styles */
-.closest-facility-container {
-  position: absolute;
-  top: 55px;
-  right: 8px;
-  z-index: 1000;
-}
-
 @media (max-width: 767px) {
-  .closest-facility-container {
-    top: auto;
-    bottom: 16px;
-    right: 16px;
-  }
-
   .map-search-container {
     top: 10px;
-    max-width: 90%;
+    max-width: 50%;
   }
 
-  /* Adjust location services on mobile */
   .location-services-button {
     padding: 6px 10px;
     font-size: 12px;
@@ -609,7 +583,7 @@ export default {
 
 .marker-filter-container {
   position: absolute;
-  top: 16px;
+  top: 48px;
   left: 16px;
   z-index: 1000;
   transition: all 0.3s ease;
@@ -620,13 +594,11 @@ export default {
 .filter-toggle-button {
   display: block;
   width: 100%;
-  padding: 10px 16px;
   background-color: white;
   border: none;
-  border-radius: 12px;
   text-align: center;
   font-weight: 500;
-  color: #333;
+  color: #000000;
   cursor: pointer;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
 }
@@ -654,7 +626,7 @@ export default {
 :deep(.leaflet-control-zoom) {
   position: absolute !important;
   bottom: 40px !important;
-  right: 10px !important;
+  right: 0px !important;
   margin: 20px !important;
   border: none;
   border-radius: 8px;
@@ -768,7 +740,7 @@ export default {
 /* Mobile-specific styles */
 @media (max-width: 767px) {
   :deep(.leaflet-control-zoom) {
-    bottom: 16px !important;
+    bottom: 40px !important;
   }
 
   :deep(.leaflet-control-zoom-in),
@@ -793,3 +765,4 @@ export default {
   }
 }
 </style>
+
