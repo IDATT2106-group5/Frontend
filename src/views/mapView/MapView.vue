@@ -448,7 +448,6 @@ export default {
   overflow: hidden;
 }
 
-/* Search container */
 .map-search-container {
   position: absolute;
   top: 16px;
@@ -459,11 +458,10 @@ export default {
   z-index: 1000;
 }
 
-/* Location Services Styling */
 .location-services-container {
   position: absolute;
   bottom: 16px;
-  right: 16px;
+  right: 20px;
   z-index: 1000;
 }
 
@@ -496,52 +494,16 @@ export default {
   color: #ff4d4f;
 }
 
-/* Moving the marker filter below location services */
-.marker-filter-container {
-  position: absolute;
-  top: 70px; /* Moved down to account for location services */
-  left: 16px;
-  z-index: 1000;
-  transition: all 0.3s ease;
-  max-width: 100%;
-  width: auto;
-}
-
-/* Rest of the original styles */
-.closest-facility-container {
-  position: absolute;
-  top: 55px;
-  right: 8px;
-  z-index: 1000;
-}
-
 @media (max-width: 767px) {
-  .closest-facility-container {
-    top: auto;
-    bottom: 16px;
-    right: 16px;
-  }
-
   .map-search-container {
     top: 10px;
-    max-width: 90%;
+    max-width: 50%;
   }
 
-  /* Adjust location services on mobile */
   .location-services-button {
     padding: 6px 10px;
     font-size: 12px;
   }
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.5s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
 }
 
 #map {
@@ -549,44 +511,12 @@ export default {
   height: 100%;
 }
 
-/* Custom Marker Popup Styles */
-.marker-popup-container {
-  padding: 4px;
-}
 
-.marker-info-content {
-  margin-bottom: 12px;
-}
-
-.marker-popup {
-  min-width: 200px;
-}
-
-.marker-popup h3 {
-  margin-top: 0;
-  margin-bottom: 8px;
-  font-size: 16px;
-}
-
-.marker-popup p {
-  margin: 4px 0;
-  font-size: 14px;
-}
-
-.marker-popup-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 12px;
-  border-top: 1px solid #eee;
-  padding-top: 8px;
-}
 
 :deep(.leaflet-top.leaflet-right > div) {
   display: none;
 }
 
-
-/* Map Notification */
 .map-notification {
   position: absolute;
   bottom: 16px;
@@ -609,7 +539,7 @@ export default {
 
 .marker-filter-container {
   position: absolute;
-  top: 16px;
+  top: 48px;
   left: 16px;
   z-index: 1000;
   transition: all 0.3s ease;
@@ -620,13 +550,11 @@ export default {
 .filter-toggle-button {
   display: block;
   width: 100%;
-  padding: 10px 16px;
   background-color: white;
   border: none;
-  border-radius: 12px;
   text-align: center;
   font-weight: 500;
-  color: #333;
+  color: #000000;
   cursor: pointer;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
 }
@@ -650,11 +578,10 @@ export default {
   margin-top: 12px;
 }
 
-/* Custom Zoom Controls */
 :deep(.leaflet-control-zoom) {
   position: absolute !important;
   bottom: 40px !important;
-  right: 10px !important;
+  right: 0px !important;
   margin: 20px !important;
   border: none;
   border-radius: 8px;
@@ -697,7 +624,6 @@ export default {
   padding: 4px;
 }
 
-/* Search result marker styles */
 :deep(.search-result-icon) {
   z-index: 1000 !important;
 }
@@ -765,10 +691,9 @@ export default {
   100% { transform: rotate(360deg); }
 }
 
-/* Mobile-specific styles */
 @media (max-width: 767px) {
   :deep(.leaflet-control-zoom) {
-    bottom: 16px !important;
+    bottom: 40px !important;
   }
 
   :deep(.leaflet-control-zoom-in),
@@ -789,7 +714,8 @@ export default {
   }
 
   .marker-filter-container {
-    top: 70px; /* Moved below search bar on mobile */
+    top: 70px;
   }
 }
 </style>
+
