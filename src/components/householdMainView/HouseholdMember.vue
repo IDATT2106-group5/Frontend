@@ -8,6 +8,11 @@ import ConfirmModal from '@/components/householdMainView/modals/ConfirmModal.vue
 
 const householdStore = useHouseholdStore()
 
+/**
+ * Props passed to the component.
+ * @prop {Object} member - The household member to display.
+ * @prop {boolean} isOwner - Whether this member is the owner.
+ */
 const props = defineProps({
   member: {
     type: Object,
@@ -19,6 +24,10 @@ const props = defineProps({
   }
 })
 
+/**
+ * Emits events to parent component.
+ * @event remove-member
+ */
 const emit = defineEmits(['remove-member'])
 
 const isEditing = ref(false)
@@ -29,22 +38,33 @@ const error = ref('')
 const confirmRemoveOpen = ref(false)
 const nameRegex = /^[A-Za-zæøåÆØÅ\s\-']+$/
 
-function startEdit() {
+
+/**
+ * Enables editing mode and initializes form fields.
+ */
+const startEdit = () => {
   editName.value = props.member.fullName
   editEmail.value = props.member.email || ''
   isEditing.value = true
 }
 
-function cancelEdit() {
+/**
+ * Cancels the edit mode and resets error state.
+ */
+const cancelEdit = () => {
   isEditing.value = false
   error.value = ''
 }
-
-async function saveEdit() {
+/**
+ * Validates and saves changes to the member info.
+ * @returns {Promise<void>}
+ */
+const saveEdit = async () => {
   if (!editName.value.trim()) {
     error.value = 'Navn er påkrevd'
     return
   }
+
   if (!nameRegex.test(editName.value)) {
     error.value = 'Navnet kan ikke inneholde tall eller spesialtegn'
     return
@@ -82,9 +102,13 @@ async function saveEdit() {
   }
 }
 
-function openConfirmRemove() {
-  confirmRemoveOpen.value = true
-}
+
+/**
+ * Confirms and removes the member from the household.
+ * @returns {Promise<void>}
+ */
+const confirmRemove = async () => {
+  if (!confirm(`Er du sikker på at du vil fjerne ${props.member.fullName}?`)) return
 
 async function doRemove() {
   confirmRemoveOpen.value = false
@@ -185,7 +209,7 @@ async function doRemove() {
           size="sm"
           @click="startEdit"
         >
-          <Edit 
+          <Edit
           class="h-4 w-4" />
         </Button>
         <Button

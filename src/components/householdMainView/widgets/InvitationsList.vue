@@ -8,14 +8,27 @@ const store = useHouseholdStore()
 const page = ref(1)
 const per = 5
 
+/**
+ * Computes a filtered list of only the invitations with "PENDING" status.
+ * @returns {import('vue').ComputedRef<Array<{ email: string, date: string, status: string }>>}
+ */
 const pendingInvitations = computed(() =>
   store.sentInvitations.filter(inv => inv.status === 'PENDING')
 )
 
+/**
+ * Calculates the total number of pages based on number of invitations.
+ * Ensures there is always at least one page.
+ * @returns {import('vue').ComputedRef<number>}
+ */
 const total = computed(() =>
   Math.max(1, Math.ceil(pendingInvitations.value.length / per))
 )
 
+/**
+ * Computes the invitations to be displayed on the current page.
+ * @returns {import('vue').ComputedRef<Array>}
+ */
 const displayed = computed(() => {
   const start = (page.value - 1) * per
   return pendingInvitations.value.slice(start, start + per)

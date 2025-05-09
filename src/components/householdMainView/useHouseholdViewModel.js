@@ -6,7 +6,6 @@ export default function useHousehold() {
   const router = useRouter()
   const householdStore = useHouseholdStore()
 
-  // Use store's reactive state directly
   const isLoading = computed(() => householdStore.isLoading)
   const error = computed(() => householdStore.error)
   const hasHousehold = computed(() => householdStore.hasHousehold)
@@ -15,21 +14,29 @@ export default function useHousehold() {
   const householdId = computed(() => householdStore.currentHousehold?.id || '')
   const isOwner = computed(() => householdStore.isCurrentUserOwner)
 
-  // UI control states
   const showAddForm = ref(false)
   const showInviteForm = ref(false)
   const showEditForm = ref(false)
 
-  // Load household data on mount
+  /** Load household data when the component mounts */
   onMounted(() => {
     householdStore.loadHouseholdData()
   })
 
-  // UI control methods
+  /** Open the form to add a new member */
   const openAddMemberForm = () => { showAddForm.value = true }
+
+  /** Open the form to invite someone by email */
   const openInviteForm = () => { showInviteForm.value = true }
+
+  /** Open the form to edit household name or address */
   const openEditHouseholdForm = () => { showEditForm.value = true }
 
+  
+  /**
+   * Deletes the current household and reloads state
+   * (should only be available to owners)
+   */
   const deleteHousehold = async () => {
     try {
       await householdStore.deleteHousehold()
@@ -39,6 +46,9 @@ export default function useHousehold() {
     }
   }
   
+  /**
+   * Removes the current user from the household
+   */
   const leaveHousehold = async () => {
     try {
       await householdStore.leaveHousehold()

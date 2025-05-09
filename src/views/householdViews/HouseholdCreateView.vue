@@ -18,6 +18,10 @@ const isLoading = ref(true)
 const MAX_NAME_LENGTH = 20
 const MAX_ADDRESS_LENGTH = 50
 
+/**
+ * Lifecycle hook to check if the user is already part of a household.
+ * If an error occurs, sets an error message.
+ */
 onMounted(async () => {
   try {
     await householdStore.checkCurrentHousehold()
@@ -28,6 +32,12 @@ onMounted(async () => {
   }
 })
 
+/**
+ * Validates and submits a request to create a new household.
+ * - Ensures name and address are within allowed lengths.
+ * - Displays error messages for validation and request failures.
+ * - Redirects to /household on success.
+ */
 const createHousehold = async () => {
   if (!householdName.value.trim()) {
     errorMessage.value = 'Husstandsnavn kan ikke være tomt.'

@@ -25,10 +25,16 @@ const props = defineProps({
 const router = useRouter()
 const userStore = useUserStore()
 
+/**
+ * Logs out the user when mounting the component to ensure fresh state.
+ */
 onBeforeMount(() => {
   userStore.logout()
 })
 
+/**
+ * Redirects to login if email or token props are missing.
+ */
 if (props.emailMissing || props.tokenMissing) {
   router.replace('/login');
 }
@@ -48,7 +54,10 @@ const status = reactive({
   errorMessage: ''
 })
 
-// Validation rules
+/**
+ * Validation rules for the password and confirmation fields.
+ * Includes length, character requirements, and matching.
+ */
 const rules = computed(() => {
   return {
     password: {
@@ -80,12 +89,20 @@ const rules = computed(() => {
 
 const v$ = useVuelidate(rules, formData)
 
+/**
+ * Returns the first validation error message for a given field.
+ * 
+ * @param {import('@vuelidate/core').Validation} field
+ * @returns {string}
+ */
 const getErrorMessage = (field) => {
   if (!field.$errors || field.$errors.length === 0) return '';
   return field.$errors[0].$message;
 }
 
-// Captcha setup
+/**
+ * Initializes hCaptcha rendering and token callbacks on mount.
+ */
 onMounted(() => {
   window.hcaptchaCallback = (token) => {
     formData.hCaptchaToken = token
@@ -111,6 +128,10 @@ onMounted(() => {
   renderCaptcha();
 });
 
+/**
+ * Validates the form and submits the admin registration request.
+ * Handles hCaptcha verification, error feedback, and redirect on success.
+ */
 const onSubmit = async () => {
   const result = await v$.value.$validate()
 
