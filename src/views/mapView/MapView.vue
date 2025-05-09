@@ -60,22 +60,28 @@ export default {
     const locationStore = useLocationStore()
     const householdId = householdStore.currentHousehold?.id || null
 
-    // Get location related state from the location store
     const isSharing = computed(() => locationStore.isSharing)
 
     const { subscribeToPosition, fetchHouseholdPositions, connected } = useWebSocket()
 
-    // Use storeToRefs for reactive properties
     const { isLoadingMarkers, markersLoadError, notification, activeRoute } = storeToRefs(mapStore)
 
     const isMobileView = computed(() => {
-      return windowWidth.value < 768 // Common breakpoint for mobile
+      return windowWidth.value < 768 
     })
 
+    /**
+     * Toggles the user's position sharing state via LocationStore.
+     */
     function togglePositionSharing() {
       locationStore.togglePositionSharing()
     }
 
+    /**
+     * Lifecycle hook: runs when the component is mounted.
+     * Initializes the map, sets up listeners, subscribes to WebSocket updates,
+     * loads initial user positions and admin markers if applicable.
+     */
     onMounted(async () => {
       isFilterCollapsed.value = isMobileView.value
 
@@ -86,10 +92,8 @@ export default {
           console.log('Map initialized successfully')
           mapInitialized.value = true
 
-          // Common map initialization - emit map-ready event
           emit('map-ready', map.value)
 
-          // Process user positions for both admin and regular mode
           userPositions.value.forEach((position, userId) => {
             const isCurrentUser = userId === userStore.user.id
             updateUserMarker(
@@ -117,23 +121,19 @@ export default {
             console.error('Error fetching household positions:', error)
           }
 
-          // Admin-specific setup
           if (props.isAdminMode) {
             console.log('Setting up admin mode in MapView')
 
-            // Set up click handler for admin mode
             map.value.on('click', (e) => {
               console.log('Admin map clicked:', e.latlng)
               emit('map-click', e)
             })
 
-            // Sync admin markers to the map store if provided
             if (props.markers && props.markers.length > 0) {
               syncAdminMarkersToStore()
             }
           }
 
-          // Add additional timeout to ensure markers are refreshed after map is ready
           setTimeout(() => {
             mapStore.refreshMarkerLayers()
             console.log('Forced marker refresh after timeout')
@@ -146,7 +146,9 @@ export default {
       window.addEventListener('resize', handleResize)
     })
 
-    // Function to sync admin markers to the map store for unified handling
+    /**
+     * Syncs the provided markers (admin mode) to the map store.
+     */
     const syncAdminMarkersToStore = () => {
       if (!props.isAdminMode || !props.markers || !props.markers.length) return
 
@@ -164,11 +166,12 @@ export default {
         editingMarkerId: props.editingMarkerId
       }));
 
-      // Update the store with these markers
       mapStore.setAdminMarkers(adminMarkers)
     }
 
-    // Watch for changes in the markers prop from the parent component
+    /**
+     * Watcher: Sync admin markers to store when props.markers change.
+     */
     watch(() => props.markers, () => {
       if (props.isAdminMode && map.value) {
         console.log('Admin markers changed, syncing to map store');
@@ -176,11 +179,13 @@ export default {
       }
     }, { deep: true });
 
+    /**
+     * Watcher: Updates current user marker when isSharing changes.
+     */
     watch(
       () => isSharing.value,
       (newValue) => {
         try {
-          // Update user marker if needed
           if (userPositions.value.has(userStore.user.id)) {
             const position = userPositions.value.get(userStore.user.id)
             const name = position.fullName.split(' ')[0]
@@ -189,20 +194,24 @@ export default {
         } catch (error) {
           console.log('Error updating user marker: No user logged in')
         }
-        // Call the map store method to update all marker popups
         if (map.value) {
           mapStore.updateMarkerPopups(newValue)
         }
       },
     )
-
-    // Watch for changes in the editingMarkerId
+    
+    /**
+     * Watcher: Refresh markers if the editingMarkerId changes (admin mode only).
+     */
     watch(() => props.editingMarkerId, (newId, oldId) => {
       if (props.isAdminMode && map.value) {
         syncAdminMarkersToStore();
       }
     });
 
+    /**
+     * Watcher: Subscribes to position updates when WebSocket connects and householdId is available.
+     */
     watch(
       () => connected.value && householdId,
       (isConnected) => {
@@ -212,17 +221,21 @@ export default {
       },
     )
 
-    // When the map changes (after initialization), set up the map move handler
+    /**
+     * Watcher: Refresh marker layers when the map becomes available.
+     */
     watch(() => map.value, (newMap) => {
       if (newMap && props.isAdminMode) {
-        // Set up map move event for admin mode
         newMap.on('moveend', () => {
           mapStore.refreshMarkerLayers();
         });
       }
     });
 
-    // Clean up on unmount
+    /**
+     * Lifecycle hook: runs when the component is about to be destroyed.
+     * Cleans up event listeners and map subscriptions.
+     */
     onUnmounted(() => {
       if (map.value && props.isAdminMode) {
         map.value.off('moveend')
@@ -230,6 +243,10 @@ export default {
       window.removeEventListener('resize', handleResize)
     })
 
+    /**
+     * Handles incoming user position data from WebSocket and updates map state.
+     * @param {Object} positionData - The position object with userId, fullName, latitude, and longitude
+     */
     const handlePositionUpdate = (positionData) => {
       console.log('Handling position update:', positionData)
 
@@ -268,15 +285,19 @@ export default {
       }
     }
 
+    /**
+     * Updates or creates a user location marker on the map.
+     * @param {string} userId
+     * @param {string} name - First name to display in marker
+     * @param {number} longitude
+     * @param {number} latitude
+     * @param {boolean} isCurrentUser - True if the marker is for the current user
+     */
     function updateUserMarker(userId, name, longitude, latitude, isCurrentUser = false) {
-
-      // Check if marker already exists
       if (userMarkers.value.has(userId)) {
         const marker = userMarkers.value.get(userId)
 
-        // If this is the current user and sharing status changed, we need to remove and recreate the marker
         if (isCurrentUser && !isSharing.value) {
-          // Remove the marker from the map
           if (map.value && typeof map.value.removeLayer === 'function') {
             map.value.removeLayer(marker)
           }
@@ -285,12 +306,10 @@ export default {
           return
         }
 
-        // Otherwise just update the position
         marker.setLatLng([latitude, longitude])
         return
       }
 
-      // Don't create marker for current user when not sharing
       if (isCurrentUser && !isSharing.value) {
         console.log(`Skipping marker creation for current user (sharing off)`)
         return
@@ -332,7 +351,6 @@ export default {
           })
         }
 
-        // Only proceed if markerIcon is properly defined
         if (!markerIcon) {
           console.error(`Could not create marker icon for user ${userId}`)
           return
@@ -342,7 +360,6 @@ export default {
           icon: markerIcon,
         })
 
-        // Check if map is properly initialized before adding
         if (map.value && typeof map.value.addLayer === 'function') {
           newMarker.addTo(map.value)
           userMarkers.value.set(userId, newMarker)
@@ -356,6 +373,9 @@ export default {
       }
     }
 
+    /**
+     * Handles window resize events to adapt map/filter UI.
+     */
     const handleResize = () => {
       windowWidth.value = window.innerWidth
       mapStore.resizeMap()
@@ -367,10 +387,16 @@ export default {
       }
     }
 
+    /**
+     * Re-attempts loading markers from the map store.
+     */
     const retryLoadMarkers = () => {
       mapStore.initMarkers()
     }
 
+    /**
+     * Toggles the visibility of the marker filter (especially in mobile view).
+     */
     const toggleFilterCollapse = () => {
       isFilterCollapsed.value = !isFilterCollapsed.value
       if (!isFilterCollapsed.value) {
@@ -478,6 +504,7 @@ export default {
       </div>
   </div>
 </template>
+
 <style scoped>
 :deep(.leaflet-control-zoom) {
   position: absolute !important;

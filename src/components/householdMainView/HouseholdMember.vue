@@ -7,6 +7,11 @@ import { useHouseholdStore } from '@/stores/HouseholdStore'
 
 const householdStore = useHouseholdStore()
 
+/**
+ * Props passed to the component.
+ * @prop {Object} member - The household member to display.
+ * @prop {boolean} isOwner - Whether this member is the owner.
+ */
 const props = defineProps({
   member: {
     type: Object,
@@ -18,6 +23,10 @@ const props = defineProps({
   }
 })
 
+/**
+ * Emits events to parent component.
+ * @event remove-member
+ */
 const emit = defineEmits(['remove-member'])
 
 const isEditing = ref(false)
@@ -27,17 +36,27 @@ const isSaving = ref(false)
 const error = ref('')
 const nameRegex = /^[A-Za-zæøåÆØÅ\s\-']+$/
 
+
+/**
+ * Enables editing mode and initializes form fields.
+ */
 const startEdit = () => {
   editName.value = props.member.fullName
   editEmail.value = props.member.email || ''
   isEditing.value = true
 }
 
+/**
+ * Cancels the edit mode and resets error state.
+ */
 const cancelEdit = () => {
   isEditing.value = false
   error.value = ''
 }
-
+/**
+ * Validates and saves changes to the member info.
+ * @returns {Promise<void>}
+ */
 const saveEdit = async () => {
   if (!editName.value.trim()) {
     error.value = 'Navn er påkrevd'
@@ -81,6 +100,11 @@ const saveEdit = async () => {
   }
 }
 
+
+/**
+ * Confirms and removes the member from the household.
+ * @returns {Promise<void>}
+ */
 const confirmRemove = async () => {
   if (!confirm(`Er du sikker på at du vil fjerne ${props.member.fullName}?`)) return
 

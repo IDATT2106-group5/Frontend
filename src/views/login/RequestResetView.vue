@@ -9,6 +9,14 @@ const success = ref('')
 const isLoading = ref(false)
 const userStore = useUserStore()
 
+/**
+ * Validates the email address and sends a password reset link if valid.
+ * Updates the `success` or `error` message based on the result of the request.
+ * Also manages loading state during the process.
+ * 
+ * @async
+ * @function
+ */
 const checkEmailAndSendResetLink = async () => {
   error.value = ''
   success.value = ''

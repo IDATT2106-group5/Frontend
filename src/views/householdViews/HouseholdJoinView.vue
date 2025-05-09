@@ -13,7 +13,13 @@ const requestSent    = ref(false)
 
 const householdStore = useHouseholdStore()
 
-// On every keystroke: uppercase, strip non-alphanumeric, cap at 8 chars, clear messages
+/**
+ * Handles user input for the household ID field.
+ * Ensures the value is uppercase and contains only alphanumeric characters.
+ * Resets search state when user types.
+ * 
+ * @param {Event} e - Input event.
+ */
 function onInput(e) {
   joinHouseholdId.value = e.target.value
     .toUpperCase()
@@ -25,7 +31,12 @@ function onInput(e) {
   requestSent.value = false
 }
 
-// Paste handling: same cleaning
+/**
+ * Handles paste event in the input field.
+ * Prevents pasting invalid characters and inserts the cleaned value.
+ * 
+ * @param {ClipboardEvent} e - Paste event.
+ */
 function onPaste(e) {
   e.preventDefault()
   const pasted = (e.clipboardData || window.clipboardData).getData('text')
@@ -38,7 +49,13 @@ function onPaste(e) {
   input.dispatchEvent(new Event('input'))
 }
 
-// On blur: re-clean just in case
+
+/**
+ * Cleans the input value when the field loses focus.
+ * Ensures consistent formatting even after editing.
+ * 
+ * @param {FocusEvent} e - Blur event.
+ */
 function onBlur(e) {
   e.target.value = e.target.value
     .toUpperCase()
@@ -47,8 +64,12 @@ function onBlur(e) {
   e.target.dispatchEvent(new Event('input'))
 }
 
+
+/**
+ * Searches for a household based on the current household ID input.
+ * Updates result or shows an appropriate error message.
+ */
 async function searchForHousehold() {
-  // reset
   joinError.value = ''
   joinSuccess.value = ''
   foundHousehold.value = null
@@ -76,6 +97,11 @@ async function searchForHousehold() {
   }
 }
 
+
+/**
+ * Sends a join request to the found household.
+ * Displays a success message or shows an error.
+ */
 async function sendJoinRequest() {
   if (!foundHousehold.value) {
     joinError.value = 'Du må først søke etter en gyldig husstand'
