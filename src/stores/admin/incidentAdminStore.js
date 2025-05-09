@@ -328,7 +328,7 @@ export const useIncidentAdminStore = defineStore('incidentAdmin', {
         await IncidentAdminService.deleteIncident(parseInt(id));
         toast({
           title: 'Slettet en krise',
-          description: 'Du har selttet en krise.',
+          description: 'Du har slettet en krise.',
           variant: 'success',
         })
         this.incidents = this.incidents.filter(incident => incident.id !== id);
