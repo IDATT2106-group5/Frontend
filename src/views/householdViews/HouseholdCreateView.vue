@@ -15,6 +15,9 @@ const address = ref('')
 const errorMessage = ref('')
 const isLoading = ref(true)
 
+const MAX_NAME_LENGTH = 20
+const MAX_ADDRESS_LENGTH = 50
+
 onMounted(async () => {
   try {
     await householdStore.checkCurrentHousehold()
@@ -30,6 +33,17 @@ const createHousehold = async () => {
     errorMessage.value = 'Husstandsnavn kan ikke være tomt.'
     return
   }
+  
+  if (householdName.value.length > MAX_NAME_LENGTH) {
+    errorMessage.value = `Navn kan ikke være lenger enn ${MAX_NAME_LENGTH} tegn.`
+    return
+  }
+
+  if (address.value.length > MAX_ADDRESS_LENGTH) {
+    errorMessage.value = `Adresse kan ikke være lenger enn ${MAX_ADDRESS_LENGTH} tegn.`
+    return
+  }
+  
   errorMessage.value = ''
   try {
     await householdStore.createHousehold({
@@ -71,9 +85,14 @@ const createHousehold = async () => {
           <input
             v-model="householdName"
             type="text"
+            maxlength="20"
             class="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
             placeholder="F.eks. 'Familien Hansen'"
           />
+          <div class="text-xs text-gray-500 mt-1 flex justify-between">
+            <span>Maks {{ MAX_NAME_LENGTH }} tegn</span>
+            <span>{{ householdName.length }}/{{ MAX_NAME_LENGTH }}</span>
+          </div>
         </div>
 
         <div>
@@ -83,9 +102,14 @@ const createHousehold = async () => {
           <input
             v-model="address"
             type="text"
+            maxlength="50"
             class="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
             placeholder="F.eks. 'Storgata 1, 0000 Oslo'"
           />
+          <div class="text-xs text-gray-500 mt-1 flex justify-between">
+            <span>Maks {{ MAX_ADDRESS_LENGTH }} tegn</span>
+            <span>{{ address.length }}/{{ MAX_ADDRESS_LENGTH }}</span>
+          </div>
         </div>
 
         <p v-if="errorMessage" class="text-red-600 text-sm">{{ errorMessage }}</p>
