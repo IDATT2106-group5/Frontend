@@ -241,7 +241,6 @@ export const useHouseholdStore = defineStore('household', {
         this._verifyOwnership();
 
         await HouseholdService.updateUnregisteredMember(
-          this.currentHousehold.id,
           memberId,
           data
         );
@@ -492,7 +491,7 @@ export const useHouseholdStore = defineStore('household', {
 
         await RequestService.declineJoinRequest(invitationId);
 
-  
+
         this.receivedInvitations = this.receivedInvitations.filter(inv => inv.id !== invitationId);
 
 

@@ -76,12 +76,13 @@ function playNotificationSound() {
   console.log('Playing notification sound')
   if (notificationSound.value) {
     notificationSound.value.currentTime = 0 // Reset sound to beginning
-    notificationSound.value.play().catch(error => {
+    notificationSound.value.play().catch((error) => {
       // Handle autoplay restrictions (common in browsers)
       console.log('Could not play notification sound:', error)
     })
   }
 }
+
 /**
  * Toggles the visibility of the notifications panel.
  * Marks all notifications as read when the panel is opened.
@@ -98,6 +99,19 @@ function toggleNotifications() {
     })
   }
 }
+
+/**
+ * Watches for changes in the incident popup state.
+ */
+watch(
+  () => showIncidentPopup.value,
+  (newValue) => {
+    console.log('showIncidentPopup changed:', newValue)
+    if (newValue && currentIncident.value) {
+      console.log('Current incident:', currentIncident.value)
+    }
+  },
+)
 
 /**
  * Marks a single notification as read by ID.
@@ -170,9 +184,8 @@ watch(
     if (newCount > oldCount && oldCount !== undefined) {
       playNotificationSound()
     }
-  }
+  },
 )
-
 
 /**
  * Determines the route to navigate to based on the notification type.
