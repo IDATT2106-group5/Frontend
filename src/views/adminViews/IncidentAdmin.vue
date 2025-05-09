@@ -210,16 +210,6 @@ export default {
      */
     const updateAddressFromCoordinates = async (lat, lng) => {
       try {
-        // Make sure the incidentAdminStore has this method
-        // If not, you'll need to implement it similar to markerAdminStore
-        if (typeof incidentAdminStore.updateAddressFromCoordinates === 'function') {
-          return await incidentAdminStore.updateAddressFromCoordinates(lat, lng);
-        } else {
-          // Fallback implementation if the store doesn't have this method
-          // This is just a placeholder - you should implement the actual API call in your store
-          console.warn("updateAddressFromCoordinates not implemented in store, using fallback");
-
-          // Using Nominatim API for reverse geocoding (as an example)
           const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
             { headers: { 'Accept-Language': 'no' } }
@@ -231,7 +221,6 @@ export default {
 
           const data = await response.json();
 
-          // Update form data with address information
           incidentFormData.value.address = data.address.road || '';
           incidentFormData.value.postalCode = data.address.postcode || '';
           incidentFormData.value.city = data.address.city || data.address.town || data.address.village || '';
@@ -241,7 +230,7 @@ export default {
             postalCode: incidentFormData.value.postalCode,
             city: incidentFormData.value.city
           };
-        }
+
       } catch (error) {
         console.error('Error in reverse geocoding:', error);
         throw error;
@@ -1160,7 +1149,6 @@ textarea.form-control {
   cursor: pointer;
 }
 
-/* Incidents List */
 .incidents-container {
   display: flex;
   flex-direction: column;
