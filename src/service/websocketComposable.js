@@ -109,13 +109,13 @@ export default function useWebSocket() {
 
   /**
    * Sends the user's latest position.
-   * @param {string} userId - User ID.
+   * @param {string} token - The token.
    * @param {number} longitude - Longitude.
    * @param {number} latitude - Latitude.
    * @returns {Promise<void>} A promise that resolves when position is sent.
    */
-  function updatePosition(userId, longitude, latitude) {
-    return webSocketService.updatePosition(userId, longitude, latitude)
+  function updatePosition(token, longitude, latitude) {
+    return webSocketService.updatePosition(token, longitude, latitude)
   }
 
   /**

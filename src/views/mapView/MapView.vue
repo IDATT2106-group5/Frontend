@@ -3,7 +3,7 @@
     <div id="map" ref="mapContainer"></div>
 
     <!-- Location Services Control -->
-    <div class="location-services-container" v-if="!isAdminMode">
+    <div class="location-services-container">
       <Button
         @click="togglePositionSharing"
         variant="default"
@@ -163,7 +163,32 @@ export default {
           console.log('Map initialized successfully')
           mapInitialized.value = true
 
-          // If in admin mode, set up admin-specific features
+          // Common map initialization - emit map-ready event
+          emit('map-ready', map.value);
+
+          // Process user positions for both admin and regular mode
+          userPositions.value.forEach((position, userId) => {
+            const isCurrentUser = userId === userStore.user.id
+            updateUserMarker(userId, position.fullName, position.longitude, position.latitude, isCurrentUser)
+          })
+
+          if (connected.value && householdId) {
+            subscribeToPosition(householdId, handlePositionUpdate)
+          }
+
+          try {
+            const positions = await fetchHouseholdPositions()
+            if (Array.isArray(positions)) {
+              console.log(`Received ${positions.length} initial positions`)
+              positions.forEach((pos) => handlePositionUpdate(pos))
+            } else {
+              console.warn('Expected positions array but received:', positions)
+            }
+          } catch (error) {
+            console.error('Error fetching household positions:', error)
+          }
+
+          // Admin-specific setup
           if (props.isAdminMode) {
             console.log("Setting up admin mode in MapView");
 
@@ -176,33 +201,6 @@ export default {
             // Sync admin markers to the map store if provided
             if (props.markers && props.markers.length > 0) {
               syncAdminMarkersToStore();
-            }
-
-            emit('map-ready', map.value);
-          } else {
-            // Regular non-admin mode initialization
-            emit('map-ready', map.value);
-
-            // Only process user positions if not in admin mode
-            userPositions.value.forEach((position, userId) => {
-              const isCurrentUser = userId === userStore.user.id
-              updateUserMarker(userId, position.fullName, position.longitude, position.latitude, isCurrentUser)
-            })
-
-            if (connected.value && householdId) {
-              subscribeToPosition(householdId, handlePositionUpdate)
-            }
-
-            try {
-              const positions = await fetchHouseholdPositions()
-              if (Array.isArray(positions)) {
-                console.log(`Received ${positions.length} initial positions`)
-                positions.forEach((pos) => handlePositionUpdate(pos))
-              } else {
-                console.warn('Expected positions array but received:', positions)
-              }
-            } catch (error) {
-              console.error('Error fetching household positions:', error)
             }
           }
 
@@ -264,7 +262,7 @@ export default {
     });
 
     watch(() => connected.value && householdId, (isConnected) => {
-      if (isConnected && householdId && !props.isAdminMode) {
+      if (isConnected && householdId) {
         subscribeToPosition(householdId, handlePositionUpdate)
       }
     })
@@ -289,8 +287,6 @@ export default {
     });
 
     const handlePositionUpdate = (positionData) => {
-      // Skip if in admin mode
-      if (props.isAdminMode) return;
 
       console.log('Handling position update:', positionData)
 
@@ -332,8 +328,6 @@ export default {
     }
 
     function updateUserMarker(userId, name, longitude, latitude, isCurrentUser = false) {
-      // Skip if in admin mode
-      if (props.isAdminMode) return;
 
       // First check if marker already exists
       if (userMarkers.value.has(userId)) {
@@ -460,8 +454,8 @@ export default {
 
 .location-services-container {
   position: absolute;
-  bottom: 16px;
-  right: 20px;
+  bottom: 40px;
+  right: 60px;
   z-index: 1000;
 }
 
@@ -511,15 +505,13 @@ export default {
   height: 100%;
 }
 
-
-
 :deep(.leaflet-top.leaflet-right > div) {
   display: none;
 }
 
 .map-notification {
   position: absolute;
-  bottom: 16px;
+  bottom: 40px;
   left: 50%;
   transform: translateX(-50%);
   background-color: rgba(0, 0, 0, 0.7);
@@ -580,8 +572,8 @@ export default {
 
 :deep(.leaflet-control-zoom) {
   position: absolute !important;
-  bottom: 40px !important;
-  right: 0px !important;
+  bottom: 20px !important;
+  right: 0 !important;
   margin: 20px !important;
   border: none;
   border-radius: 8px;
@@ -718,4 +710,6 @@ export default {
   }
 }
 </style>
+
+
 

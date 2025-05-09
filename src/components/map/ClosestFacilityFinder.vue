@@ -174,14 +174,12 @@ const requestLocation = async () => {
 
   try {
     userLocation.value = await GeolocationService.getUserLocation();
-    console.log("User location acquired:", userLocation.value);
 
     // Set up continuous watching with less strict parameters
     if (navigator.geolocation) {
       watchId.value = navigator.geolocation.watchPosition(
         (position) => {
           userLocation.value = [position.coords.latitude, position.coords.longitude];
-          console.log("Updated user location:", userLocation.value);
         },
         (error) => {
           // Only log watching errors, don't update error display

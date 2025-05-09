@@ -226,6 +226,17 @@ export const useMapStore = defineStore('map', {
           this.createRouteToMarker(markerData);
         };
 
+        // Initialize markers
+        await this.initMarkers();
+
+        // Initialize incidents
+        await this.initIncidents();
+
+        setTimeout(() => {
+          MapService.invalidateMapSize(this.map);
+          this.refreshMarkerLayers();
+        }, 300);
+
         // Try to get user location and center map there
         try {
           const userCoords = await GeolocationService.getUserLocation();
@@ -236,22 +247,6 @@ export const useMapStore = defineStore('map', {
           console.warn("Could not get user location for initial map centering:", locationError);
           // Continue with default coordinates
         }
-
-        // Initialize markers
-        await this.initMarkers();
-
-        setTimeout(() => {
-          MapService.invalidateMapSize(this.map);
-          this.refreshMarkerLayers(); // Add this line to explicitly refresh markers
-        }, 300);
-
-        // Initialize incidents
-        this.initIncidents();
-
-        // Force a resize after initialization
-        setTimeout(() => {
-          MapService.invalidateMapSize(this.map);
-        }, 300);
 
         return this.map;
       } catch (error) {
@@ -1684,16 +1679,8 @@ export const useMapStore = defineStore('map', {
         this.markerLayers['ADMIN'] = L.layerGroup();
 
         // Add a special marker type for admin markers if it doesn't exist
-        const adminTypeExists = this.markerTypes.some(type => type.id === 'ADMIN');
-        if (!adminTypeExists) {
-          this.markerTypes.push({
-            id: 'ADMIN',
-            title: 'Admin Markers',
-            color: '#FF5722',
-            visible: true,
-            icon: null // The icon will be determined by the marker type
-          });
-        }
+        this.markerTypes.some(type => type.id === 'ADMIN');
+
       }
 
       this.refreshMarkerLayers();
