@@ -33,7 +33,7 @@ onBeforeMount(() => {
 })
 
 /**
- * Redirects to login if email or token props are missing.
+ * Redirects to log in if email or token props are missing.
  */
 if (props.emailMissing || props.tokenMissing) {
   router.replace('/login');

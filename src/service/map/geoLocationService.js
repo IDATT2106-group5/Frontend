@@ -33,8 +33,8 @@ class GeolocationService {
   getBrowserLocation(options = {}) {
     const defaultOptions = {
       enableHighAccuracy: true,
-      timeout: 10000,
-      maximumAge: 0
+      timeout: 300000,
+      maximumAge: 10000,
     };
 
     const mergedOptions = { ...defaultOptions, ...options };
@@ -59,7 +59,7 @@ class GeolocationService {
     try {
       return await this.getUserLocation({
         enableHighAccuracy: false,
-        timeout: 3000, // Short timeout
+        timeout: 300000,
         maximumAge: 60000 // Accept positions up to 1 minute old
       });
     } catch (error) {
