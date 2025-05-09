@@ -448,7 +448,6 @@ export default {
   overflow: hidden;
 }
 
-/* Search container */
 .map-search-container {
   position: absolute;
   top: 16px;
@@ -459,7 +458,6 @@ export default {
   z-index: 1000;
 }
 
-/* Location Services Styling */
 .location-services-container {
   position: absolute;
   bottom: 16px;
@@ -508,59 +506,17 @@ export default {
   }
 }
 
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.5s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-}
-
 #map {
   width: 100%;
   height: 100%;
 }
 
-/* Custom Marker Popup Styles */
-.marker-popup-container {
-  padding: 4px;
-}
 
-.marker-info-content {
-  margin-bottom: 12px;
-}
-
-.marker-popup {
-  min-width: 200px;
-}
-
-.marker-popup h3 {
-  margin-top: 0;
-  margin-bottom: 8px;
-  font-size: 16px;
-}
-
-.marker-popup p {
-  margin: 4px 0;
-  font-size: 14px;
-}
-
-.marker-popup-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 12px;
-  border-top: 1px solid #eee;
-  padding-top: 8px;
-}
 
 :deep(.leaflet-top.leaflet-right > div) {
   display: none;
 }
 
-
-/* Map Notification */
 .map-notification {
   position: absolute;
   bottom: 16px;
@@ -622,7 +578,6 @@ export default {
   margin-top: 12px;
 }
 
-/* Custom Zoom Controls */
 :deep(.leaflet-control-zoom) {
   position: absolute !important;
   bottom: 40px !important;
@@ -669,7 +624,6 @@ export default {
   padding: 4px;
 }
 
-/* Search result marker styles */
 :deep(.search-result-icon) {
   z-index: 1000 !important;
 }
@@ -737,7 +691,6 @@ export default {
   100% { transform: rotate(360deg); }
 }
 
-/* Mobile-specific styles */
 @media (max-width: 767px) {
   :deep(.leaflet-control-zoom) {
     bottom: 40px !important;
@@ -761,7 +714,7 @@ export default {
   }
 
   .marker-filter-container {
-    top: 70px; /* Moved below search bar on mobile */
+    top: 70px;
   }
 }
 </style>
