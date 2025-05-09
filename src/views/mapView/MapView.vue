@@ -1,79 +1,3 @@
-<template>
-  <div class="map-container">
-    <div id="map" ref="mapContainer"></div>
-
-    <!-- Location Services Control -->
-    <div class="location-services-container">
-      <Button
-        @click="togglePositionSharing"
-        variant="default"
-        class="location-services-button"
-        :class="{ 'services-active': isSharing }"
-      >
-        <div class="relative">
-          <LocateFixed class="w-5 h-5" />
-          <div v-if="!isSharing" class="absolute inset-0 flex items-center justify-center">
-            <div class="w-5 h-0.5 bg-red-500 -rotate-45 rounded-full"></div>
-          </div>
-        </div>
-        <span>
-          {{ isSharing ? 'Stedstjenester på' : 'Stedstjenester av' }}
-        </span>
-      </Button>
-    </div>
-
-    <!-- Add notification display with proper v-if check -->
-    <transition name="fade">
-      <div v-if="notification" class="map-notification">
-        {{ notification }}
-      </div>
-    </transition>
-
-    <ClosestFacilityFinder
-      v-if="!isLoadingMarkers && !markersLoadError && !isAdminMode && isSharing"
-    />
-
-    <!-- Add the search bar -->
-    <div class="map-search-container">
-      <MapSearchBar />
-    </div>
-
-    <!-- Loading indicator -->
-    <div v-if="isLoadingMarkers" class="map-loading-overlay">
-      <div class="map-loading-spinner"></div>
-      <div class="map-loading-text">Laster kart data...</div>
-    </div>
-
-    <!-- Error message -->
-    <div v-if="markersLoadError" class="map-error-message">
-      {{ markersLoadError }}
-      <Button @click="retryLoadMarkers" variant="primary" class="retry-button">
-        Prøv på nytt
-      </Button>
-    </div>
-
-    <!-- Marker Filter -->
-    <div
-      class="marker-filter-container"
-      :class="{ collapsed: isFilterCollapsed }"
-      v-if="!isAdminMode"
-    >
-      <Button
-        v-if="isMobileView"
-        @click="toggleFilterCollapse"
-        variant="default"
-        class="filter-toggle-button"
-      >
-        <span v-if="isFilterCollapsed">Vis filter</span>
-        <span v-else>Skjul filter</span>
-      </Button>
-      <div :class="['filter-content', { hidden: isFilterCollapsed && isMobileView }]">
-        <MarkerFilter v-if="!isLoadingMarkers && !markersLoadError" :isMobileView="isMobileView" />
-      </div>
-    </div>
-  </div>
-</template>
-
 <script>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useMapStore } from '@/stores/map/mapStore'
@@ -274,10 +198,10 @@ export default {
         } catch (error) {
           console.log('Error updating user marker: No user logged in')
         }
-          // Call the map store method to update all marker popups
-          if (map.value) {
-            mapStore.updateMarkerPopups(newValue)
-          }
+        // Call the map store method to update all marker popups
+        if (map.value) {
+          mapStore.updateMarkerPopups(newValue)
+        }
       },
     )
 
@@ -497,7 +421,81 @@ export default {
   },
 }
 </script>
+<template>
+  <div class="map-container">
+    <div id="map" ref="mapContainer"></div>
 
+    <!-- Location Services Control -->
+    <div class="location-services-container">
+      <Button
+        @click="togglePositionSharing"
+        variant="default"
+        class="location-services-button"
+        :class="{ 'services-active': isSharing }"
+      >
+        <div class="relative">
+          <LocateFixed class="w-5 h-5" />
+          <div v-if="!isSharing" class="absolute inset-0 flex items-center justify-center">
+            <div class="w-5 h-0.5 bg-red-500 -rotate-45 rounded-full"></div>
+          </div>
+        </div>
+        <span>
+          {{ isSharing ? 'Stedstjenester på' : 'Stedstjenester av' }}
+        </span>
+      </Button>
+    </div>
+
+    <!-- Add notification display with proper v-if check -->
+    <transition name="fade">
+      <div v-if="notification" class="map-notification">
+        {{ notification }}
+      </div>
+    </transition>
+
+    <ClosestFacilityFinder
+      v-if="!isLoadingMarkers && !markersLoadError && !isAdminMode && isSharing"
+    />
+
+    <!-- Add the search bar -->
+    <div class="map-search-container">
+      <MapSearchBar />
+    </div>
+
+    <!-- Loading indicator -->
+    <div v-if="isLoadingMarkers" class="map-loading-overlay">
+      <div class="map-loading-spinner"></div>
+      <div class="map-loading-text">Laster kart data...</div>
+    </div>
+
+    <!-- Error message -->
+    <div v-if="markersLoadError" class="map-error-message">
+      {{ markersLoadError }}
+      <Button @click="retryLoadMarkers" variant="primary" class="retry-button">
+        Prøv på nytt
+      </Button>
+    </div>
+
+    <!-- Marker Filter -->
+    <div
+      class="marker-filter-container"
+      :class="{ collapsed: isFilterCollapsed }"
+      v-if="!isAdminMode"
+    >
+      <Button
+        v-if="isMobileView"
+        @click="toggleFilterCollapse"
+        variant="default"
+        class="filter-toggle-button"
+      >
+        <span v-if="isFilterCollapsed">Vis filter</span>
+        <span v-else>Skjul filter</span>
+      </Button>
+      <div :class="['filter-content', { hidden: isFilterCollapsed && isMobileView }]">
+        <MarkerFilter v-if="!isLoadingMarkers && !markersLoadError" :isMobileView="isMobileView" />
+      </div>
+    </div>
+  </div>
+</template>
 <style scoped>
 .map-container {
   width: 100%;
