@@ -11,17 +11,19 @@
       <Button variant="ghost" size="icon" class="close-btn" @click="clearError">×</Button>
     </div>
 
-    <!-- Loading overlay -->
-    <div v-if="isLoading" class="loading-overlay">
-      <div class="loading-spinner"></div>
-      <p>Laster...</p>
-    </div>
-
     <!-- Left panel: List or Form -->
     <div class="left-panel">
       <!-- Marker List -->
       <div v-if="!isEditing && !isCreating" class="marker-list-panel">
         <h1>Markører</h1>
+
+        <Button
+          variant="default"
+          class="add-new-btn"
+          @click="onAddNew"
+        >
+          + Legg til ny
+        </Button>
 
         <!-- Search and Filter -->
         <div class="search-filter-container">
@@ -115,14 +117,6 @@
             <p>Ingen markører funnet</p>
           </div>
         </div>
-
-        <Button
-          variant="default"
-          class="add-new-btn"
-          @click="onAddNew"
-        >
-          + Legg til ny
-        </Button>
       </div>
 
       <!-- Marker Form (Edit/Create) -->
@@ -325,6 +319,16 @@
       />
     </div>
   </div>
+  <ConfirmModal
+    v-if="confirmDeleteModalOpen"
+    title="Slett markør"
+    description="Er du sikker på at du vil slette denne markøren? Dette kan ikke angres."
+    confirm-text="Slett"
+    cancel-text="Avbryt"
+    @cancel="cancelMarkerDeletion"
+    @confirm="confirmMarkerDeletion"
+    class="marker-delete-modal"
+  />
 </template>
 
 <script>
@@ -336,6 +340,7 @@ import MapView from '@/views/mapView/MapView.vue';
 import Button from '@/components/ui/button/Button.vue';
 import Input from '@/components/ui/input/Input.vue';
 import L from 'leaflet';
+import ConfirmModal from '@/components/householdMainView/modals/ConfirmModal.vue';
 
 export default {
   name: 'markerAdmin',
@@ -343,6 +348,7 @@ export default {
     MapView,
     Button,
     Input,
+    ConfirmModal,
   },
 
   setup() {
@@ -353,6 +359,8 @@ export default {
     const showDescriptionTips = ref(false);
     const dropdownOpen = ref(false);
     const activeEditMarker = ref(null);
+    const confirmDeleteModalOpen = ref(false);
+    const markerToDelete = ref(null);
 
     // Map configuration
     const mapCenter = ref([63.4305, 10.3951]); // Trondheim
@@ -636,13 +644,14 @@ export default {
       }
     };
 
-    // Enhanced onDeleteMarker with better feedback
-    const onDeleteMarker = async () => {
-      if (!confirm('Er du sikker på at du vil slette denne markøren?')) {
-        return;
-      }
+    const onDeleteMarker = () => {
+      // Store the ID of the marker to delete
+      markerToDelete.value = markerFormData.value.id;
+      // Open the confirmation modal
+      confirmDeleteModalOpen.value = true;
+    };
 
-
+    const confirmMarkerDeletion = async () => {
       // Clear temp marker
       if (tempMarker.value) {
         tempMarker.value.remove();
@@ -650,7 +659,7 @@ export default {
       }
 
       // Store the ID to verify deletion
-      const deletingId = markerFormData.value.id;
+      const deletingId = markerToDelete.value;
 
       // Clear active marker reference
       activeEditMarker.value = null;
@@ -663,6 +672,14 @@ export default {
       // Call store method to delete
       const success = await mapStore.deleteMarker(deletingId);
 
+      // Close the modal
+      confirmDeleteModalOpen.value = false;
+      markerToDelete.value = null;
+    };
+
+    const cancelMarkerDeletion = () => {
+      confirmDeleteModalOpen.value = false;
+      markerToDelete.value = null;
     };
 
     const clearSuccess = () => {
@@ -752,7 +769,11 @@ export default {
       clearError,
       onMapClick,
       onAddressChange,
-      activeEditMarker
+      activeEditMarker,
+      confirmDeleteModalOpen,
+      markerToDelete,
+      confirmMarkerDeletion,
+      cancelMarkerDeletion,
     };
   }
 };
@@ -770,7 +791,7 @@ export default {
   background-color: white;
   cursor: pointer;
   user-select: none;
-  height: 42px; /* Match your form control height */
+  height: 42px;
 }
 
 .custom-select:hover {
@@ -838,7 +859,6 @@ export default {
   background-color: #e0f0ff;
 }
 
-/* Keep all your existing styles below */
 .marker-admin-container {
   display: flex;
   width: 100%;
@@ -846,29 +866,6 @@ export default {
   gap: 16px;
   padding: 16px;
   position: relative;
-}
-
-.loading-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(255, 255, 255, 0.8);
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  z-index: 1010;
-}
-
-.loading-spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #3498db;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
@@ -934,7 +931,6 @@ h1 {
   margin-bottom: 24px;
 }
 
-/* Form styles */
 .form-group {
   margin-bottom: 16px;
 }
@@ -981,7 +977,6 @@ textarea.form-control {
   margin-left: auto;
 }
 
-/* Markers list styles */
 .search-filter-container {
   display: flex;
   flex-direction: column;
@@ -1039,6 +1034,7 @@ textarea.form-control {
 
 .add-new-btn {
   width: 100%;
+  margin-bottom: 10px;
 }
 
 .empty-markers {
@@ -1055,7 +1051,16 @@ textarea.form-control {
   font-size: 14px;
   color: #666;
 }
-/* Responsive styles */
+
+.marker-delete-modal {
+  z-index: 2000 !important;
+  position: fixed !important;
+}
+
+.marker-delete-modal .fixed {
+  z-index: 2000 !important;
+}
+
 @media (max-width: 768px) {
   .marker-admin-container {
     flex-direction: column;
@@ -1105,7 +1110,6 @@ textarea.form-control {
   background-color: rgb(219, 234, 254);
 }
 
-/* Tips box styling */
 .tips-box {
   background-color: rgb(239, 246, 255);
   color: rgb(59, 130, 246);
@@ -1115,7 +1119,6 @@ textarea.form-control {
   position: relative;
 }
 
-/* Close button - positioned in the corner */
 .close-tips-btn {
   position: absolute;
   top: 12px;
@@ -1134,7 +1137,6 @@ textarea.form-control {
   color: rgb(0, 0, 0);
 }
 
-/* Tips list */
 .tips-list {
   list-style-type: disc;
   padding-left: 20px;
@@ -1202,3 +1204,4 @@ textarea.form-control {
   overflow-y: auto;
 }
 </style>
+
