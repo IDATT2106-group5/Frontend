@@ -26,7 +26,7 @@ class RequestService extends BaseService {
         throw error;
       }
     }
-  
+
    /**
    * Fetches all invitations sent by a household.
    *
@@ -34,16 +34,14 @@ class RequestService extends BaseService {
    * @returns {Promise<Array<Object>>} List of sent invitations.
    * @throws {Error} If the request fails.
    */
-    async getSentInvitationsByHousehold(householdId) {
+    async getSentInvitationsByHousehold() {
       try {
-        const response = await this.post('invitations/sent/by-household', {
-          householdId
-        });
-    
+        const response = await this.post('invitations/sent/by-household');
+
         if (Array.isArray(response)) {
           return response;
         }
-    
+
         if (response && response.data) {
           return response.data;
         }
@@ -58,19 +56,18 @@ class RequestService extends BaseService {
   /**
    * Fetches all join requests received by the household.
    *
-   * @param {string} householdId - Household ID.
    * @returns {Promise<Array<Object>>} List of join requests.
    * @throws {Error} If the request fails.
    */
-  async getReceivedJoinRequests(householdId) {
+  async getReceivedJoinRequests() {
     try {
-      
-      const data = await this.post('join-requests/received', { householdId });
-  
+
+      const data = await this.post('join-requests/received');
+
       return data;
     } catch (error) {
       console.error('[ERROR] Failed to fetch join requests:', error);
-  
+
       if (error.response) {
         console.error('[ERROR RESPONSE DATA]', error.response.data);
         console.error('[ERROR RESPONSE STATUS]', error.response.status);
@@ -80,7 +77,7 @@ class RequestService extends BaseService {
       } else {
         console.error('[ERROR MESSAGE]', error.message);
       }
-  
+
       throw error;
     }
   }
@@ -92,10 +89,10 @@ class RequestService extends BaseService {
    * @returns {Promise<Array<Object>>} List of received invitations.
    * @throws {Error} If the request fails.
    */
-    async getReceivedInvitationsByUser(userId) {
+    async getReceivedInvitationsByUser() {
       try {
 
-        const response = await this.post('invitations/received', { userId });
+        const response = await this.post('invitations/received');
 
         if (Array.isArray(response)) {
           return response;
@@ -159,7 +156,7 @@ class RequestService extends BaseService {
         throw error;
       }
     }
-  
+
   /**
    * Declines a join request by its ID.
    *

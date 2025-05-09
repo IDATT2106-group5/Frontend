@@ -20,7 +20,7 @@ import { useDateStore } from '@/stores/DateStore'
  * Imports the news store to manage news related actions.
  * @see useNewsStore
  */
-import { useNewsStore } from '@/stores/NewsStore'
+import { useNewsStore } from '@/stores/news/NewsStore'
 
 /**
  * Imports the household store to manage household related actions.
@@ -43,7 +43,7 @@ const incidentStore = useIncidentAdminStore()
  * Fetches user data from the backend.
  */
 onMounted(async () => {
-  await newsStore.fetchNews()
+  await newsStore.fetchPaginatedNews(0,3)
   dateStore.startClock()
   await incidentStore.fetchIncidents()
   if (!userStore.user) {
@@ -74,7 +74,6 @@ const incident = computed(() =>
  * @returns {string|string}
  */
 const calculateTimeDifference = (createdAt) => {
-  if (!createdAt) return 'Just now'
 
   const now = new Date(dateStore.currentDateTime)
   const createdTime = new Date(createdAt)
@@ -173,21 +172,21 @@ onUnmounted(() => {
     <section class="bg-[#2c3e50] text-white py-8 px-4">
       <h2 class="text-3xl md:text-4xl font-bold text-center mb-6">Siste nytt</h2>
       <div
-        v-for="(news, index) in newsStore.newsItems.slice(0, 3)"
+        v-for="(news, index) in newsStore.news.slice(0,3)"
         :key="index"
         class="bg-white text-black p-4 rounded flex flex-col sm:flex-row justify-between gap-2 mb-3"
-        @click="$router.push('/nyheter')"
+        @click="$router.push('/news')"
       >
         <p class="font-semibold">{{ news.title }}</p>
         <span class="text-red-600 font-bold text-right sm:text-left">{{
-          calculateTimeDifference(news.created_at)
+          calculateTimeDifference(news.createdAt)
         }}</span>
       </div>
 
       <div class="text-center mt-6">
         <button
           class="bg-[#2c3e50] text-white px-4 py-2 rounded border border-white"
-          @click="$router.push('/nyheter')"
+          @click="$router.push('/news')"
         >
           Alle nyheter
         </button>

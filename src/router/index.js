@@ -35,7 +35,7 @@ import AdminUserView from '@/views/adminViews/AdminUsersView.vue'
 import MarkerAdmin from '@/views/adminViews/MarkerAdmin.vue'
 import IncidentAdmin from '@/views/adminViews/IncidentAdmin.vue'
 import ScenarioList from '@/components/scenario/ScenarioList.vue'
-import ScenarioAdminView from '@/views/ScenarioAdminView.vue'
+import ScenarioAdminView from '@/views/scenarioView/ScenarioAdminView.vue'
 import EditScenarioList from '@/components/scenario/EditScenarioList.vue'
 import ScenarioInfo from '@/components/scenario/ScenarioInfo.vue'
 import NyhetsView from '@/views/nyheter/NyhetsView.vue'
@@ -183,6 +183,12 @@ const routes = [
     component: ScenarioAdminView,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
+  {
+    path: '/admin/admin-news',
+    name: 'AdminNews',
+    component: NewsAdminView,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
 
   // --- Special (2FA & admin-registration) ---
   {
@@ -205,7 +211,17 @@ const routes = [
     path: '/not-authorized',
     name: 'not-authorized',
     component: notAuthorizedView
-  }
+  },
+  {
+    path: '/after',
+    name: 'after',
+    component: AfterView
+  },
+  {
+    path: '/under',
+    name: 'under',
+    component: SeekSafetyView
+  },
 ]
 
 const router = createRouter({

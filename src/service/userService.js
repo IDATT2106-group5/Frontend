@@ -12,15 +12,14 @@ class UserService extends BaseService {
     super('/user');
   }
 
-  /**
-   * Fetches the current household associated with the specified user ID.
-   *
-   * @param {string} userId - The ID of the user.
-   * @returns {Promise<Object>} The household data associated with the user.
-   * @throws {Error} If the request fails or household is not found.
-   */
-  async getCurrentHouseholdByUserId(userId) {
-    return this.get(`me/household/${userId}`);
+  async getCurrentHouseholdByUserId() {
+    try {
+      const response = await this.get(`me/household`);
+      return response;
+    } catch (error) {
+      console.error("Household not found:", error);
+      throw error;
+    }
   }
   
   /**
@@ -31,10 +30,15 @@ class UserService extends BaseService {
    * @throws {Error} If the request fails.
    */
   async checkEmail(email) {
-    const response = await this.post('check-mail', { email });
-    return response.userId;
+    try {
+      const response = await this.post('check-mail', { email });
+      return response.userId;
+    } catch (error) {
+      console.error('[ERROR] Checking email existence:', error);
+      throw error;
+    }
   }
-  
+
 }
 
 export default new UserService();
