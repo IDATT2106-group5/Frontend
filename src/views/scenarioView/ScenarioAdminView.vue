@@ -21,7 +21,7 @@ export default {
     ShieldAlert,
     Trash2,
     Bomb,
-    Waves
+    Waves,
   },
 
   /**
@@ -52,7 +52,7 @@ export default {
       { name: 'Zap', component: Zap },
       { name: 'ShieldAlert', component: ShieldAlert },
       { name: 'Bomb', component: Bomb },
-      { name: 'Wave', component: Waves },
+      { name: 'Waves', component: Waves },
     ]
 
     /**

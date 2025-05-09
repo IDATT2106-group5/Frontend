@@ -11,7 +11,8 @@ import {
   Thermometer,
   Zap,
   ShieldAlert,
-  Bomb
+  Bomb,
+  Waves,
 } from 'lucide-vue-next'
 
 export default {
@@ -62,6 +63,8 @@ export default {
       Thermometer,
       Zap,
       ShieldAlert,
+      Bomb,
+      Waves,
     }
 
     /**
