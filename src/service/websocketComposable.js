@@ -161,6 +161,7 @@ export default function useWebSocket() {
     resetNotificationCount,
     subscribeToPosition,
     updatePosition,
+    fetchNotifications,
     fetchHouseholdPositions,
     showIncidentPopup,
     currentIncident,
