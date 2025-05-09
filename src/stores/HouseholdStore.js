@@ -366,7 +366,6 @@ export const useHouseholdStore = defineStore('household', {
      */
     async fetchSentInvitations() {
       if (!this.currentHousehold?.id) {
-        console.warn('[FETCH INVITATIONS] No active household');
         return;
       }
 

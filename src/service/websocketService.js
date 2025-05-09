@@ -59,9 +59,7 @@ export default class WebSocketService {
 
   _onConnected() {
     this.connected = true
-    console.log('Connected to WebSocket')
 
-    console.log(`User ID: ${this.userId}, Token: ${this.token}`)
 
     this.stompClient.subscribe('/topic/notifications', (message) => {
       try {
@@ -77,7 +75,6 @@ export default class WebSocketService {
         this.callbacks.onNotification()
       }
     })
-    console.log('Subscribed to /topic/notifications')
 
     if (this.token && this.userId) {
       this.stompClient.subscribe(`/user/queue/notifications`, (message) => {
@@ -94,7 +91,6 @@ export default class WebSocketService {
           this.callbacks.onNotification()
         }
       })
-      console.log(`Subscribed to /user/queue/notifications`)
     }
 
     this.callbacks.onConnected()
@@ -102,7 +98,6 @@ export default class WebSocketService {
 
   _onDisconnected() {
     this.connected = false
-    console.log('Disconnected from WebSocket')
     this.callbacks.onDisconnected()
   }
 
@@ -122,7 +117,6 @@ export default class WebSocketService {
           console.error('Error parsing position data:', error)
         }
       })
-      console.log(`Subscribed to /topic/position/${householdId}`)
       return true
     } else {
       console.error('Cannot subscribe to position: STOMP client not connected')
@@ -143,7 +137,6 @@ export default class WebSocketService {
           destination: '/app/position',
           body: JSON.stringify(positionData),
         })
-        console.log('Position update sent successfully')
         return true
       } catch (error) {
         console.error('Error sending position update:', error)

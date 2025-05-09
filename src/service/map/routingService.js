@@ -19,7 +19,6 @@ class RoutingService extends BaseService {
    * @returns {L.Routing.Control} The routing control
    */
   showRoute(map, startCoords, endCoords, options = {}) {
-    console.log("RoutingService.showRoute called with:", { startCoords, endCoords });
 
     // Remove any existing route
     this.clearRoute();
@@ -73,7 +72,6 @@ class RoutingService extends BaseService {
    * Clear any existing route from the map
    */
   clearRoute() {
-    console.log("Clearing existing route");
 
     if (this.routingControl) {
       try {

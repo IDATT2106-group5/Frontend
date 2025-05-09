@@ -25,7 +25,6 @@ class UserService extends BaseService {
       const response = await this.get(`me/household/${userId}`);
       return response;
     } catch (error) {
-      console.error("Household not found:", error);
       throw error;
     }
   }
@@ -42,7 +41,6 @@ class UserService extends BaseService {
       const response = await this.post('check-mail', { email });
       return response.userId; 
     } catch (error) {
-      console.error('[ERROR] Checking email existence:', error);
       throw error;
     }
   }

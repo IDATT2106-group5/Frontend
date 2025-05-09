@@ -48,7 +48,6 @@ class RequestService extends BaseService {
           return response.data;
         }
     
-        console.warn('Could not find invitations array in response');
         return [];
       } catch (error) {
         console.error("Error fetching invitations by household:", error);
@@ -106,7 +105,6 @@ class RequestService extends BaseService {
           return response.data;
         }
 
-        console.warn('Could not find invitations array in response');
         return [];
       } catch (error) {
         console.error('[ERROR] Fetching received invitations:', error);

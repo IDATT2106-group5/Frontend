@@ -48,7 +48,6 @@ export default function useWebSocket() {
           connected.value = false
         },
         onNotification: (message) => {
-          console.log('Notification received', message)
           if (userStore.user?.id) {
             fetchNotifications(userStore.user.id)
           }
@@ -77,7 +76,6 @@ export default function useWebSocket() {
   async function subscribeToPosition(householdId, callback) {
     if (userStore.token && householdId) {
       webSocketService.subscribeToPosition(householdId, (position) => {
-        console.log('Position update received:', position)
         if (callback) callback(position)
       })
     }
@@ -145,7 +143,6 @@ export default function useWebSocket() {
         },
       })
       const data = await response.json()
-      console.log('Received position update data:', data)
       return data
     } catch (error) {
       console.error('Error fetching position update:', error)

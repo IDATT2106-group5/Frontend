@@ -108,10 +108,8 @@ export const useUserStore = defineStore('user', {
     async fetchUser() {
       try {
         const response = await apiClient.get('user/me')
-        console.log("Fetch user called - implement UserService");
         this.user = response.data
       } catch (err) {
-        console.error("Error fetching user:", err);
         this.logout()
       }
     },
@@ -243,7 +241,6 @@ export const useUserStore = defineStore('user', {
       this.error = null;
       try {
         const response = await AuthService.requestPasswordReset(email);
-        console.log('Password reset response:', response);
         return { success: true, message: response.data.message };
       } catch (err) {
         this.error = err.response?.data?.error || "Feil ved tilbakestilling av passord.";
