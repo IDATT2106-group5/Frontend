@@ -75,12 +75,6 @@ class MarkerService extends BaseService {
         radiusKm = this.defaultRadius;
       }
 
-      console.log(`Fetching markers from: ${this.buildUrl('')} with dynamic params:`, {
-        latitude,
-        longitude,
-        radiusKm: Math.round(radiusKm * 10) / 10 // Round to 1 decimal place
-      });
-
       // Get with dynamic parameters
       const response = await this.get('', {
         params: {
@@ -121,7 +115,6 @@ class MarkerService extends BaseService {
         });
       });
 
-      console.log(`Loaded ${response.length} markers for radius ${radiusKm.toFixed(1)} km`);
       return markersByType;
     } catch (error) {
       console.error('Error fetching all markers:', error);

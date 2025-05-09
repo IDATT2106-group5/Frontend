@@ -112,10 +112,8 @@ export const useLocationStore = defineStore('location', () => {
     () => userStore.user?.id,
     (userId) => {
       if (userId && isSharing.value && !positionUpdateInterval.value) {
-        console.log('User authenticated, starting position sharing')
         startPositionSharing()
       } else if (!userId && positionUpdateInterval.value) {
-        console.log('User logged out, stopping position sharing')
         stopPositionSharing()
       }
     },
@@ -145,7 +143,6 @@ export const useLocationStore = defineStore('location', () => {
 
   if (isSharing.value && userStore.user?.id) {
     setTimeout(() => {
-      console.log('Initializing position sharing')
       startPositionSharing()
     }, 30000)
   }
