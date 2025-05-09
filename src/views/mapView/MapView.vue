@@ -343,8 +343,8 @@ export default {
       <Button
         @click="togglePositionSharing"
         variant="default"
-        class="flex items-center gap-2 bg-white text-gray-700 font-medium p-2 px-3 rounded-lg shadow-md cursor-pointer transition-all duration-200"
-        :class="{ 'bg-blue-500 text-white': isSharing }"
+        class="flex items-center gap-2 bg-white text-gray-700 font-medium p-2 px-3 rounded-lg shadow-md cursor-pointer transition-all duration-200 hover:bg-gray-200"
+        :class="{ 'bg-blue-500 text-white hover:bg-blue-300': isSharing }"
       >
         <div class="relative">
           <LocateFixed class="w-5 h-5" />
