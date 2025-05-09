@@ -1,4 +1,3 @@
-<!-- src/views/admin/MarkerAdmin.vue -->
 <template>
   <div class="marker-admin-container">
     <!-- Alert messages -->
@@ -319,6 +318,8 @@
         :center="mapCenter"
         :zoom="mapZoom"
         :is-admin-mode="true"
+        :markers="markers"
+        :editingMarkerId="activeEditMarker"
         @map-ready="onMapReady"
         @map-click="onMapClick"
       />
@@ -328,7 +329,7 @@
 
 <script>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { useMarkerAdminStore } from '@/stores/admin/markerAdminStore';
+import { useMapStore } from '@/stores/map/mapStore';
 import { storeToRefs } from 'pinia';
 import MarkerConfigService from '@/service/map/markerConfigService';
 import MapView from '@/views/mapView/MapView.vue';
@@ -351,12 +352,16 @@ export default {
     const showFilterDropdown = ref(false);
     const showDescriptionTips = ref(false);
     const dropdownOpen = ref(false);
+    const activeEditMarker = ref(null);
 
     // Map configuration
     const mapCenter = ref([63.4305, 10.3951]); // Trondheim
     const mapZoom = ref(13);
 
-    const markerAdminStore = useMarkerAdminStore();
+    // Initialize the mapStore
+    const mapStore = useMapStore();
+
+    // Get reactive properties from the store
     const {
       markers,
       filteredMarkers,
@@ -366,7 +371,7 @@ export default {
       isLoading,
       error,
       success
-    } = storeToRefs(markerAdminStore);
+    } = storeToRefs(mapStore);
 
     const searchTerm = ref('');
     const filterType = ref('');
@@ -375,7 +380,7 @@ export default {
     const markerConfigs = MarkerConfigService.getMarkerConfigs();
 
     // Computed properties
-    const markerTypes = computed(() => markerAdminStore.markerTypes);
+    const markerTypes = computed(() => mapStore.adminMarkerTypes);
 
     // Close dropdown when clicking outside
     const closeDropdownOnOutsideClick = (e) => {
@@ -412,39 +417,31 @@ export default {
     };
 
     const onMapClick = async (e) => {
-      console.log("Map click handler called:", e.latlng);
-
       // Only proceed if in edit or create mode
       if (!isEditing.value && !isCreating.value) {
-        console.log("Click ignored: not in edit or create mode");
         return;
       }
 
       const { lat, lng } = e.latlng;
-
-      console.log("Updating coordinates to:", lat, lng);
 
       // Update form data with the new coordinates
       markerFormData.value.latitude = lat;
       markerFormData.value.longitude = lng;
 
       // Also update through the store to ensure reactivity
-      markerAdminStore.updateMarkerCoordinates(lat, lng);
+      mapStore.updateMarkerCoordinates(lat, lng);
 
       // Update or create temporary marker
       if (tempMarker.value) {
         tempMarker.value.setLatLng([lat, lng]);
-        console.log("Updated existing marker position");
       } else {
         const icon = createMarkerIcon(markerFormData.value.type);
         tempMarker.value = L.marker([lat, lng], { icon }).addTo(map.value);
-        console.log("Created new temporary marker");
       }
 
       // Perform reverse geocoding to get address information
       try {
-        const addressInfo = await markerAdminStore.updateAddressFromCoordinates(lat, lng);
-        console.log("Address updated based on new coordinates:", addressInfo);
+        await mapStore.updateAddressFromCoordinates(lat, lng);
       } catch (error) {
         console.error("Error updating address from coordinates:", error);
       }
@@ -462,7 +459,6 @@ export default {
       );
     };
 
-    // Add this method to the setup() function in MarkerAdmin.vue
     const onAddressChange = debounce(async () => {
       // Only proceed if we have at least some address information
       if (!markerFormData.value.address && !markerFormData.value.postalCode && !markerFormData.value.city) {
@@ -481,7 +477,7 @@ export default {
       }
 
       try {
-        const coordinates = await markerAdminStore.updateCoordinatesFromAddress(addressQuery);
+        const coordinates = await mapStore.updateCoordinatesFromAddress(addressQuery);
 
         if (coordinates && tempMarker.value && map.value) {
           // Update the marker position on the map
@@ -516,11 +512,11 @@ export default {
     };
 
     const onSearchChange = () => {
-      markerAdminStore.setSearchTerm(searchTerm.value);
+      mapStore.setSearchTerm(searchTerm.value);
     };
 
     const onFilterChange = () => {
-      markerAdminStore.setFilterType(filterType.value);
+      mapStore.setFilterType(filterType.value);
       showFilterDropdown.value = false;
     };
 
@@ -533,7 +529,7 @@ export default {
     };
 
     const onAddNew = () => {
-      markerAdminStore.initNewMarker();
+      mapStore.initNewMarker();
 
       // Center map at default location
       if (map.value) {
@@ -552,63 +548,132 @@ export default {
       ).addTo(map.value);
     };
 
+    // Enhanced onEditMarker with forced marker updates
     const onEditMarker = (marker) => {
-      markerAdminStore.editMarker(marker);
+
+      // Set active marker ID FIRST to hide original immediately
+      activeEditMarker.value = marker.id;
+
+      // Immediate refresh to hide original marker
+      if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
+        mapView.value.refreshMarkers();
+      }
+
+      // Then call store method
+      mapStore.editMarker(marker);
+
+      // Remove any existing temp marker
+      if (tempMarker.value) {
+        tempMarker.value.remove();
+        tempMarker.value = null;
+      }
 
       // Center map at marker location
       if (map.value) {
         map.value.setView([marker.latitude, marker.longitude], 16);
       }
 
-      // Create temporary marker
-      if (tempMarker.value) {
-        tempMarker.value.remove();
-      }
+      // Create temporary marker with small delay to ensure map is ready
+      setTimeout(() => {
+        try {
+          const icon = createMarkerIcon(marker.type);
+          if (icon && map.value) {
+            tempMarker.value = L.marker(
+              [marker.latitude, marker.longitude],
+              { icon }
+            ).addTo(map.value);
 
-      const icon = createMarkerIcon(marker.type);
-      tempMarker.value = L.marker(
-        [marker.latitude, marker.longitude],
-        { icon }
-      ).addTo(map.value);
+            // Force map to update to ensure marker is visible
+            map.value.invalidateSize();
+          }
+        } catch (err) {
+          console.error("Error creating temp marker:", err);
+        }
+      }, 20);
     };
 
-    const onSaveMarker = async () => {
-      await markerAdminStore.saveMarker();
-    };
-
+    // Enhanced onCancelEdit with retries
     const onCancelEdit = () => {
-      markerAdminStore.cancelEdit();
 
-      // Clear temporary marker
+      // First clear temp marker
       if (tempMarker.value) {
         tempMarker.value.remove();
         tempMarker.value = null;
       }
+
+      // Store marker ID being edited before clearing
+      const editingId = activeEditMarker.value;
+
+      // Clear local reference
+      activeEditMarker.value = null;
+
+      // Call store method to cancel
+      mapStore.cancelEdit();
     };
 
+    // Enhanced onSaveMarker with multi-stage refresh
+    const onSaveMarker = async () => {
+
+      if (tempMarker.value) {
+        tempMarker.value.remove();
+        tempMarker.value = null;
+      }
+
+      activeEditMarker.value = null;
+      mapStore.refreshMarkerLayers();
+
+
+      // Call store method to save
+      const success = await mapStore.saveMarker();
+
+      if (success) {
+
+        setTimeout(() => {
+          if (map.value) {
+            map.value.invalidateSize();
+          }
+        }, 300);
+      }
+    };
+
+    // Enhanced onDeleteMarker with better feedback
     const onDeleteMarker = async () => {
       if (!confirm('Er du sikker på at du vil slette denne markøren?')) {
         return;
       }
 
-      const success = await markerAdminStore.deleteMarker(markerFormData.value.id);
 
-      if (success) {
-        // Clear temporary marker
-        if (tempMarker.value) {
-          tempMarker.value.remove();
-          tempMarker.value = null;
-        }
+      // Clear temp marker
+      if (tempMarker.value) {
+        tempMarker.value.remove();
+        tempMarker.value = null;
       }
+
+      // Store the ID to verify deletion
+      const deletingId = markerFormData.value.id;
+
+      // Clear active marker reference
+      activeEditMarker.value = null;
+
+      // Force immediate refresh first to hide visually
+      if (mapView.value && typeof mapView.value.refreshMarkers === 'function') {
+        mapView.value.refreshMarkers();
+      }
+
+      // Call store method to delete
+      const success = await mapStore.deleteMarker(deletingId);
+
     };
 
     const clearSuccess = () => {
-      markerAdminStore.clearSuccess();
+      mapStore.clearSuccess();
     };
 
     const clearError = () => {
-      markerAdminStore.clearError();
+      mapStore.clearError();
     };
+
+
 
     // Watch for changes to marker type to update icon
     watch(() => markerFormData.value.type, (newType) => {
@@ -619,14 +684,23 @@ export default {
       }
     });
 
+    watch(() => map.value, (newMap) => {
+      if (newMap && props.isAdminMode) {
+        // Set up map move event for admin mode
+        newMap.on('moveend', () => {
+          mapStore.refreshMarkerLayers();
+        });
+      }
+    });
+
     // Lifecycle hooks
     onMounted(async () => {
       // Fetch markers
-      await markerAdminStore.fetchMarkers();
+      await mapStore.fetchMarkers();
 
       // Initialize search and filter
-      searchTerm.value = markerAdminStore.searchTerm;
-      filterType.value = markerAdminStore.filterType;
+      searchTerm.value = mapStore.searchTerm;
+      filterType.value = mapStore.filterType;
 
       document.addEventListener('click', closeDropdownOnOutsideClick);
     });
@@ -639,7 +713,6 @@ export default {
       }
 
       document.removeEventListener('click', closeDropdownOnOutsideClick);
-
     });
 
     return {
@@ -679,13 +752,13 @@ export default {
       clearError,
       onMapClick,
       onAddressChange,
+      activeEditMarker
     };
   }
 };
 </script>
 
 <style scoped>
-
 .custom-select-wrapper {
   position: relative;
   width: 100%;
@@ -766,15 +839,6 @@ export default {
 }
 
 /* Keep all your existing styles below */
-.marker-admin-container {
-  display: flex;
-  width: 100%;
-  height: calc(100vh - 60px);
-  gap: 16px;
-  padding: 16px;
-  position: relative;
-}
-
 .marker-admin-container {
   display: flex;
   width: 100%;

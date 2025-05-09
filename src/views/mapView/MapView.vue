@@ -84,9 +84,10 @@ import L from 'leaflet'
 import ClosestFacilityFinder from '@/components/map/ClosestFacilityFinder.vue'
 import { useUserStore } from '@/stores/UserStore.js'
 import { useHouseholdStore } from '@/stores/HouseholdStore.js'
-import { useLocationStore } from '@/stores/map/LocationStore.js' // Import the new store
-import { LocateFixed } from 'lucide-vue-next' // Import the icon
+import { useLocationStore } from '@/stores/map/LocationStore.js'
+import { LocateFixed } from 'lucide-vue-next'
 import MapSearchBar from '@/components/map/MapSearchBar.vue';
+import markerConfigService from '@/service/map/markerConfigService.js'
 
 export default {
   name: 'MapView',
@@ -109,6 +110,14 @@ export default {
     isAdminMode: {
       type: Boolean,
       default: false
+    },
+    markers: {
+      type: Array,
+      default: () => []
+    },
+    editingMarkerId: {
+      type: String,
+      default: null
     }
   },
   emits: ['map-ready', 'map-click'],
@@ -123,7 +132,7 @@ export default {
     const mapInitialized = ref(false)
     const userStore = useUserStore()
     const householdStore = useHouseholdStore()
-    const locationStore = useLocationStore() // Use the location store
+    const locationStore = useLocationStore()
     const householdId = householdStore.currentHousehold?.id || null
 
     // Get location related state from the location store
@@ -154,18 +163,27 @@ export default {
           console.log('Map initialized successfully')
           mapInitialized.value = true
 
-          emit('map-ready', map.value);
-
-          // If in admin mode, set up click handler directly on the Leaflet map
+          // If in admin mode, set up admin-specific features
           if (props.isAdminMode) {
-            console.log("Setting up admin mode click handler");
+            console.log("Setting up admin mode in MapView");
+
+            // Set up click handler for admin mode
             map.value.on('click', (e) => {
-              console.log("Leaflet map click:", e.latlng);
+              console.log("Admin map clicked:", e.latlng);
               emit('map-click', e);
             });
+
+            // Sync admin markers to the map store if provided
+            if (props.markers && props.markers.length > 0) {
+              syncAdminMarkersToStore();
+            }
+
+            emit('map-ready', map.value);
           } else {
+            // Regular non-admin mode initialization
+            emit('map-ready', map.value);
+
             // Only process user positions if not in admin mode
-            // Process any stored positions that came in before map initialization
             userPositions.value.forEach((position, userId) => {
               const isCurrentUser = userId === userStore.user.id
               updateUserMarker(userId, position.fullName, position.longitude, position.latitude, isCurrentUser)
@@ -187,6 +205,12 @@ export default {
               console.error('Error fetching household positions:', error)
             }
           }
+
+          // Add additional timeout to ensure markers are refreshed after map is ready
+          setTimeout(() => {
+            mapStore.refreshMarkerLayers();
+            console.log("Forced marker refresh after timeout");
+          }, 500);
         }
       } catch (error) {
         console.error('Map initialization failed:', error)
@@ -195,23 +219,74 @@ export default {
       window.addEventListener('resize', handleResize)
     })
 
+    // Function to sync admin markers to the map store for unified handling
+    const syncAdminMarkersToStore = () => {
+      if (!props.isAdminMode || !props.markers || !props.markers.length) return;
+
+      console.log("Syncing admin markers to map store:", props.markers.length);
+
+      // Convert admin markers to the format expected by the map store
+      // and add them to a special admin layer in the store
+      const adminMarkers = props.markers.map(marker => ({
+        id: marker.id,
+        lat: marker.latitude,
+        lng: marker.longitude,
+        type: marker.type,
+        name: marker.name || '',
+        address: marker.address || '',
+        description: marker.description || '',
+        contactInfo: marker.contactInfo || '',
+        openingHours: marker.openingHours || '',
+        // Add a flag to identify admin markers
+        isAdminMarker: true,
+        // Add editingMarkerId to allow filtering
+        editingMarkerId: props.editingMarkerId
+      }));
+
+      // Update the store with these markers
+      mapStore.setAdminMarkers(adminMarkers);
+    };
+
+    // Watch for changes in the markers prop from the parent component
+    watch(() => props.markers, () => {
+      if (props.isAdminMode && map.value) {
+        console.log('Admin markers changed, syncing to map store');
+        syncAdminMarkersToStore();
+      }
+    }, { deep: true });
+
+    // Watch for changes in the editingMarkerId
+    watch(() => props.editingMarkerId, (newId, oldId) => {
+      if (props.isAdminMode && map.value) {
+        console.log(`Editing marker changed: ${oldId} -> ${newId}`);
+        syncAdminMarkersToStore();
+      }
+    });
+
     watch(() => connected.value && householdId, (isConnected) => {
       if (isConnected && householdId && !props.isAdminMode) {
         subscribeToPosition(householdId, handlePositionUpdate)
       }
     })
 
+    // When the map changes (after initialization), set up the map move handler
+    watch(() => map.value, (newMap) => {
+      if (newMap && props.isAdminMode) {
+        // Set up map move event for admin mode
+        newMap.on('moveend', () => {
+          console.log("Map moved, refreshing markers");
+          mapStore.refreshMarkerLayers();
+        });
+      }
+    });
+
+    // Clean up on unmount
     onUnmounted(() => {
-      window.removeEventListener('resize', handleResize)
-
-      userMarkers.value.forEach((marker) => {
-        if (map.value) {
-          map.value.removeLayer(marker)
-        }
-      })
-
-      mapStore.cleanupMap()
-    })
+      if (map.value && props.isAdminMode) {
+        map.value.off('moveend');
+      }
+      window.removeEventListener('resize', handleResize);
+    });
 
     const handlePositionUpdate = (positionData) => {
       // Skip if in admin mode
@@ -387,8 +462,8 @@ export default {
 /* Location Services Styling */
 .location-services-container {
   position: absolute;
-  top: 16px;
-  left: 16px;
+  bottom: 16px;
+  right: 16px;
   z-index: 1000;
 }
 
@@ -514,7 +589,7 @@ export default {
 /* Map Notification */
 .map-notification {
   position: absolute;
-  top: 16px;
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
   background-color: rgba(0, 0, 0, 0.7);
@@ -578,7 +653,7 @@ export default {
 /* Custom Zoom Controls */
 :deep(.leaflet-control-zoom) {
   position: absolute !important;
-  bottom: 16px !important;
+  bottom: 40px !important;
   right: 10px !important;
   margin: 20px !important;
   border: none;
