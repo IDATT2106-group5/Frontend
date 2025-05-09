@@ -296,33 +296,24 @@ export default {
      */
     const updateCoordinatesFromAddress = async (addressQuery) => {
       try {
-        // Check if the store has this method
-        if (typeof incidentAdminStore.updateCoordinatesFromAddress === 'function') {
-          return await incidentAdminStore.updateCoordinatesFromAddress(addressQuery);
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}&limit=1`,
+          { headers: { 'Accept-Language': 'no' } }
+        );
+
+        if (!response.ok) {
+          throw new Error('Geocoding API request failed');
+        }
+
+        const data = await response.json();
+
+        if (data.length > 0) {
+          return {
+            lat: parseFloat(data[0].lat),
+            lng: parseFloat(data[0].lon)
+          };
         } else {
-          // Fallback implementation if the store doesn't have this method
-          console.warn("updateCoordinatesFromAddress not implemented in store, using fallback");
-
-          // Using Nominatim API for geocoding (as an example)
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}&limit=1`,
-            { headers: { 'Accept-Language': 'no' } }
-          );
-
-          if (!response.ok) {
-            throw new Error('Geocoding API request failed');
-          }
-
-          const data = await response.json();
-
-          if (data.length > 0) {
-            return {
-              lat: parseFloat(data[0].lat),
-              lng: parseFloat(data[0].lon)
-            };
-          } else {
-            throw new Error('No results found for this address');
-          }
+          throw new Error('No results found for this address');
         }
       } catch (error) {
         console.error('Error in geocoding:', error);
