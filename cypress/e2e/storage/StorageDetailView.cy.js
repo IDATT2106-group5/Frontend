@@ -1,199 +1,104 @@
-// cypress/e2e/storage-detail.spec.js
-
-describe('Storage Detail View', () => {
+describe('Storage Detail - Real Backend Testing', () => {
   beforeEach(() => {
-    // Mock necessary data and API responses
-    cy.intercept('GET', '**/api/households/current', {
-      statusCode: 200,
-      body: { id: 'mock-household-id' }
-    }).as('getHousehold');
+    cy.intercept('POST', '**/api/auth/login').as('loginRequest');
+    cy.intercept('GET', '**/api/users/profile').as('getUserProfile');
+    cy.intercept('GET', '**/api/households/current').as('getCurrentHousehold');
+    cy.intercept('GET', '**/api/storage/items*').as('fetchStorageItems');
 
-    cy.intercept('GET', '**/api/storage/items*', {
-      statusCode: 200,
-      body: {
-        'Væske': [
-          {
-            id: '1',
-            name: 'Vann (Imsdal)',
-            expiryDate: '01.12.2025',
-            quantity: 5,
-            unit: 'Liter'
-          }
-        ],
-        'Mat': [
-          {
-            id: '1',
-            name: 'Hamburger',
-            expiryDate: '05.06.2025',
-            quantity: 2,
-            unit: 'kg'
-          }
-        ]
-      }
-    }).as('getStorageItems');
+    cy.visit('http://localhost:5173/login');
 
-    cy.intercept('GET', '**/api/item-templates*', {
-      statusCode: 200,
-      body: [
-        {
-          id: 'template-1',
-          name: 'New Water Bottle',
-          itemType: 'LIQUIDS'
-        },
-        {
-          id: 'template-2',
-          name: 'Canned Beans',
-          itemType: 'FOOD'
-        }
-      ]
-    }).as('getItemTemplates');
+    cy.get('input[name="email"]').type('nathalie.graidy@gmail.com');
+    cy.get('input[name="password"]').type('12345678');
+    cy.get('button[type="submit"]').click();
 
-    // Visit the storage detail page
-    cy.visit('/storage-detail');
-    cy.wait('@getHousehold');
-    cy.wait('@getStorageItems');
+    cy.wait('@loginRequest');
+    cy.url().should('eq', 'http://localhost:5173/');
+
+    cy.visit('http://localhost:5173/storage-detail');
+
+
+    cy.contains('Rediger - / Legg til i lager').should('be.visible');
   });
 
-  it('should open edit mode and create a new item', () => {
-    // Click the Edit button to enter edit mode
-    cy.contains('button', 'Rediger - / Legg til i lager').click();
+  it('adds an item to storage', () => {
 
-    // Verify we're in edit mode
-    cy.contains('button', 'Lukk').should('be.visible');
+    cy.contains('.flex.items-center.gap-3', 'Væske').click()
 
-    // Open the væske (liquids) accordion if not already open
-    cy.contains('.flex', 'Væske').click();
 
-    // Wait for the AddStorageItem component to be visible
-    cy.wait(500); // Short wait to ensure accordion animation completes
+    cy.contains('button', 'Rediger - / Legg til i lager').click()
 
-    // Mock the POST request for adding a new item
-    cy.intercept('POST', '**/api/storage/items*', {
-      statusCode: 201,
-      body: {
-        id: 'new-item-id',
-        name: 'New Water Bottle',
-        expiryDate: '01.06.2025',
-        quantity: 3,
-        unit: 'Liter'
-      }
-    }).as('addItem');
+    cy.contains('span', 'Velg vare').click()
 
-    // Click on dropdown to select item
-    cy.get('[placeholder="Velg vare"]').first().click();
+    cy.get('input[placeholder="Søk etter vare..."]').type('Vann')
 
-    // Wait for item templates to load
-    cy.wait('@getItemTemplates');
+    cy.get('.absolute.z-10 div')
+      .not(':contains("Ingen varer funnet")')
+      .first()
+      .click()
 
-    // Select the first item from the dropdown
-    cy.contains('New Water Bottle').click();
+    cy.get('input[type="date"]').type('2025-12-31')
 
-    // Set expiry date
-    const futureDate = new Date();
-    futureDate.setMonth(futureDate.getMonth() + 6);
-    const formattedDate = futureDate.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-    cy.get('input[type="date"]').first().type(formattedDate);
+    cy.get('input[type="number"]').clear().type('3')
 
-    // Set quantity
-    cy.get('input[type="number"]').first().clear().type('3');
+    cy.get('.flex.items-center.space-x-4 button').first().click();
 
-    // Click the add button
-    cy.get('button').find('svg').first().click();
+    cy.contains('Vare lagt til').should('be.visible')
+  })
 
-    // Wait for the add request to complete
-    cy.wait('@addItem');
+  it('updates an item in storage', () => {
+    cy.contains('.flex.items-center.gap-3', 'Væske').click()
 
-    // Verify success toast appears
-    cy.contains('Vare lagt til').should('be.visible');
+    cy.contains('button', 'Rediger - / Legg til i lager').click()
 
-    // Close edit mode
-    cy.contains('button', 'Lukk').click();
-  });
+    cy.wait(500)
 
-  it('should open edit mode and edit an existing item', () => {
-    // Click the Edit button to enter edit mode
-    cy.contains('button', 'Rediger - / Legg til i lager').click();
+    cy.get('.grid.grid-cols-5')
+      .contains('Vann')
+      .closest('.grid.grid-cols-5')
+      .click()
 
-    // Open the væske (liquids) accordion if not already open
-    cy.contains('.flex', 'Væske').click();
+    cy.wait(300)
 
-    // Wait for the items to be visible
-    cy.wait(500);
+    cy.get('[data-cy="edit-button"]').first().click()
 
-    // Mock the PUT request for updating an item
-    cy.intercept('PUT', '**/api/storage/items/*', {
-      statusCode: 200,
-      body: {
-        id: 'vaske-item-1',
-        name: 'Water (1.5L)',
-        expiryDate: '15.12.2025',
-        quantity: 10,
-        unit: 'Liter'
-      }
-    }).as('updateItem');
+    cy.wait(300)
 
-    // First, expand the item group to see individual items
-    cy.contains('Water').click();
+    cy.get('input[type="number"]').clear()
 
-    // Find and click edit button (Pencil icon) for the first item
-    cy.get('svg').filter((_idx, el) => {
-      return Cypress.$(el).attr('class')?.includes('text-gray-600 hover:text-blue-600');
-    }).first().click();
+    cy.get('input[type="number"]')
+      .first().click().type('300', { force: true })
 
-    // Modify quantity input
-    cy.get('input[type="number"]').first().clear().type('10');
+    cy.get('[data-cy="save-button"]').first().click()
 
-    // Modify date input (set it to 15th of December 2025)
-    cy.get('input[type="date"]').first().clear().type('2025-12-15');
+    cy.contains('Oppdaterte vare').should('be.visible')
 
-    // Click save button (represented by Save icon)
-    cy.get('svg').filter((_idx, el) => {
-      return Cypress.$(el).attr('class')?.includes('text-gray-600 hover:text-green-600');
-    }).first().click();
+    cy.contains('300 Liter').should('exist')
 
-    // Wait for the update request to complete
-    cy.wait('@updateItem');
+    cy.contains('button', 'Lukk').click()
+  })
 
-    // Verify success toast appears
-    cy.contains('Oppdaterte vare').should('be.visible');
+  it('delete an item in storage', () => {
+    cy.contains('.flex.items-center.gap-3', 'Væske').click()
 
-    // Close edit mode
-    cy.contains('button', 'Lukk').click();
-  });
+    cy.contains('button', 'Rediger - / Legg til i lager').click()
 
-  it('should open edit mode and delete an item', () => {
-    // Click the Edit button to enter edit mode
-    cy.contains('button', 'Rediger - / Legg til i lager').click();
+    cy.wait(500)
 
-    // Open the mat (food) accordion if not already open
-    cy.contains('.flex', 'Mat').click();
 
-    // Wait for the items to be visible
-    cy.wait(500);
+    cy.get('.grid.grid-cols-5')
+      .contains('Vann')
+      .closest('.grid.grid-cols-5')
+      .click()
 
-    // Mock the DELETE request for deleting an item
-    cy.intercept('DELETE', '**/api/storage/items/*', {
-      statusCode: 200
-    }).as('deleteItem');
+    cy.wait(300)
 
-    // First, expand the item group to see individual items
-    cy.contains('Rice').click();
+    cy.get('[data-cy="delete-button"]').first().click()
 
-    // Find and click delete button (Trash icon) for the first item
-    cy.get('svg').filter((_idx, el) => {
-      return Cypress.$(el).attr('class')?.includes('text-gray-600 hover:text-red-600');
-    }).first().click();
+    cy.get('[data-cy="modal-confirm-button"]').click();
 
-    // Confirm deletion in the modal
-    cy.contains('Slett').click();
+    cy.contains('Slettet vare').should('be.visible')
 
-    // Wait for the delete request to complete
-    cy.wait('@deleteItem');
+    cy.contains('button', 'Lukk').click()
 
-    // Verify success toast appears
-    cy.contains('Slettet vare').should('be.visible');
-
-    // Close edit mode
-    cy.contains('button', 'Lukk').click();
   });
 });

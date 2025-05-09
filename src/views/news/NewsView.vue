@@ -47,7 +47,6 @@ function formatDate(dateString) {
 
     // Check if the date is valid
     if (isNaN(date.getTime())) {
-      console.log('Invalid date received:', dateString)
       return 'Invalid date'
     }
 
@@ -114,8 +113,6 @@ const loadMore = () => {
  * @returns {boolean} True if there are more items to display, false otherwise.
  */
 const hasMoreItems = computed(() => {
-  console.log('Current Page:', currentPage.value)
-  console.log('Total Pages:', totalPages.value)
   return totalPages.value - 1 > currentPage.value
 })
 </script>

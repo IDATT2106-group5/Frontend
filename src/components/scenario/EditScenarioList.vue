@@ -4,19 +4,10 @@ import { useRouter } from 'vue-router'
 import { useScenarioStore } from '@/stores/ScenarioStore'
 import { Button } from '@/components/ui/button/index.js'
 import {
-  AlertTriangle,
-  AlertOctagon,
-  Droplets,
-  Flame,
-  Wind,
-  Thermometer,
-  Zap,
-  ShieldAlert,
-  CirclePlus,
-  Pencil,
-  Map,
-  Bomb,
-  Waves
+  AlertTriangle, AlertOctagon, Droplets, Flame, Wind, Thermometer, Zap, ShieldAlert, Trash2, Bomb,
+  Waves, Car, ThermometerSun, Nfc, CloudDrizzle, FlashlightOff, Footprints, Snowflake, Swords,
+  MountainSnow, CloudLightning, FlaskRound, LightbulbOff, FlaskConical, Syringe, Atom, DropletOff,
+  CirclePlus, Pencil,
 } from 'lucide-vue-next'
 
 export default {
@@ -64,16 +55,9 @@ export default {
      * Used for dynamically displaying the correct icon for each scenario
      */
     const iconMap = {
-      AlertTriangle,
-      AlertOctagon,
-      Droplets,
-      Flame,
-      Wind,
-      Thermometer,
-      Zap,
-      ShieldAlert,
-      Bomb,
-      Waves,
+      AlertTriangle, AlertOctagon, Droplets, Flame, Wind, Thermometer, Zap, ShieldAlert, Trash2, Bomb,
+      Waves, Car, ThermometerSun, Nfc, CloudDrizzle, FlashlightOff, Footprints, Snowflake, Swords,
+      MountainSnow, CloudLightning, FlaskRound, LightbulbOff, FlaskConical, Syringe, Atom, DropletOff,
     }
 
     /**

@@ -786,8 +786,6 @@ export const useMapStore = defineStore('map', {
       this.routeError = null;
 
       try {
-        console.log("Generating route from", startCoords, "to", endCoords);
-
         // Store the coordinates
         this.routeStart = startCoords;
         this.routeEnd = endCoords;
@@ -806,7 +804,6 @@ export const useMapStore = defineStore('map', {
 
         this.map.fitBounds(bounds);
 
-        console.log("Route generated successfully");
       } catch (error) {
         console.error("Error generating route:", error);
         this.routeError = "Kunne ikke generere rute. Vennligst prøv igjen senere.";
@@ -1285,7 +1282,7 @@ export const useMapStore = defineStore('map', {
 
         toast({
           title: 'Slettet kart markør',
-          description: 'Du har slettet en klart markør.',
+          description: 'Du har slettet en kart markør.',
           variant: 'success',
         })
 
