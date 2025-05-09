@@ -95,15 +95,6 @@ export const useLocationStore = defineStore('location', () => {
     }
   }
 
-  function attemptReconnect() {
-    if (isSharing.value && !positionUpdateInterval.value && connected.value) {
-      console.debug('Attempting to reconnect position sharing')
-      startPositionSharing()
-      return true
-    }
-    return false
-  }
-
   watch(
     () => userStore.user?.id,
     (userId) => {
