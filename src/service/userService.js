@@ -1,6 +1,5 @@
 import BaseService from '@/service/baseService';
 
-
 /**
  * Service for user related API operations such as retrieving user household info
  * and verifying email existence.
@@ -21,12 +20,7 @@ class UserService extends BaseService {
    * @throws {Error} If the request fails or household is not found.
    */
   async getCurrentHouseholdByUserId(userId) {
-    try {
-      const response = await this.get(`me/household/${userId}`);
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    return this.get(`me/household/${userId}`);
   }
   
   /**
@@ -37,12 +31,8 @@ class UserService extends BaseService {
    * @throws {Error} If the request fails.
    */
   async checkEmail(email) {
-    try {
-      const response = await this.post('check-mail', { email });
-      return response.userId; 
-    } catch (error) {
-      throw error;
-    }
+    const response = await this.post('check-mail', { email });
+    return response.userId;
   }
   
 }

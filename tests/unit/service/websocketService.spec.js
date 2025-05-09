@@ -1,3 +1,4 @@
+/* global setImmediate, global */
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import WebSocketService from '@/service/websocketService.js'
 import { Client } from '@stomp/stompjs'

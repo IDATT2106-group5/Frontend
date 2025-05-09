@@ -1,5 +1,4 @@
-// tests/unit/service/websocketComposable.spec.js
-
+/* global setImmediate, global */
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
@@ -30,7 +29,7 @@ vi.mock('@/service/websocketService.js', () => ({
 const flushPromises = () => new Promise((r) => setImmediate(r))
 
 describe('useWebSocket composable', () => {
-  let wrapper
+  let wrapper;  
 
   beforeEach(async () => {
     initSpy.mockClear()
