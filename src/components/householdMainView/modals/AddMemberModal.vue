@@ -1,51 +1,88 @@
 <script setup>
-import { ref } from 'vue'
-import { useHouseholdStore } from '@/stores/HouseholdStore'
-import { Button } from '@/components/ui/button'
-import { toast } from '@/components/ui/toast'
+  import { ref } from 'vue'
+  import { useHouseholdStore } from '@/stores/HouseholdStore'
+  import { Button } from '@/components/ui/button'
+  import { toast } from '@/components/ui/toast'
 
-const emit = defineEmits(['close'])
-const store = useHouseholdStore()
+  /**
+  * Emits events to parent component
+  * @type {function[]}
+  * @property {function} close - Emitted when the form is closed or when a member is successfully added
+  */
+  const emit = defineEmits(['close'])
 
-const newMemberName = ref('')
-const formError = ref('')
-const addingMember = ref(false)
+  /**
+  * Instance of the household store
+  * @type {import('@/stores/HouseholdStore').HouseholdStore}
+  */
+  const store = useHouseholdStore()
 
-async function addMember() {
+  /**
+  * The name of the new member to be added
+  * @type {import('vue').Ref<string>}
+  */
+  const newMemberName = ref('')
+
+  /**
+  * Error message to display if form validation fails
+  * @type {import('vue').Ref<string>}
+  */
+  const formError = ref('')
+
+  /**
+  * Flag indicating if a member is currently being added
+  * @type {import('vue').Ref<boolean>}
+  */
+  const addingMember = ref(false)
+
+  /**
+  * Adds a new member to the household
+  *
+  * Validates the input, then submits to the store.
+  * Shows success toast on success, displays error on failure.
+  *
+  * @async
+  * @returns {Promise<void>}
+  */
+  async function addMember() {
   if (!newMemberName.value) {
-    formError.value = 'Vennligst fyll ut navn'
-    return
-  }
+  formError.value = 'Vennligst fyll ut navn'
+  return
+}
   if (newMemberName.value.length > 30) {
-    formError.value = 'Navnet kan maks være 30 tegn langt'
-    return
-  }
+  formError.value = 'Navnet kan maks være 30 tegn langt'
+  return
+}
 
   addingMember.value = true
   formError.value = ''
 
   try {
-    const added = await store.addMember({
-      name: newMemberName.value,
-      fullName: newMemberName.value
-    })
+  /**
+   * The newly added member
+   * @type {Object}
+   * @property {string} fullName - The full name of the added member
+   */
+  const added = await store.addMember({
+  name: newMemberName.value,
+  fullName: newMemberName.value
+})
 
-    toast({
-      title: 'Medlem lagt til',
-      description: `Bruker ${added.fullName} har blitt lagt til i husstanden.`,
-      variant: 'success'
-    })
+  toast({
+  title: 'Medlem lagt til',
+  description: `Bruker ${added.fullName} har blitt lagt til i husstanden.`,
+  variant: 'success'
+})
 
-    // Refresh household data so new member appears immediately
-    await store.loadHouseholdData()
+  await store.loadHouseholdData()
 
-    newMemberName.value = ''
-    emit('close')
-  } catch (err) {
-    formError.value = err instanceof Error ? err.message : String(err)
-  } finally {
-    addingMember.value = false
-  }
+  newMemberName.value = ''
+  emit('close')
+} catch (err) {
+  formError.value = err instanceof Error ? err.message : String(err)
+} finally {
+  addingMember.value = false
+}
 }
 </script>
 
@@ -76,6 +113,7 @@ async function addMember() {
         <Button variant="outline" @click="emit('close')">Avbryt</Button>
         <Button
           class="px-4 py-2 rounded text-white bg-[#27AE60] hover:bg-[#219653] disabled:opacity-50"
+          data-cy="add-member"
           :disabled="addingMember"
           @click="addMember"
         >

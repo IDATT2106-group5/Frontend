@@ -17,7 +17,6 @@ const showPersonvern = ref(false)
  */
 onMounted(() => {
   window.hcaptchaCallback = (token) => {
-    console.log('hCaptcha token received:', token);
     formData.hCaptchaToken = token
   }
 
@@ -125,11 +124,8 @@ const onSubmit = async () => {
   const result = await v$.value.$validate()
 
   if (!result) {
-    console.log('Validation errors:', v$.value.$errors)
     return
   }
-
-  console.log(' Token at form submit:', formData.hCaptchaToken);
 
   if (!formData.hCaptchaToken) {
     status.error = true
@@ -149,8 +145,6 @@ const onSubmit = async () => {
       tlf: formData.tlf ? formData.tlf.replace(/\s/g, '') : '',
       hCaptchaToken: formData.hCaptchaToken
     }
-
-    console.log('Sending registration data:', userData);
 
     const success = await userStore.register(userData)
 
@@ -333,7 +327,7 @@ const onSubmit = async () => {
               @change="v$.privacyPolicy.$touch()"
             />
             <label for="privacy" class="ml-2 text-sm text-gray-600">
-              Jeg har lest og godtar 
+              Jeg har lest og godtar
               <span @click="showPersonvern = true" class="text-blue-600 hover:underline cursor-pointer">
                 personvernerklæringen
               </span>

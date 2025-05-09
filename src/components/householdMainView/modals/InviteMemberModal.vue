@@ -3,37 +3,74 @@ import { ref } from 'vue'
 import { useHouseholdStore } from '@/stores/HouseholdStore'
 import { toast } from '@/components/ui/toast'
 
+/**
+ * Emits events to parent component
+ * @type {function[]}
+ * @property {function} close - Emitted when the form is closed or after successful invitation
+ */
 const emit = defineEmits(['close'])
+
+/**
+ * Household store instance
+ * @type {import('@/stores/HouseholdStore').HouseholdStore}
+ */
 const store = useHouseholdStore()
 
+/**
+ * The email address to invite
+ * @type {import('vue').Ref<string>}
+ */
 const email = ref('')
+
+/**
+ * Error message to display if validation fails
+ * @type {import('vue').Ref<string>}
+ */
 const error = ref('')
+
+/**
+ * Flag indicating if invite operation is in progress
+ * @type {import('vue').Ref<boolean>}
+ */
 const loading = ref(false)
 
+/**
+ * Sends an invitation to join the household
+ *
+ * Validates the email, checks for duplicates, then submits to the store.
+ * Shows success toast on success, displays error on failure.
+ *
+ * @async
+ * @returns {Promise<void>}
+ */
 async function invite() {
   error.value = ''
-  
+
   if (!email.value.trim()) {
     error.value = 'Vennligst skriv inn en e-postadresse'
     return
   }
-  
+
   if (!validateEmail(email.value)) {
     error.value = 'Ugyldig e-postformat'
     return
   }
 
+  /**
+   * Normalized email address
+   * @type {string}
+   */
   const cleanEmail = email.value.trim().toLowerCase()
 
-  if (store.sentInvitations.some(inv => 
-    inv.email.toLowerCase() === cleanEmail && 
+  if (store.sentInvitations.some(inv =>
+    inv.email.toLowerCase() === cleanEmail &&
     inv.status === 'PENDING'
   )) {
     error.value = 'Allerede sendt invitasjon til denne e-posten'
     return
   }
 
-  if (store.members.registered.some(m => 
+  if (store.members.registered.some(m =>
     m.email.toLowerCase() === cleanEmail
   )) {
     error.value = 'Denne brukeren er allerede medlem'
@@ -42,19 +79,21 @@ async function invite() {
 
   loading.value = true
   try {
-    await store.inviteMember(cleanEmail)    
+    await store.inviteMember(cleanEmail)
+
     toast({
       title: 'Invitasjon sendt',
       description: `En invitasjon ble sendt til ${cleanEmail}`,
       variant: 'success'
     })
+
     emit('close')
   } catch (e) {
-    const backendError = e.response?.data?.message || 
-                        e.response?.data?.error || 
-                        e.response?.data || 
-                        'Ukjent feil'
-    
+    const backendError = e.response?.data?.message ||
+      e.response?.data?.error ||
+      e.response?.data ||
+      'Ukjent feil'
+
     let userMessage = backendError
     if (backendError.includes('User with email not found')) {
       userMessage = `Fant ingen bruker med e-post: ${cleanEmail}`
@@ -67,6 +106,12 @@ async function invite() {
   }
 }
 
+/**
+ * Validates an email address format
+ *
+ * @param {string} email - The email address to validate
+ * @returns {boolean} True if email format is valid, false otherwise
+ */
 function validateEmail(email) {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return re.test(email)
@@ -100,6 +145,8 @@ function validateEmail(email) {
           Avbryt
         </button>
         <button
+          type="button"
+          data-cy="invite-button"
           @click="invite"
           :disabled="loading"
           class="px-4 py-1 bg-primary text-white rounded hover:bg-[hsl(var(--primary-hover))] disabled:opacity-50 relative"

@@ -184,7 +184,6 @@ export const useUserStore = defineStore('user', {
       this.error = null;
       try {
         const resp = await RegisterAdminService.registerAdmin(adminData);
-        console.log(resp);
 
         return true;
       } catch(err) {

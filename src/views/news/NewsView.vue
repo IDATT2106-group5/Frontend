@@ -7,7 +7,7 @@ const currentPage = ref(0)
 const pageSize = ref(5)
 const totalPages = ref(0)
 
-const currentFilter = ref('all') // Current filter for news items ('all', 'unread', 'read')
+const currentFilter = ref('all')
 
 /**
  * Fetches paginated news items when the component is mounted.
@@ -47,7 +47,6 @@ function formatDate(dateString) {
 
     // Check if the date is valid
     if (isNaN(date.getTime())) {
-      console.log('Invalid date received:', dateString)
       return 'Invalid date'
     }
 
@@ -114,8 +113,6 @@ const loadMore = () => {
  * @returns {boolean} True if there are more items to display, false otherwise.
  */
 const hasMoreItems = computed(() => {
-  console.log('Current Page:', currentPage.value)
-  console.log('Total Pages:', totalPages.value)
   return totalPages.value - 1 > currentPage.value
 })
 </script>

@@ -1,4 +1,4 @@
-import { defineStore } from 'pinia' // Assuming you're using Pinia for state management
+import { defineStore } from 'pinia' 
 import ScenarioService from '@/service/scenarioService'
 
 /**
@@ -68,7 +68,7 @@ export const useScenarioStore = defineStore('scenario', {
 
       try {
         const scenario = await ScenarioService.getScenarioById(id);
-        // Update the selected scenario with the fetched data
+        
         this.selectedScenario = scenario;
         return scenario;
       } catch (error) {
@@ -100,7 +100,7 @@ export const useScenarioStore = defineStore('scenario', {
 
       try {
         const result = await ScenarioService.createScenario(scenarioData)
-        // Refresh scenarios to get the newly created one with its server-assigned ID
+
         await this.fetchAllScenarios()
         return result
       } catch (error) {
@@ -125,9 +125,9 @@ export const useScenarioStore = defineStore('scenario', {
 
       try {
         const result = await ScenarioService.updateScenario(id, scenarioData)
-        // Refresh scenarios to get the updated data
+     
         await this.fetchAllScenarios()
-        // If this was the selected scenario, update it
+  
         if (this.selectedScenario && this.selectedScenario.id === id) {
           this.selectScenario(id)
         }
