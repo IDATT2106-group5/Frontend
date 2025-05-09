@@ -455,15 +455,18 @@ function cancelDelete() {
                   v-if="editingItem !== item.id"
                   @click.stop="startEditing(item)"
                   class="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-gray-600 hover:text-blue-600 cursor-pointer flex-shrink-0"
+                  data-cy="edit-button"
                 />
                 <Save
                   v-if="editingItem === item.id"
                   @click.stop="saveItemEdit(item.id)"
                   class="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-gray-600 hover:text-green-600 cursor-pointer flex-shrink-0"
+                  data-cy="save-button"
                 />
                 <Trash
                   @click.stop="openDeleteConfirm(item.id)"
                   class="h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 text-gray-600 hover:text-red-600 cursor-pointer flex-shrink-0"
+                  data-cy="delete-button"
                 />
               </div>
             </div>

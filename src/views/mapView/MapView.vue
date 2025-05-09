@@ -83,7 +83,6 @@ export default {
         map.value = await mapStore.initMap(mapContainer.value)
 
         if (map.value) {
-          console.log('Map initialized successfully')
           mapInitialized.value = true
 
           // Common map initialization - emit map-ready event
@@ -108,7 +107,6 @@ export default {
           try {
             const positions = await fetchHouseholdPositions()
             if (Array.isArray(positions)) {
-              console.log(`Received ${positions.length} initial positions`)
               positions.forEach((pos) => handlePositionUpdate(pos))
             } else {
               console.warn('Expected positions array but received:', positions)
@@ -119,13 +117,11 @@ export default {
 
           // Admin-specific setup
           if (props.isAdminMode) {
-            console.log('Setting up admin mode in MapView')
 
             // Set up click handler for admin mode
             map.value.on('click', (e) => {
-              console.log('Admin map clicked:', e.latlng)
-              emit('map-click', e)
-            })
+              emit('map-click', e);
+            });
 
             // Sync admin markers to the map store if provided
             if (props.markers && props.markers.length > 0) {
@@ -136,7 +132,6 @@ export default {
           // Add additional timeout to ensure markers are refreshed after map is ready
           setTimeout(() => {
             mapStore.refreshMarkerLayers()
-            console.log('Forced marker refresh after timeout')
           }, 500)
         }
       } catch (error) {
@@ -231,7 +226,6 @@ export default {
     })
 
     const handlePositionUpdate = (positionData) => {
-      console.log('Handling position update:', positionData)
 
       if (!positionData) {
         return
@@ -263,8 +257,6 @@ export default {
         const isCurrentUser = userId === userStore.user.id
         const name = fullName.split(' ')[0]
         updateUserMarker(userId, name, parsedLong, parsedLat, isCurrentUser)
-      } else {
-        console.log(`Map not ready yet. Storing position for user ${userId} for later display`)
       }
     }
 
@@ -346,7 +338,6 @@ export default {
         if (map.value && typeof map.value.addLayer === 'function') {
           newMarker.addTo(map.value)
           userMarkers.value.set(userId, newMarker)
-          console.log(`Created new marker for user ${userId}`)
         } else {
           console.error(`Cannot add marker: map instance is not properly initialized`, map.value)
           userMarkers.value.set(userId, newMarker)
@@ -402,17 +393,16 @@ export default {
 </script>
 
 <template>
-    <div class="w-full h-[calc(100vh-60px)] relative overflow-hidden">
-      <div id="map" ref="mapContainer" class="w-full h-full"></div>
-
+  <div class="w-full h-[calc(100vh-60px)] relative overflow-hidden">
+    <div id="map" ref="mapContainer" class="w-full h-full"></div>
 
     <!-- Location Services Control -->
       <div class="absolute bottom-10 right-16 z-50">
         <Button
           @click="togglePositionSharing"
           variant="default"
-          class="flex items-center gap-2 bg-white text-gray-700 font-medium p-2 px-3 rounded-lg shadow-md cursor-pointer transition-all duration-200"
-          :class="{ 'bg-blue-500 text-white': isSharing }"
+          class="flex items-center gap-2 bg-white text-gray-700 font-medium p-2 px-3 rounded-lg shadow-md cursor-pointer transition-all duration-200 hover:bg-gray-200"
+          :class="{ 'bg-blue-500 text-white hover:bg-blue-300': isSharing }"
         >
           <div class="relative">
             <LocateFixed class="w-5 h-5" />
@@ -535,7 +525,7 @@ export default {
 
 @media (max-width: 767px) {
   :deep(.leaflet-control-zoom) {
-    bottom: 40px !important;
+    bottom: 20px !important;
   }
 
   :deep(.leaflet-control-zoom-in),
@@ -545,21 +535,17 @@ export default {
     line-height: 30px;
     font-size: 16px;
   }
+}
 
-  .map-loading-spinner {
-    width: 30px;
-    height: 30px;
-  }
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 
-  .map-loading-text {
-    font-size: 14px;
-  }
-
-  .marker-filter-container {
-    top: 70px;
-  }
+@keyframes fade-in-out {
+  0% { opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
 }
 </style>
-
-
-

@@ -163,7 +163,6 @@ export const useNewsStore = defineStore('news', {
       }
     },
     markAsRead(id) {
-      console.log('Marking as read:', id)
       const item = this.news.find((news) => news.id === id)
       if (item) {
         item.read = true
@@ -171,7 +170,6 @@ export const useNewsStore = defineStore('news', {
       }
     },
     async deleteNews(id) {
-      console.log('Deleting news item with ID:', id)
       this.loading = true
       this.error = null
 
