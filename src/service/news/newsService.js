@@ -1,90 +1,74 @@
 import BaseService from '@/service/baseService'
 
 /**
- * Service class for handling scenario-related API operations
+ * Service class for handling news-related API operations
  * @extends BaseService
  */
 class NewsService extends BaseService {
   /**
-   * Creates an instance of ScenarioService with the scenarios API endpoint
+   * Creates an instance of NewsService with the news API endpoint
    */
   constructor() {
     super('/news')
   }
 
   /**
-   * Retrieves all scenarios from the system
+   * Retrieves paginated news from the system
    * @async
-   * @returns {Promise<Array>} Promise resolving to an array of scenario objects
-   * @throws {Error} If the API request fails
+   * @param {number} page - The page number to retrieve
+   * @param {number} size - The number of items per page
+   * @returns {Promise<Object>} Promise resolving to an object containing news array and pagination info
    */
   async fetchPaginatedNews(page, size) {
-    try {
-      const response = await this.get(`get/?page=${page}&size=${size}`)
-      const data = response
-
-
-      return {
-        news: data.news || [],
-        totalPages: data.totalPages || 1,
-        totalElements: data.totalElements || 0,
-      }
-    } catch (error) {
+    const response = await this.get(`get/?page=${page}&size=${size}`)
+    const data = response
+    
+    return {
+      news: data.news || [],
+      totalPages: data.totalPages || 1,
+      totalElements: data.totalElements || 0,
     }
   }
 
   /**
-   * Retrieves a specific scenario by its ID
+   * Retrieves a specific news item by its ID
    * @async
-   * @param {number} id - The unique identifier of the scenario to retrieve
-   * @returns {Promise<Object>} Promise resolving to the scenario object
-   * @throws {Error} If the API request fails
+   * @param {number} id - The unique identifier of the news to retrieve
+   * @returns {Promise<Object>} Promise resolving to the news object
    */
   async getNewsById(id) {
-    try {
-      return await this.get(`${id}`)
-    } catch (error) {
-      throw error
-    }
+    return await this.get(`${id}`)
   }
 
   /**
-   * Creates a new scenario in the system
+   * Creates a new news item in the system
    * @async
-   * @param {Object} newsData - The data for the new scenario
-   * @returns {Promise<Object>} Promise resolving to the API response with a success message
-   * @throws {Error} If the scenario creation request fails
+   * @param {Object} newsData - The data for the new news item
+   * @returns {Promise<Object>} Promise resolving to the API response
    */
-  async createNews(NewsData) {
-    try {
-      return await this.post('create', NewsData)
-    } catch (error) {
-      throw error
-    }
-  }
-
-  async deleteNews(id) {
-    try {
-      return await this.post(`delete/${id}`)
-    } catch (error) {
-      throw error
-    }
+  async createNews(newsData) {
+    return await this.post('create', newsData)
   }
 
   /**
-   * Updates an existing scenario in the system
+   * Deletes a news item from the system
    * @async
-   * @param {number} id - The unique identifier of the scenario to update
-   * @param {Object} scenarioData - The updated scenario data
-   * @returns {Promise<Object>} Promise resolving to the API response with a success message
-   * @throws {Error} If the scenario update request fails
+   * @param {number} id - The unique identifier of the news item to delete
+   * @returns {Promise<Object>} Promise resolving to the API response
+   */
+  async deleteNews(id) {
+    return await this.post(`delete/${id}`)
+  }
+
+  /**
+   * Updates an existing news item in the system
+   * @async
+   * @param {number} id - The unique identifier of the news item to update
+   * @param {Object} newsData - The updated news data
+   * @returns {Promise<Object>} Promise resolving to the API response
    */
   async updateNews(id, newsData) {
-    try {
-      return await this.post(`edit/${id}`, newsData)
-    } catch (error) {
-      throw error
-    }
+    return await this.post(`edit/${id}`, newsData)
   }
 }
 

@@ -9,21 +9,13 @@ export default class WebSocketService {
       onDisconnected: () => {},
       onNotification: () => {},
       onPositionUpdate: () => {},
-      onIncident: () => {}, 
+      onIncident: () => {},
     }
     this.userId = null
     this.token = null
   }
 
-  init({
-    userId,
-    householdId,
-    token,
-    onConnected,
-    onDisconnected,
-    onNotification,
-    onPositionUpdate,
-  }) {
+  init({ userId, householdId, token, onConnected, onDisconnected, onNotification, onPositionUpdate }) {
     this.userId = userId
     this.token = token
     this.householdId = householdId
@@ -41,35 +33,38 @@ export default class WebSocketService {
       window.global = window
     }
 
-    import('sockjs-client').then((SockJS) => {
-      const socket = new SockJS.default(`http://localhost:8080/ws?userId=${this.userId}`)
+    import('sockjs-client')
+      .then((SockJS) => {
+        const socket = new SockJS.default(`http://localhost:8080/ws?userId=${this.userId}`)
 
-      this.stompClient = new Client({
-        webSocketFactory: () => socket,
-        onConnect: () => this._onConnected(),
-        onDisconnect: () => this._onDisconnected(),
-        reconnectDelay: 5000,
-        heartbeatIncoming: 4000,
-        heartbeatOutgoing: 4000,
+        this.stompClient = new Client({
+          webSocketFactory: () => socket,
+          onConnect: () => this._onConnected(),
+          onDisconnect: () => this._onDisconnected(),
+          reconnectDelay: 5000,
+          heartbeatIncoming: 4000,
+          heartbeatOutgoing: 4000,
+        })
+
+        this.stompClient.activate()
       })
-
-      this.stompClient.activate()
-    })
+      .catch((err) => {
+        console.error('Failed to load SockJS client', err)
+      })
   }
 
   _onConnected() {
     this.connected = true
 
-
     this.stompClient.subscribe('/topic/notifications', (message) => {
       try {
         const data = JSON.parse(message.body)
         this.callbacks.onNotification(data)
-
-        if (data && data.type === 'INCIDENT') {
+        if (data.type === 'INCIDENT') {
           this.callbacks.onIncident(data)
         }
-      } catch (error) {
+      } catch (err) {
+        console.error('Error handling /topic/notifications message', err)
         this.callbacks.onNotification()
       }
     })
@@ -79,11 +74,11 @@ export default class WebSocketService {
         try {
           const data = JSON.parse(message.body)
           this.callbacks.onNotification(data)
-
-          if (data && data.type === 'INCIDENT') {
+          if (data.type === 'INCIDENT') {
             this.callbacks.onIncident(data)
           }
-        } catch (error) {
+        } catch (err) {
+          console.error('Error handling /user/queue/notifications message', err)
           this.callbacks.onNotification()
         }
       })
@@ -108,23 +103,18 @@ export default class WebSocketService {
       this.stompClient.subscribe(`/topic/position/${householdId}`, (message) => {
         try {
           const data = JSON.parse(message.body)
-          if (callback) callback(data)
-        } catch (error) {
+          callback && callback(data)
+        } catch (err) {
+          console.error('Error handling position update', err)
         }
       })
       return true
-    } else {
-      return false
     }
+    return false
   }
 
   updatePosition(userId, longitude, latitude) {
-    const positionData = {
-      userId: userId,
-      longitude: longitude,
-      latitude: latitude,
-    }
-
+    const positionData = { userId, longitude, latitude }
     if (this.stompClient && this.connected) {
       try {
         this.stompClient.publish({
@@ -132,11 +122,11 @@ export default class WebSocketService {
           body: JSON.stringify(positionData),
         })
         return true
-      } catch (error) {
+      } catch (err) {
+        console.error('Error publishing position update', err)
         return false
       }
-    } else {
-      return false
     }
+    return false
   }
 }
