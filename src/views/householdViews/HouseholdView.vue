@@ -264,7 +264,7 @@ const sendJoinRequest = async () => {
               <h2 class="text-lg font-bold mb-1">Søk å bli med</h2>
               <p class="text-teal-800 text-sm">Skriv inn husstands‑ID:</p>
               <p v-if="isOwner" class="text-orange-600 text-xs mt-1">
-                Først forlat din nåværende husstand.
+                En husstands eier kan ikke sende eller akseptere invitasjoner om å bli med i andre husstander. Vennligst slett husstanden eller gi eierskap til noen andre.
               </p>
             </div>
             <div class="space-y-4">
@@ -325,8 +325,20 @@ const sendJoinRequest = async () => {
                   <p class="text-xs"><strong>ID:</strong> {{ inv.householdId }}</p>
                   <p class="text-xs"><strong>Navn:</strong> {{ truncateText(inv.householdName, 20) }}</p>
                   <div class="flex gap-2 justify-center">
-                    <button @click="acceptInvitation(inv.id)" class="flex-1 text-xs py-1 rounded bg-primary text-white">Aksepter</button>
-                    <button @click="declineInvitation(inv.id)" class="flex-1 text-xs py-1 rounded border border-gray-400">Avslå</button>
+                    <button
+                      @click="acceptInvitation(inv.id)"
+                      :disabled="isOwner"
+                      :title="isOwner
+                        ? 'En husstandseier kan ikke akseptere invitasjoner. Vennligst slett husstanden eller gi noen andre eierskap.'
+                        : ''"
+                      class="flex-1 text-xs py-1 rounded bg-primary text-white
+                             disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Aksepter
+                    </button>
+                    <button @click="declineInvitation(inv.id)" class="flex-1 text-xs py-1 rounded border border-gray-400">
+                      Avslå
+                    </button>
                   </div>
                 </div>
               </div>
