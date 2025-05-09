@@ -1,10 +1,13 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/UserStore'
 import { useVuelidate } from '@vuelidate/core'
-import { required, minLength, sameAs, helpers } from '@vuelidate/validators'
+import { helpers, minLength, required, sameAs } from '@vuelidate/validators'
 import { Eye, EyeOff } from 'lucide-vue-next'
+import PasswordRequirementsList from '@/components/passwordRequirement/PasswordRequirementsList.vue'
+import { Input } from '@/components/ui/input/index.js'
+import { Button } from '@/components/ui/button/index.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -23,13 +26,29 @@ const tokenValid = ref(false)
 // Validation
 const rules = computed(() => ({
   newPassword: {
-    required: helpers.withMessage('Passord er påkrevd', required),
-    minLength: helpers.withMessage('Passordet må være minst 8 tegn', minLength(8))
+      required: helpers.withMessage('Passord er påkrevd', required),
+      minLength: helpers.withMessage('Passordet må være minst 8 tegn', minLength(8)),
+      containsUppercase: helpers.withMessage(
+        'Passordet må inneholde minst én stor bokstav',
+        helpers.regex(/[A-Z]/)
+      ),
+      containsLowercase: helpers.withMessage(
+        'Passordet må inneholde minst én liten bokstav',
+        helpers.regex(/[a-z]/)
+      ),
+      containsNumber: helpers.withMessage(
+        'Passordet må inneholde minst ett tall',
+        helpers.regex(/[0-9]/)
+      ),
+      containsSpecial: helpers.withMessage(
+        'Passordet må inneholde minst ett spesialtegn (f.eks. !@#$%^&*)',
+        helpers.regex(/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+/)
+      )
   },
   confirmPassword: {
     required: helpers.withMessage('Bekreft passord er påkrevd', required),
-    sameAs: helpers.withMessage('Passordene må være like', sameAs(newPassword))
-  }
+    sameAs: helpers.withMessage('Passordene må være like', sameAs(newPassword)),
+  },
 }))
 
 const v$ = useVuelidate(rules, { newPassword, confirmPassword })
@@ -75,82 +94,97 @@ const resetPassword = async () => {
 <template>
   <div class="min-h-screen flex flex-col items-center justify-center p-4 bg-white">
     <RouterLink to="/" class="absolute top-4 left-6">
-      <img src="/src/assets/icons/Krisefikser.png" alt="Krisefikser Logo" class="w-12 hover:opacity-80" />
+      <img
+        src="/src/assets/icons/Krisefikser.png"
+        alt="Krisefikser Logo"
+        class="w-12 hover:opacity-80"
+      />
     </RouterLink>
+
     <h1 class="text-2xl font-bold mb-4">Lag nytt passord</h1>
     <p class="text-gray-700 mb-4">Fyll inn nytt passord for å tilbakestille kontoen din.</p>
 
     <!-- Form -->
     <div v-if="tokenValid" class="w-full max-w-md space-y-4">
       <!-- New password -->
-      <div class="relative">
-        <input
-          v-model="v$.newPassword.$model"
-          :type="showPassword ? 'text' : 'password'"
-          placeholder="Nytt passord"
-          class="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 pr-10"
-          @blur="v$.newPassword.$touch()"
-        />
-        <button
-          type="button"
-          @click="showPassword = !showPassword"
-          class="absolute top-2.5 right-2 text-gray-500"
-        >
-          <component :is="showPassword ? EyeOff : Eye" class="w-5 h-5" />
-        </button>
-        <p v-if="v$.newPassword.$error" class="text-sm text-red-600 mt-1">
+      <div class="space-y-2">
+        <div class="relative">
+          <Input
+            id="newPassword"
+            v-model="newPassword"
+            :type="showPassword ? 'text' : 'password'"
+            placeholder="Lag et passord"
+            class="pr-10"
+            :class="{ 'border-red-500': v$.newPassword.$error }"
+            @input="v$.newPassword.$touch()"
+            @blur="v$.newPassword.$touch()"
+          />
+          <button
+            type="button"
+            @click="showPassword = !showPassword"
+            class="absolute right-3 top-1/2 transform -translate-y-1/2 bg-transparent border-none cursor-pointer text-gray-500"
+          >
+            <component :is="showPassword ? EyeOff : Eye" class="w-5 h-5" />
+          </button>
+        </div>
+        <div v-if="v$.newPassword.$error" class="text-red-500 text-xs">
           {{ getErrorMessage(v$.newPassword) }}
-        </p>
+        </div>
+        <PasswordRequirementsList :password="newPassword" :validator="v$.newPassword" />
       </div>
 
       <!-- Confirm password -->
-      <div class="relative">
-        <input
-          v-model="v$.confirmPassword.$model"
-          :type="showConfirmPassword ? 'text' : 'password'"
-          placeholder="Bekreft passord"
-          class="w-full px-4 py-2 border rounded shadow-sm focus:outline-none focus:ring-2 pr-10"
-          @blur="v$.confirmPassword.$touch()"
-        />
-        <button
-          type="button"
-          @click="showConfirmPassword = !showConfirmPassword"
-          class="absolute top-2.5 right-2 text-gray-500"
-        >
-          <component :is="showConfirmPassword ? EyeOff : Eye" class="w-5 h-5" />
-        </button>
-        <p v-if="v$.confirmPassword.$error" class="text-sm text-red-600 mt-1">
+      <div class="space-y-2">
+        <div class="relative">
+          <Input
+            id="confirmPassword"
+            v-model="confirmPassword"
+            :type="showConfirmPassword ? 'text' : 'password'"
+            placeholder="Bekreft passord"
+            class="pr-10"
+            :class="{ 'border-red-500': v$.confirmPassword.$error }"
+            @input="v$.confirmPassword.$touch()"
+            @blur="v$.confirmPassword.$touch()"
+          />
+          <button
+            type="button"
+            @click="showConfirmPassword = !showConfirmPassword"
+            class="absolute right-3 top-1/2 transform -translate-y-1/2 bg-transparent border-none cursor-pointer text-gray-500"
+          >
+            <component :is="showConfirmPassword ? EyeOff : Eye" class="w-5 h-5" />
+          </button>
+        </div>
+        <div v-if="v$.confirmPassword.$error" class="text-red-500 text-xs">
           {{ getErrorMessage(v$.confirmPassword) }}
-        </p>
+        </div>
       </div>
 
       <!-- Submit button -->
-      <button
+      <Button
         @click="resetPassword"
         :disabled="isLoading"
         class="w-full bg-teal-600 text-white py-2 rounded hover:bg-teal-700"
       >
         <span v-if="isLoading">Sender inn...</span>
         <span v-else>Tilbakestill passord</span>
-      </button>
+      </Button>
+
+      <!-- Error message -->
+      <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
+
+      <!-- Success message -->
+      <div v-if="success" class="p-2 bg-green-50 border border-green-200 rounded">
+        <p class="text-green-600 text-sm">{{ success }}</p>
+      </div>
     </div>
 
-    <!-- Error message -->
-    <p v-if="error" class="text-sm text-red-600 mt-4">{{ error }}</p>
-
-    <!-- Success message -->
-    <div
-      v-if="success"
-      class="p-2 mt-4 bg-green-50 border border-green-200 rounded max-w-md w-full"
-    >
-      <p class="text-green-600 text-sm">{{ success }}</p>
+    <!-- Show error if token is invalid -->
+    <div v-if="!tokenValid && error" class="w-full max-w-md mt-4">
+      <p class="text-red-600">{{ error }}</p>
     </div>
 
     <!-- Login link -->
-    <RouterLink
-      to="/login"
-      class="mt-4 text-sm text-blue-700 hover:underline"
-    >
+    <RouterLink to="/login" class="mt-4 text-sm text-blue-700 hover:underline">
       ← Tilbake til innlogging
     </RouterLink>
   </div>

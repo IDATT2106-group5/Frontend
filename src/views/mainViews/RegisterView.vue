@@ -1,19 +1,21 @@
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { Input } from '@/components/ui/input'
 import { useVuelidate } from '@vuelidate/core'
-import { required, email, minLength, sameAs, helpers } from '@vuelidate/validators'
-import { Mail, KeySquare, Eye, EyeOff } from 'lucide-vue-next'
+import { email, helpers, minLength, required, sameAs } from '@vuelidate/validators'
+import { Eye, EyeOff, KeySquare, Mail } from 'lucide-vue-next'
 import { useUserStore } from '@/stores/UserStore'
 import PersonVernPopUp from '@/views/mainViews/PersonVernPopUp.vue'
+import PasswordRequirementsList from '@/components/passwordRequirement/PasswordRequirementsList.vue'
+import { Button } from '@/components/ui/button/index.js'
 
 const showPersonvern = ref(false)
 
 onMounted(() => {
   // Called when hCaptcha is completed successfully
   window.hcaptchaCallback = (token) => {
-    console.log('hCaptcha token received:', token);
+    console.log('hCaptcha token received:', token)
     formData.hCaptchaToken = token
   }
 
@@ -28,15 +30,15 @@ onMounted(() => {
         callback: window.hcaptchaCallback,
         'expired-callback': window.hcaptchaReset,
         'error-callback': window.hcaptchaReset
-      });
+      })
     } else {
       // Retry after short delay if script isn't ready
-      setTimeout(renderCaptcha, 300);
+      setTimeout(renderCaptcha, 300)
     }
   }
 
-  renderCaptcha();
-});
+  renderCaptcha()
+})
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -70,13 +72,29 @@ const rules = computed(() => {
     fullName: {
       required: helpers.withMessage('Navn er påkrevd', required),
       onlyLetters: helpers.withMessage(
-      'Navnet kan kun inneholde bokstaver og mellomrom',
-      (value) => /^[A-Za-zÆØÅæøå\s]+$/.test(value)
-    )
+        'Navnet kan kun inneholde bokstaver og mellomrom',
+        (value) => /^[A-Za-zÆØÅæøå\s]+$/.test(value)
+      )
     },
     password: {
       required: helpers.withMessage('Passord er påkrevd', required),
-      minLength: helpers.withMessage('Passordet må være minst 8 tegn', minLength(8))
+      minLength: helpers.withMessage('Passordet må være minst 8 tegn', minLength(8)),
+      containsUppercase: helpers.withMessage(
+        'Passordet må inneholde minst én stor bokstav',
+        helpers.regex(/[A-Z]/)
+      ),
+      containsLowercase: helpers.withMessage(
+        'Passordet må inneholde minst én liten bokstav',
+        helpers.regex(/[a-z]/)
+      ),
+      containsNumber: helpers.withMessage(
+        'Passordet må inneholde minst ett tall',
+        helpers.regex(/[0-9]/)
+      ),
+      containsSpecial: helpers.withMessage(
+        'Passordet må inneholde minst ett spesialtegn (f.eks. !@#$%^&*)',
+        helpers.regex(/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]+/)
+      )
     },
     confirmPassword: {
       required: helpers.withMessage('Bekreft passord er påkrevd', required),
@@ -87,7 +105,8 @@ const rules = computed(() => {
         'Telefonnummer må være 8 siffer',
         (value) => !value || value.replace(/\s/g, '').length === 8
       )
-    },
+    }
+    ,
     privacyPolicy: {
       isChecked: helpers.withMessage('Du må godta personvernerklæringen', (value) => value === true)
     }
@@ -97,8 +116,8 @@ const rules = computed(() => {
 const v$ = useVuelidate(rules, formData)
 
 const getErrorMessage = (field) => {
-  if (!field.$errors || field.$errors.length === 0) return '';
-  return field.$errors[0].$message;
+  if (!field.$errors || field.$errors.length === 0) return ''
+  return field.$errors[0].$message
 }
 
 const onSubmit = async () => {
@@ -109,7 +128,7 @@ const onSubmit = async () => {
     return
   }
 
-  console.log(' Token at form submit:', formData.hCaptchaToken);
+  console.log(' Token at form submit:', formData.hCaptchaToken)
 
   if (!formData.hCaptchaToken) {
     status.error = true
@@ -130,7 +149,7 @@ const onSubmit = async () => {
       hCaptchaToken: formData.hCaptchaToken
     }
 
-    console.log('Sending registration data:', userData);
+    console.log('Sending registration data:', userData)
 
     const success = await userStore.register(userData)
 
@@ -154,7 +173,11 @@ const onSubmit = async () => {
   <div class="flex justify-center items-center min-h-screen bg-white">
     <PersonVernPopUp :visible="showPersonvern" @close="showPersonvern = false" />
     <RouterLink to="/" class="absolute top-4 left-6">
-      <img src="/src/assets/icons/Krisefikser.png" alt="Krisefikser Logo" class="w-12 hover:opacity-80" />
+      <img
+        src="/src/assets/icons/Krisefikser.png"
+        alt="Krisefikser Logo"
+        class="w-12 hover:opacity-80"
+      />
     </RouterLink>
     <div class="w-full max-w-2xl">
       <h1 class="text-4xl font-bold text-center mb-8">Opprett Bruker</h1>
@@ -188,7 +211,7 @@ const onSubmit = async () => {
                 type="email"
                 placeholder="E-post"
                 class="pl-10"
-                :class="{'border-red-500': v$.email.$error}"
+                :class="{ 'border-red-500': v$.email.$error }"
                 @input="v$.email.$touch()"
                 @blur="v$.email.$touch()"
               />
@@ -208,7 +231,7 @@ const onSubmit = async () => {
               v-model="v$.fullName.$model"
               type="text"
               placeholder="Fornavn Etternavn"
-              :class="{'border-red-500': v$.fullName.$error}"
+              :class="{ 'border-red-500': v$.fullName.$error }"
               @input="v$.fullName.$touch()"
               @blur="v$.fullName.$touch()"
             />
@@ -230,7 +253,7 @@ const onSubmit = async () => {
                 id="password"
                 v-model="v$.password.$model"
                 :type="showPassword ? 'text' : 'password'"
-                placeholder="Laget passord"
+                placeholder="Lag et passord"
                 class="pl-10"
                 :class="{'border-red-500': v$.password.$error}"
                 @input="v$.password.$touch()"
@@ -247,99 +270,105 @@ const onSubmit = async () => {
             <div v-if="v$.password.$error" class="text-red-500 text-xs mt-1">
               {{ getErrorMessage(v$.password) }}
             </div>
-          </div>
-
-          <!-- Phone Number Input -->
-          <div class="flex flex-col mb-6">
-            <label for="tlf" class="text-base font-medium mb-2">Telefon nummer</label>
-            <Input
-              id="tlf"
-              v-model="v$.tlf.$model"
-              v-mask="'### ## ###'"
-              placeholder="123 45 678"
-              @input="v$.tlf.$touch()"
-              @blur="v$.tlf.$touch()"
-              :class="{'border-red-500': v$.tlf.$error}"
+            <PasswordRequirementsList
+              :password="formData.password"
+              :validator="v$.password"
             />
-            <div v-if="v$.tlf.$error" class="text-red-500 text-xs mt-1">
-              {{ getErrorMessage(v$.tlf) }}
-            </div>
           </div>
 
-          <!-- Confirm Password Input -->
-          <div class="flex flex-col mb-6">
-            <label for="confirmPassword" class="text-base font-medium mb-2 flex">
-              Bekreft Passord<span class="text-red-500 ml-0.5">*</span>
-            </label>
-            <div class="relative flex items-center">
-              <div class="absolute left-3 text-gray-400 pointer-events-none">
-                <KeySquare class="w-5 h-5" />
-              </div>
+            <!-- Phone Number Input -->
+            <div class="flex flex-col mb-6">
+              <label for="tlf" class="text-base font-medium mb-2">Telefon nummer</label>
               <Input
-                id="confirmPassword"
-                v-model="v$.confirmPassword.$model"
-                :type="showConfirmPassword ? 'text' : 'password'"
-                placeholder="Skriv passordet igjen"
-                class="pl-10"
-                :class="{'border-red-500': v$.confirmPassword.$error}"
-                @input="v$.confirmPassword.$touch()"
-                @blur="v$.confirmPassword.$touch()"
+                id="tlf"
+                v-model="v$.tlf.$model"
+                v-mask="'### ## ###'"
+                placeholder="123 45 678"
+                @input="v$.tlf.$touch()"
+                @blur="v$.tlf.$touch()"
+                :class="{ 'border-red-500': v$.tlf.$error }"
               />
-              <button
-                type="button"
-                @click="showConfirmPassword = !showConfirmPassword"
-                class="absolute right-3 bg-transparent border-none cursor-pointer text-gray-500"
-              >
-              <component :is="showConfirmPassword ? EyeOff : Eye" class="w-5 h-5" />
-              </button>
+              <div v-if="v$.tlf.$error" class="text-red-500 text-xs mt-1">
+                {{ getErrorMessage(v$.tlf) }}
+              </div>
             </div>
-            <div v-if="v$.confirmPassword.$error" class="text-red-500 text-xs mt-1">
-              {{ getErrorMessage(v$.confirmPassword) }}
+
+            <!-- Confirm Password Input -->
+            <div class="flex flex-col mb-6">
+              <label for="confirmPassword" class="text-base font-medium mb-2 flex">
+                Bekreft Passord<span class="text-red-500 ml-0.5">*</span>
+              </label>
+              <div class="relative flex items-center">
+                <div class="absolute left-3 text-gray-400 pointer-events-none">
+                  <KeySquare class="w-5 h-5" />
+                </div>
+                <Input
+                  id="confirmPassword"
+                  v-model="v$.confirmPassword.$model"
+                  :type="showConfirmPassword ? 'text' : 'password'"
+                  placeholder="Skriv passordet igjen"
+                  class="pl-10"
+                  :class="{ 'border-red-500': v$.confirmPassword.$error }"
+                  @input="v$.confirmPassword.$touch()"
+                  @blur="v$.confirmPassword.$touch()"
+                />
+                <button
+                  type="button"
+                  @click="showConfirmPassword = !showConfirmPassword"
+                  class="absolute right-3 bg-transparent border-none cursor-pointer text-gray-500"
+                >
+                  <component :is="showConfirmPassword ? EyeOff : Eye" class="w-5 h-5" />
+                </button>
+              </div>
+              <div v-if="v$.confirmPassword.$error" class="text-red-500 text-xs mt-1">
+                {{ getErrorMessage(v$.confirmPassword) }}
+              </div>
             </div>
           </div>
-        </div>
 
-        <!-- TODO: CAPTCHA -->
-        <div class="h-captcha mb-6"></div>
+          <!-- TODO: CAPTCHA -->
+          <div class="h-captcha mb-6"></div>
 
-        <div class="flex flex-col gap-4 mb-6">
-
-          <div class="flex items-start">
-            <input
-              id="privacy"
-              v-model="v$.privacyPolicy.$model"
-              type="checkbox"
-              class="w-4 h-4 mt-1 border border-gray-300 rounded"
-              @change="v$.privacyPolicy.$touch()"
-            />
-            <label for="privacy" class="ml-2 text-sm text-gray-600">
-              Jeg har lest og godtar 
-              <span @click="showPersonvern = true" class="text-blue-600 hover:underline cursor-pointer">
+          <div class="flex flex-col gap-4 mb-6">
+            <div class="flex items-start">
+              <input
+                id="privacy"
+                v-model="v$.privacyPolicy.$model"
+                type="checkbox"
+                class="w-4 h-4 mt-1 border border-gray-300 rounded"
+                @change="v$.privacyPolicy.$touch()"
+              />
+              <label for="privacy" class="ml-2 text-sm text-gray-600">
+                Jeg har lest og godtar
+                <span
+                  @click="showPersonvern = true"
+                  class="text-blue-600 hover:underline cursor-pointer"
+                >
                 personvernerklæringen
               </span>
-            </label>
+              </label>
+            </div>
+            <div v-if="v$.privacyPolicy.$error" class="text-red-500 text-xs">
+              {{ getErrorMessage(v$.privacyPolicy) }}
+            </div>
           </div>
-          <div v-if="v$.privacyPolicy.$error" class="text-red-500 text-xs">
-            {{ getErrorMessage(v$.privacyPolicy) }}
+
+          <!-- Register Button -->
+          <button
+            type="submit"
+            class="w-full bg-blue-900 hover:bg-blue-950 text-white font-medium py-3 px-4 rounded transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed mb-4"
+            :disabled="v$.$invalid || status.loading"
+          >
+            {{ status.loading ? 'Registrerer...' : 'Registrer' }}
+          </button>
+
+          <!-- Login Link -->
+          <div class="text-center text-sm text-gray-600">
+            <p>
+              Har du en konto?
+              <router-link to="/login" class="text-blue-600 hover:underline">Logg inn</router-link>
+            </p>
           </div>
-        </div>
-
-        <!-- Register Button -->
-        <button
-          type="submit"
-          class="w-full bg-blue-900 hover:bg-blue-950 text-white font-medium py-3 px-4 rounded transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed mb-4"
-          :disabled="v$.$invalid || status.loading"
-        >
-          {{ status.loading ? 'Registrerer...' : 'Registrer' }}
-        </button>
-
-        <!-- Login Link -->
-        <div class="text-center text-sm text-gray-600">
-          <p>
-            Har du en konto?
-            <router-link to="/login" class="text-blue-600 hover:underline">Logg inn</router-link>
-          </p>
-        </div>
       </form>
     </div>
   </div>

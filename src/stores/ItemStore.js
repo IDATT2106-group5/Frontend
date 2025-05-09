@@ -6,16 +6,16 @@ import ItemService from '@/service/itemService'
  * Pinia store for managing catalog items, including pagination, search, and category filtering.
  */
 export const useItemStore = defineStore('item', () => {
-  /** @type {import('vue').Ref<Array<Object>>} */ 
+  /** @type {import('vue').Ref<Array<Object>>} */
   const items = ref([])
- 
-  /** @type {import('vue').Ref<boolean>} */  
+
+  /** @type {import('vue').Ref<boolean>} */
   const isLoading = ref(false)
 
   /** @type {import('vue').Ref<string|null>} */
   const error = ref(null)
 
-  /** @type {import('vue').Ref<number>} */ 
+  /** @type {import('vue').Ref<number>} */
   const currentPage = ref(0)
 
   /** @type {import('vue').Ref<boolean>} */
@@ -55,6 +55,7 @@ export const useItemStore = defineStore('item', () => {
         return items.value
       }
 
+      console.log(response)
       const responseItems = response.items || []
 
       if (reset) {
