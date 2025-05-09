@@ -168,33 +168,36 @@ export default {
     async saveNewsItem() {
       const newsItem = {
         ...this.currentNews,
-      }
+      };
 
       try {
         if (this.isEditing && this.currentNews.id) {
-          await this.newsStore.updateNews(this.currentNews.id, newsItem)
+          await this.newsStore.updateNews(this.currentNews.id, newsItem);
           toast({
             title: 'Nyhet ble oppdatert',
             description: 'Du har oppdatert en nyhet.',
             variant: 'success',
-          })
+          });
         } else {
-          await this.newsStore.createNews(newsItem)
+          // Create a new news item
+          const result = await this.newsStore.createNews(newsItem);
           toast({
             title: 'Ny nyhet ble lagt til',
             description: 'Du laget en ny nyhet',
             variant: 'success',
-          })
+          });
+
+          // No need to fetch news again, the store now handles this properly
         }
 
-        this.closeModal()
+        this.closeModal();
       } catch (error) {
-        console.error('Failed to save news item:', error)
+        console.error('Failed to save news item:', error);
         toast({
           title: 'Feil',
           description: 'Klarte ikke å oppdatere eller lage nyhet.',
           variant: 'destructive',
-        })
+        });
       }
     },
 
