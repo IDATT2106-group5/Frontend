@@ -34,7 +34,6 @@ export const useLocationStore = defineStore('location', () => {
 
         console.debug('Updating position for current user')
         await updatePosition(userStore.token, longitude.toString(), latitude.toString())
-
       },
       (error) => {
         console.error('Geolocation error:', error)
@@ -66,6 +65,7 @@ export const useLocationStore = defineStore('location', () => {
   }
 
   function startPositionSharing() {
+    console.log('Starting position sharing')
     if (!navigator.geolocation) {
       locationError.value = 'Positionering er ikke tilgjengelig i nettleseren din'
       return
@@ -73,7 +73,7 @@ export const useLocationStore = defineStore('location', () => {
     if (positionUpdateInterval.value) {
       clearInterval(positionUpdateInterval.value)
     }
-
+    updateUserPosition()
     positionUpdateInterval.value = setInterval(updateUserPosition, 30000)
     isSharing.value = true
     localStorage.setItem('isSharing', 'true')
@@ -92,9 +92,11 @@ export const useLocationStore = defineStore('location', () => {
   }
 
   function togglePositionSharing() {
-    if (isSharing.value) {
+    if (isSharing.value === true) {
+      console.debug('Stopping position sharing')
       stopPositionSharing()
     } else {
+      console.debug('Starting position sharing')
       startPositionSharing()
     }
   }
