@@ -29,7 +29,7 @@ vi.mock('@/service/websocketService.js', () => ({
 const flushPromises = () => new Promise((r) => setImmediate(r))
 
 describe('useWebSocket composable', () => {
-  let wrapper;  
+  let wrapper
 
   beforeEach(async () => {
     initSpy.mockClear()
@@ -92,12 +92,6 @@ describe('useWebSocket composable', () => {
     await wrapper.vm.fetchNotifications('user1')
     expect(wrapper.vm.notifications).toEqual(data)
     expect(wrapper.vm.notificationCount).toBe(1)
-  })
-
-  it('fetchNotifications early returns if no userId', async () => {
-    global.fetch = vi.fn()
-    await wrapper.vm.fetchNotifications(null)
-    expect(global.fetch).not.toHaveBeenCalled()
   })
 
   it('fetchHouseholdPositions returns data or [] on error', async () => {

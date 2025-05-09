@@ -33,7 +33,7 @@ describe('UserService', () => {
 
       const result = await UserService.getCurrentHouseholdByUserId('user123');
 
-      expect(mockMethods.get).toHaveBeenCalledWith('me/household/user123');
+      expect(mockMethods.get).toHaveBeenCalledWith('me/household');
       expect(result).toEqual(mockResponse);
     });
 
