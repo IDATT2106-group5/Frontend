@@ -276,9 +276,6 @@ export default {
         tempMarker.value = null;
       }
 
-      // Store marker ID being edited before clearing
-      const editingId = activeEditMarker.value;
-
       // Clear local reference
       activeEditMarker.value = null;
 
@@ -337,7 +334,7 @@ export default {
       }
 
       // Call store method to delete
-      const success = await mapStore.deleteMarker(deletingId);
+      await mapStore.deleteMarker(deletingId);
 
       // Close the modal
       confirmDeleteModalOpen.value = false;
