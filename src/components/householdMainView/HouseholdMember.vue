@@ -1,138 +1,268 @@
+/**
+* @fileoverview Component for finding and navigating to nearby facilities on a map
+* @component MapFacilityFinder
+* @description Allows users to find the closest facility of a selected type based on their location and navigate to it
+*/
 <script setup>
-import { ref } from 'vue'
-import { Crown, UserIcon, Mail, Edit, Save, X, Phone } from 'lucide-vue-next'
-import { Button } from '@/components/ui/button'
-import { toast } from '@/components/ui/toast'
-import { useHouseholdStore } from '@/stores/HouseholdStore'
-import ConfirmModal from '@/components/householdMainView/modals/ConfirmModal.vue'
-
-const householdStore = useHouseholdStore()
+import {onMounted, onUnmounted, ref, watch} from 'vue';
+import {useMapStore} from '@/stores/map/mapStore';
+import {storeToRefs} from 'pinia';
+import MarkerService from '@/service/map/markerService';
+import GeolocationService from '@/service/map/geoLocationService';
+import Button from '@/components/ui/button/Button.vue';
 
 /**
- * Props passed to the component.
- * @prop {Object} member - The household member to display.
- * @prop {boolean} isOwner - Whether this member is the owner.
+ * Currently selected facility type
+ * @type {import('vue').Ref<string>}
  */
-const props = defineProps({
-  member: {
-    type: Object,
-    required: true
-  },
-  isOwner: {
-    type: Boolean,
-    default: false
+const selectedType = ref('SHELTER');
+
+/**
+ * User's current geographical location [latitude, longitude]
+ * @type {import('vue').Ref<[number, number]|null>}
+ */
+const userLocation = ref(null);
+
+/**
+ * The closest facility to the user's location
+ * @type {import('vue').Ref<Object|null>}
+ * @property {number} lat - Latitude of the facility
+ * @property {number} lng - Longitude of the facility
+ * @property {string} name - Name of the facility
+ * @property {number} distance - Distance from user in kilometers
+ */
+const closestFacility = ref(null);
+
+/**
+ * Flag indicating if an operation is in progress
+ * @type {import('vue').Ref<boolean>}
+ */
+const isLoading = ref(false);
+
+/**
+ * Error message related to location services
+ * @type {import('vue').Ref<string|null>}
+ */
+const locationError = ref(null);
+
+/**
+ * ID of the geolocation watch process
+ * @type {import('vue').Ref<number|null>}
+ */
+const watchId = ref(null);
+
+/**
+ * Flag indicating if a route is currently displayed
+ * @type {import('vue').Ref<boolean>}
+ */
+const isRouteActive = ref(false);
+
+/**
+ * Flag indicating if the component UI is in collapsed state
+ * @type {import('vue').Ref<boolean>}
+ */
+const isCollapsed = ref(false);
+
+/**
+ * Current window width for responsive layout
+ * @type {import('vue').Ref<number>}
+ */
+const windowWidth = ref(window.innerWidth);
+
+/**
+ * Determines if the component is in mobile view based on window width
+ * @returns {boolean} True if in mobile view, false otherwise
+ */
+const isMobileView = () => {
+  return windowWidth.value < 768;
+};
+
+/**
+ * Map store instance
+ * @type {import('@/stores/map/mapStore').MapStore}
+ */
+const mapStore = useMapStore();
+
+/**
+ * Reference to route error from map store
+ * @type {import('vue').Ref<string|null>}
+ */
+const {routeError} = storeToRefs(mapStore);
+
+/**
+ * Toggles the collapsed state of the component UI
+ */
+const toggleCollapse = () => {
+  isCollapsed.value = !isCollapsed.value;
+};
+
+/**
+ * Handles window resize events
+ * Updates windowWidth and adjusts collapsed state based on viewport size changes
+ */
+const handleResize = () => {
+  const previousIsMobile = isMobileView();
+  windowWidth.value = window.innerWidth;
+  const currentIsMobile = isMobileView();
+
+  if (previousIsMobile && !currentIsMobile) {
+    isCollapsed.value = false;
   }
-})
+  else if (!previousIsMobile && currentIsMobile) {
+    isCollapsed.value = true;
+  }
+};
 
 /**
- * Emits events to parent component.
- * @event remove-member
+ * Lifecycle hook that runs when the component is mounted
+ * Sets initial UI state and starts location tracking
  */
-const emit = defineEmits(['remove-member'])
+onMounted(() => {
+  // Set initial collapse state based on screen size
+  isCollapsed.value = isMobileView();
 
-const isEditing = ref(false)
-const editName = ref('')
-const editEmail = ref('')
-const isSaving = ref(false)
-const error = ref('')
-const confirmRemoveOpen = ref(false)
-const nameRegex = /^[A-Za-zæøåÆØÅ\s\-']+$/
+  // Add resize event listener
+  window.addEventListener('resize', handleResize);
 
+  requestLocation();
+});
 
 /**
- * Enables editing mode and initializes form fields.
+ * Lifecycle hook that runs before the component is unmounted
+ * Cleans up event listeners and geolocation services
  */
-const startEdit = () => {
-  editName.value = props.member.fullName
-  editEmail.value = props.member.email || ''
-  isEditing.value = true
-}
+onUnmounted(() => {
+  // Remove resize event listener
+  window.removeEventListener('resize', handleResize);
+
+  // Clean up geolocation watch
+  if (watchId.value) {
+    navigator.geolocation.clearWatch(watchId.value);
+  }
+
+  // Clear any active routes
+  if (isRouteActive.value) {
+    mapStore.clearRoute();
+    isRouteActive.value = false;
+  }
+});
 
 /**
- * Cancels the edit mode and resets error state.
- */
-const cancelEdit = () => {
-  isEditing.value = false
-  error.value = ''
-}
-/**
- * Validates and saves changes to the member info.
+ * Requests and continuously tracks the user's location
+ *
+ * @async
  * @returns {Promise<void>}
  */
-const saveEdit = async () => {
-  if (!editName.value.trim()) {
-    error.value = 'Navn er påkrevd'
-    return
-  }
-
-  if (!nameRegex.test(editName.value)) {
-    error.value = 'Navnet kan ikke inneholde tall eller spesialtegn'
-    return
-  }
-
-  isSaving.value = true
-  error.value = ''
+const requestLocation = async () => {
+  locationError.value = null;
+  isLoading.value = true;
 
   try {
-    await householdStore.updateUnregisteredMember(
-      props.member.id,
-      {
-        name: editName.value,
-        email: props.member.isRegistered ? editEmail.value : undefined
-      },
-      props.member.isRegistered
-    )
+    // Get initial location
+    userLocation.value = await GeolocationService.getUserLocation();
 
-    toast({
-      title: 'Medlem oppdatert',
-      description: `${editName.value} ble oppdatert.`,
-      variant: 'success'
-    })
-
-    isEditing.value = false
-  } catch (err) {
-    error.value = err.message || 'Kunne ikke oppdatere medlemmet'
-    toast({
-      title: 'Feil',
-      description: error.value,
-      variant: 'destructive'
-    })
+    // Set up continuous location tracking if supported
+    if (navigator.geolocation) {
+      watchId.value = navigator.geolocation.watchPosition(
+        (position) => {
+          userLocation.value = [position.coords.latitude, position.coords.longitude];
+        },
+        (error) => {
+          // Only log watching errors, don't update error display
+          console.warn("Geolocation watch error:", error);
+        },
+        {
+          enableHighAccuracy: false,
+          timeout: 30000,
+          maximumAge: 120000
+        }
+      );
+    }
+  } catch (error) {
+    console.error("Error getting location:", error);
+    locationError.value = error.message || "Could not determine your location.";
   } finally {
-    isSaving.value = false
+    isLoading.value = false;
   }
-}
-
+};
 
 /**
- * Confirms and removes the member from the household.
+ * Finds the closest facility of the selected type to user's current location
+ *
+ * @async
  * @returns {Promise<void>}
  */
-const confirmRemove = async () => {
-  if (!confirm(`Er du sikker på at du vil fjerne ${props.member.fullName}?`)) return
-
-async function doRemove() {
-  confirmRemoveOpen.value = false
-  error.value = ''
-  try {
-    await householdStore.removeMember(props.member, props.member.isRegistered)
-
-    toast({
-      title: 'Medlem fjernet',
-      description: `${props.member.fullName} er fjernet fra husstanden.`,
-      variant: 'success'
-    })
-
-    emit('remove-member', props.member.id)
-  } catch (err) {
-    const message = err.message || 'Kunne ikke fjerne medlemmet'
-    error.value = message
-    toast({
-      title: 'Feil',
-      description: message,
-      variant: 'destructive'
-    })
+const findClosestFacility = async () => {
+  if (!userLocation.value) {
+    locationError.value = "Din posisjon er ikke tilgjengelig ennå.";
+    return;
   }
-}
+
+  isLoading.value = true;
+
+  try {
+    const [lat, lng] = userLocation.value;
+
+    const facility = await MarkerService.findClosestMarker(
+      lat, lng, selectedType.value || null
+    );
+
+    closestFacility.value = facility;
+
+    if (!facility) {
+      locationError.value = "Ingen fasiliteter funnet i nærheten.";
+    } else {
+      // Clear any existing route if we find a new facility
+      if (isRouteActive.value) {
+        mapStore.clearRoute();
+        isRouteActive.value = false;
+      }
+    }
+  } catch (error) {
+    console.error("Error finding closest facility:", error);
+    locationError.value = "Kunne ikke finne nærmeste fasilitet.";
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+/**
+ * Toggles the display of a route between user location and closest facility
+ * Generates a new route if none is active, or clears existing route
+ */
+const showRoute = () => {
+  if (!closestFacility.value || !userLocation.value) {
+    return;
+  }
+
+  if (isRouteActive.value) {
+    mapStore.clearRoute();
+    isRouteActive.value = false;
+  } else {
+    const startCoords = userLocation.value;
+    const endCoords = [closestFacility.value.lat, closestFacility.value.lng];
+
+    mapStore.generateRoute(startCoords, endCoords);
+    isRouteActive.value = true;
+  }
+};
+
+/**
+ * Formats distance for display with appropriate units
+ *
+ * @param {number|null} distance - Distance in kilometers
+ * @returns {string} Formatted distance string with units (meters or km)
+ */
+const formatDistance = (distance) => {
+  if (!distance) {
+    return '';
+  }
+
+  if (distance < 1) {
+    return `${Math.round(distance * 1000)} meter`;
+  }
+  return `${distance.toFixed(1)} km`;
+};
 </script>
 
 <template>
