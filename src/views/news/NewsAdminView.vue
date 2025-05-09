@@ -48,7 +48,7 @@ export default {
         url: '',
         isCrisis: false,
       },
-      
+
       /** @type {Object} Form validation errors */
       validationErrors: {
         title: '',
@@ -102,8 +102,8 @@ export default {
      * @returns {Boolean} True if form is valid, false otherwise
      */
     isFormValid() {
-      return !this.validationErrors.title && 
-             !this.validationErrors.content && 
+      return !this.validationErrors.title &&
+             !this.validationErrors.content &&
              !this.validationErrors.url;
     }
   },
@@ -126,7 +126,7 @@ export default {
     openEditModal(newsItem = null) {
       // Reset validation state
       this.resetValidation();
-      
+
       if (newsItem) {
         this.isEditing = true
         this.currentNews = {
@@ -173,32 +173,32 @@ export default {
      */
     validateForm() {
       let isValid = true;
-      
+
       // Reset validation errors
       this.validationErrors = {
         title: '',
         content: '',
         url: ''
       };
-      
+
       // Validate title
       if (!this.currentNews.title.trim()) {
         this.validationErrors.title = 'Tittel er påkrevd';
         isValid = false;
       }
-      
+
       // Validate content
       if (!this.currentNews.content.trim()) {
         this.validationErrors.content = 'Innhold er påkrevd';
         isValid = false;
       }
-      
+
       // Validate URL
       if (!this.currentNews.url.trim()) {
         this.validationErrors.url = 'URL er påkrevd';
         isValid = false;
       }
-      
+
       return isValid;
     },
 
@@ -215,7 +215,6 @@ export default {
         const date = new Date(dateString)
 
         if (isNaN(date.getTime())) {
-          console.log('Invalid date received:', dateString)
           return 'Invalid date'
         }
 
@@ -238,12 +237,12 @@ export default {
      */
     async saveNewsItem() {
       this.submitted = true;
-      
+
       // Validate form
       if (!this.validateForm()) {
         return;
       }
-      
+
       const newsItem = {
         ...this.currentNews,
       };
