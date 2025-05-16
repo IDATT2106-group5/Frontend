@@ -45,6 +45,8 @@ It is much faster than the production build.
 
 But it's still recommended to test the production build with `test:e2e` before deploying (e.g. in CI environments):
 
+Before running E2E tests locally, make sure your development server is running. In other words, you must start the app with `npm run dev` before executing the test command below:
+
 ```sh
 npm run build
 npm run test:e2e
